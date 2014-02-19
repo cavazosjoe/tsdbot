@@ -14,6 +14,8 @@ import java.util.LinkedList;
  */
 public class TSDBot extends PircBot implements Runnable {
 
+    private static final String chan = "#tsd";
+    
     private Thread mainThread;
 
     private CloseableHttpClient httpClient;
@@ -44,43 +46,43 @@ public class TSDBot extends PircBot implements Runnable {
         switch(action) {
             case HBO_FORUM:
                 if(cmdParts.length == 1) {
-                    sendMessage("#tsd",".hbof usage: .hbof [ list | pvu [postId (optional)] ]");
+                    sendMessage(chan,".hbof usage: .hbof [ list | pv [postId (optional)] ]");
                 } else if(cmdParts[1].equals("list")) {
                     for(HboForumManager.HboForumPost post : hboForumManager.history()) {
-                        sendMessage("#tsd",post.getInline());
+                        sendMessage(chan,post.getInline());
                     }
-                } else if(cmdParts[1].equals("pvu")) {
+                } else if(cmdParts[1].equals("pv")) {
                     if(hboForumManager.history().isEmpty()) {
-                        sendMessage("#tsd","No HBO Forum threads in recent history");
+                        sendMessage(chan,"No HBO Forum threads in recent history");
                     } else if(cmdParts.length == 2) {
-                        sendMessage("#tsd",hboForumManager.history().getFirst().getPreview());
+                        sendMessage(chan,hboForumManager.history().getFirst().getPreview());
                     } else {
                         try {
                             int postId = Integer.parseInt(cmdParts[2]);
                             boolean found = false;
                             for(HboForumManager.HboForumPost post : hboForumManager.history()) {
                                 if(post.getPostId() == postId) {
-                                    sendMessage("#tsd", post.getPreview());
+                                    sendMessage(chan, post.getPreview());
                                     found = true;
                                     break;
                                 }
                             }
-                            if(!found) sendMessage("#tsd","Could not find HBO Forum thread with ID " + postId + " in recent history");
+                            if(!found) sendMessage(chan,"Could not find HBO Forum thread with ID " + postId + " in recent history");
                         } catch (NumberFormatException nfe) {
-                            sendMessage("#tsd",cmdParts[2] + " does not appear to be a number");
+                            sendMessage(chan,cmdParts[2] + " does not appear to be a number");
                         }
                     }
                 }
                 break;
             case TOM_CRUISE:
                 if(cmdParts.length == 1) {
-                    sendMessage("#tsd",TomCruise.getRandom());
+                    sendMessage(chan,TomCruise.getRandom());
                 } else if(cmdParts[1].equals("quote")) {
-                    sendMessage("#tsd",TomCruise.getRandomQuote());
+                    sendMessage(chan,TomCruise.getRandomQuote());
                 } else if(cmdParts[1].equals("clip")) {
-                    sendMessage("#tsd",TomCruise.getRandomClip());
+                    sendMessage(chan,TomCruise.getRandomClip());
                 } else {
-                    sendMessage("#tsd",".tc usage: .tc [ clip | quote ] (optional)");
+                    sendMessage(chan,".tc usage: .tc [ clip | quote ] (optional)");
                 }
                 break;
         }
@@ -94,14 +96,14 @@ public class TSDBot extends PircBot implements Runnable {
 
         while(true) {
             try {
-                wait(60 * 1000); // check every 2 minutes
+                wait(120 * 1000); // check every 2 minutes
             } catch (InterruptedException e) {
                 // something notified this thread, panic.blimp
             }
 
             hboForumNotifications = hboForumManager.sweep(httpClient);
             for(HboForumManager.HboForumPost post : hboForumNotifications) {
-                sendMessage("#tsd",post.getInline());
+                sendMessage(chan,post.getInline());
             }
 
         }

@@ -37,6 +37,7 @@ public class HboForumManager extends NotificationManager {
 
     @Override
     public LinkedList<HboForumPost> sweep(HttpClient client) {
+        //new threads found by sweep -- can be larger than MAX_HISTORY but is unlikely
         LinkedList<HboForumPost> notifications = new LinkedList<>();
         try {
             HboForumPost foundPost = null;
@@ -67,7 +68,7 @@ public class HboForumManager extends NotificationManager {
                     foundPost.setSubject(postMatcher.group(1));
 
                     String rawBody = postMatcher.group(4);
-                    String sanitizedBody = bodyHtmlPolicy.sanitize(rawBody);
+                    String sanitizedBody = bodyHtmlPolicy.sanitize(rawBody); // TODO: fix this
                     sanitizedBody = sanitizedBody.replaceAll("<BR>"," ").trim();
                     foundPost.setBody(sanitizedBody);
 
@@ -165,14 +166,13 @@ public class HboForumManager extends NotificationManager {
 
         @Override
         public String getPreview() {
-            if(body.length() < 200) return body;
+            if(body.length() < 350) return body;
             else return body.substring(0,350) + "... (snip)";
-
         }
 
         @Override
         public String getFullText() {
-            return null;
+            return body;
         }
 
     }

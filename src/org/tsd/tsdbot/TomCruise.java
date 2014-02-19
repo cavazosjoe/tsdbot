@@ -97,14 +97,10 @@ public class TomCruise {
     }
 
     public static String getRandomClip() {
-        ArrayList<String> list = new ArrayList<>(Arrays.asList(clips));
-        Collections.shuffle(list);
-        return list.get(0);
+        return clips[(int)(Math.random() * clips.length)];
     }
 
     public static String getRandomQuote() {
-        ArrayList<String> list = new ArrayList<>(Arrays.asList(quotes));
-        Collections.shuffle(list);
-        return list.get(0);
+        return clips[(int)(Math.random() * quotes.length)];
     }
 }
