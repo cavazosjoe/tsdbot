@@ -91,8 +91,7 @@ public class TomCruise {
     public static String getRandom() {
         ArrayList<String> bigList = new ArrayList<>(Arrays.asList(quotes));
         bigList.addAll(Arrays.asList(clips));
-        Collections.shuffle(bigList);
-        return bigList.get(0);
+        return bigList.get(rand.nextInt(bigList.size()));
     }
 
     public static String getRandomClip() {
