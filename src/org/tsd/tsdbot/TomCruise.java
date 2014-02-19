@@ -1,14 +1,13 @@
 package org.tsd.tsdbot;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by Joe on 2/19/14.
  */
 public class TomCruise {
+
+    private static final Random rand = new Random();
 
     private static final String[] quotes = new String[] {
             "Get with it. Millions of galaxies of hundreds of millions of stars, in a speck on one in a blink. That’s " +
@@ -97,10 +96,10 @@ public class TomCruise {
     }
 
     public static String getRandomClip() {
-        return clips[(int)(Math.random() * clips.length)];
+        return clips[rand.nextInt(clips.length)];
     }
 
     public static String getRandomQuote() {
-        return clips[(int)(Math.random() * quotes.length)];
+        return clips[rand.nextInt(quotes.length)];
     }
 }
