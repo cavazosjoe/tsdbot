@@ -67,14 +67,14 @@ public class DboForumManager extends NotificationManager {
                     System.out.println();
                     int postId = getPostNumFromLink(getField(e, "guid"));
 
-                    if((!threadList.isEmpty()) && postId < threadList.getFirst().getPostId()) break;
+                    if((!threadList.isEmpty()) && postId <= threadList.getFirst().getPostId()) break;
 
                     newPost = new DboForumPost();
                     newPost.setPostId(postId);
                     newPost.setAuthor(getField(e,"dc:creator"));
                     newPost.setSubject(getField(e,"title"));
                     newPost.setDate(dboSdf.parse(getField(e,"pubDate")));
-                    newPost.setBody("N/A");
+                    newPost.setBody(HtmlSanitizer.sanitize(getField(e,"content:encoded")));
 
                     notifications.addLast(newPost);
                 }

@@ -13,6 +13,6 @@ import java.util.List;
 public abstract class NotificationManager {
     public abstract LinkedList<? extends NotificationEntity> sweep(HttpClient client) throws OperationNotSupportedException;
     public abstract LinkedList<? extends NotificationEntity> sweep(WebClient webClient) throws OperationNotSupportedException;
-    public abstract List<? extends NotificationEntity> history();
+    public abstract LinkedList<? extends NotificationEntity> history();
     public abstract NotificationEntity expand(String key);
 }
