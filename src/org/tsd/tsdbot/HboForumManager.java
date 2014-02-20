@@ -63,7 +63,7 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
             Matcher indexMatcher = newThreadPattern.matcher(indexResponse);
 
             int postId = -1;
-            while(indexMatcher.find() && notifications.size() < 5) {
+            while(indexMatcher.find() && notifications.size() < MAX_HISTORY) {
                 postId = Integer.parseInt(indexMatcher.group(1));
                 if( (!threadList.isEmpty()) &&
                         (postId < threadList.getLast().getPostId() || threadListContainsPost(postId)) ) continue;

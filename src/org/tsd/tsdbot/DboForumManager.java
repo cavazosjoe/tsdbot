@@ -60,7 +60,7 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
             NodeList nlist = rssDoc.getElementsByTagName("item");
 
             DboForumPost newPost = null;
-            for(int i=0 ; i < Math.min(nlist.getLength(),5) ; i++) {
+            for(int i=0 ; i < Math.min(nlist.getLength(),MAX_HISTORY) ; i++) {
                 Node n = nlist.item(i);
                 if(n.getNodeType() == Node.ELEMENT_NODE) {
                     Element e = (Element)n;
