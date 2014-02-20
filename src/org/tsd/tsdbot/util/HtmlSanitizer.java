@@ -409,21 +409,23 @@ public class HtmlSanitizer {
     }
 
     public static String htmlEncodeApexes(String source) {
-        if (source != null) {
-            String result = replaceAllNoRegex(source, new String[]{"\"", "'"}, new String[]{"&quot;", "&#39;"});
-            return result;
-        } else {
-            return null;
-        }
+        return source; // don't want this - schooly
+//        if (source != null) {
+//            String result = replaceAllNoRegex(source, new String[]{"\"", "'"}, new String[]{"&quot;", "&#39;"});
+//            return result;
+//        } else {
+//            return null;
+//        }
     }
 
     public static String htmlEncodeTag(String source) {
-        if (source != null) {
-            String result = replaceAllNoRegex(source, new String[]{"<", ">"}, new String[]{"&lt;", "&gt;"});
-            return result;
-        } else {
-            return null;
-        }
+        return source; // don't want this - schooly
+//        if (source != null) {
+//            String result = replaceAllNoRegex(source, new String[]{"<", ">"}, new String[]{"&lt;", "&gt;"});
+//            return result;
+//        } else {
+//            return null;
+//        }
     }
 
     public static String convertLineFeedToBR(String text) {
