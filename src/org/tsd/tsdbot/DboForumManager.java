@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 /**
  * Created by Joe on 2/18/14.
  */
-public class DboForumManager extends NotificationManager {
+public class DboForumManager extends NotificationManager<DboForumManager.DboForumPost> {
 
     private static final String threadsRss = "http://destiny.bungie.org/forum/index.php?mode=rss&items=thread_starts";
     private static final Pattern postIdPattern = Pattern.compile("(\\d+)");
@@ -60,7 +60,7 @@ public class DboForumManager extends NotificationManager {
             NodeList nlist = rssDoc.getElementsByTagName("item");
 
             DboForumPost newPost = null;
-            for(int i=0 ; i < Math.min(nlist.getLength(),5) ; i++) {
+            for(int i=0 ; i < Math.min(nlist.getLength(),MAX_HISTORY) ; i++) {
                 Node n = nlist.item(i);
                 if(n.getNodeType() == Node.ELEMENT_NODE) {
                     Element e = (Element)n;

@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 /**
  * Created by Joe on 2/18/14.
  */
-public class HboForumManager extends NotificationManager {
+public class HboForumManager extends NotificationManager<HboForumManager.HboForumPost> {
 
     private static final Pattern newThreadPattern = Pattern.compile("<tr><td><a name='m_(\\d+)'");
     private static final Pattern postInfoPattern = Pattern.compile(
@@ -63,7 +63,7 @@ public class HboForumManager extends NotificationManager {
             Matcher indexMatcher = newThreadPattern.matcher(indexResponse);
 
             int postId = -1;
-            while(indexMatcher.find() && notifications.size() < 5) {
+            while(indexMatcher.find() && notifications.size() < MAX_HISTORY) {
                 postId = Integer.parseInt(indexMatcher.group(1));
                 if( (!threadList.isEmpty()) &&
                         (postId < threadList.getLast().getPostId() || threadListContainsPost(postId)) ) continue;
