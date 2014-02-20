@@ -10,9 +10,9 @@ import java.util.List;
 /**
  * Created by Joe on 2/18/14.
  */
-public abstract class NotificationManager {
-    public abstract LinkedList<? extends NotificationEntity> sweep(HttpClient client) throws OperationNotSupportedException;
-    public abstract LinkedList<? extends NotificationEntity> sweep(WebClient webClient) throws OperationNotSupportedException;
-    public abstract LinkedList<? extends NotificationEntity> history();
-    public abstract NotificationEntity expand(String key);
+public abstract class NotificationManager<T extends NotificationEntity> {
+    public abstract LinkedList<T> sweep(HttpClient client) throws OperationNotSupportedException;
+    public abstract LinkedList<T> sweep(WebClient webClient) throws OperationNotSupportedException;
+    public abstract LinkedList<T> history();
+    public abstract T expand(String key);
 }

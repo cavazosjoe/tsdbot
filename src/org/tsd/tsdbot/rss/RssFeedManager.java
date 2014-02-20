@@ -92,12 +92,12 @@ public class RssFeedManager extends NotificationManager<RssItem> {
     }
 
     @Override
-    public List<RssItem> history() {
+    public LinkedList<RssItem> history() {
         return null;
     }
 
     @Override
-    public NotificationEntity expand(String key) {
+    public RssItem expand(String key) {
         return null;
     }
 }
