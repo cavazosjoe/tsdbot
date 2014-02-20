@@ -5,9 +5,12 @@ import com.gargoylesoftware.htmlunit.WebClient;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.jibble.pircbotm.PircBot;
+import org.tsd.tsdbot.runnable.Strawpoll;
 import org.tsd.tsdbot.util.IRCUtil;
 
-import java.util.LinkedList;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Created by Joe on 2/18/14.
@@ -23,6 +26,9 @@ public class TSDBot extends PircBot implements Runnable {
 
     private HboForumManager hboForumManager;
     private DboForumManager dboForumManager;
+
+    private ExecutorService threadPool = Executors.newFixedThreadPool(10);
+    private Strawpoll runningPoll;
 
     public TSDBot(String channel) {
         chan = channel;
@@ -55,6 +61,8 @@ public class TSDBot extends PircBot implements Runnable {
             case HBO_FORUM: hbof(cmdParts); break;
             case DBO_FORUM: dbof(cmdParts); break;
             case TOM_CRUISE: tc(cmdParts); break;
+            case STRAWPOLL: poll(message.split(";")); break;
+            case VOTE: vote(sender, login, cmdParts); break;
         }
 
     }
@@ -133,6 +141,85 @@ public class TSDBot extends PircBot implements Runnable {
         }
     }
 
+    private void poll(String[] cmdParts) {
+        if(runningPoll != null) {
+            sendMessage(chan,"There is already a poll running. It will end in " + runningPoll.getMinutes() + " minute(s)");
+            return;
+        }
+
+        if(cmdParts.length < 4) {
+            sendMessage(chan,".poll usage: .poll <question> ; <duration (integer)> ; choice 1 ; choice 2 [ choice 3 ...]");
+            return;
+        }
+
+        String question = cmdParts[0].substring(cmdParts[0].indexOf(" ") + 1).trim(); //  .poll This is a question
+                                                                                      //        ^--->
+        int minutes = Integer.parseInt(cmdParts[1].trim());
+        String[] choices = new String[cmdParts.length-2];
+        for(int i=0 ; i < choices.length ; i++) {
+            choices[i] = cmdParts[i+2].trim();
+        }
+
+        try {
+            runningPoll = new Strawpoll(
+                    this,
+                    question,
+                    minutes,
+                    choices
+            );
+            threadPool.submit(runningPoll);
+        } catch (Exception e) {
+            sendMessage(chan,e.getMessage());
+        }
+    }
+
+    private void vote(String sender, String login, String[] cmdParts) {
+        if(runningPoll == null) {
+            sendMessage(chan,"There is no poll running");
+            return;
+        }
+
+        if(cmdParts.length != 2) {
+            sendMessage(chan,".vote <number of your choice>");
+            return;
+        }
+
+        int selection = -1;
+        try {
+            selection = Integer.parseInt(cmdParts[1]);
+        } catch (NumberFormatException nfe) {
+            sendMessage(chan,".vote <number of your choice>");
+            return;
+        }
+
+        String voteResult = runningPoll.castVote(login, selection);
+        if(voteResult != null) {
+            sendMessage(chan, voteResult + ", " + sender);
+        }
+    }
+
+    public void handlePollStart(String question, int minutes, TreeMap<Integer, String> choices) {
+        String[] displayTable = new String[choices.size()+2];
+        displayTable[0] = "NEW STRAWPOLL: " + question;
+        for(Integer i : choices.keySet()) {
+            displayTable[i] = i + ": " + choices.get(i);
+        }
+        displayTable[displayTable.length-1] = "The voting will end in " + minutes + " minute(s)";
+        sendLines(displayTable);
+    }
+
+    public void handlePollResult(String question, HashMap<String, Integer> results) {
+        String[] resultsTable = new String[results.size()+1];
+        resultsTable[0] = question + " | RESULTS:";
+        int i=1;
+        for(String choice : results.keySet()) {
+            resultsTable[i] = choice + ": " + results.get(choice);
+            i++;
+        }
+        this.runningPoll = null;
+        sendLines(resultsTable);
+    }
+
     @Override
     public synchronized void run() {
 
@@ -158,7 +245,7 @@ public class TSDBot extends PircBot implements Runnable {
 
         }
     }
-    
+
     private void sendLine(String line) {
         if(line.length() > 510) sendLines(IRCUtil.splitLongString(line));
         else sendMessage(chan, line);
@@ -171,7 +258,9 @@ public class TSDBot extends PircBot implements Runnable {
     public enum Action {
         TOM_CRUISE(".tc"),
         HBO_FORUM(".hbof"),
-        DBO_FORUM(".dbof");
+        DBO_FORUM(".dbof"),
+        STRAWPOLL(".poll"),
+        VOTE(".vote");
 
         public String cmd;
 
