@@ -24,10 +24,10 @@ public class TSDBot extends PircBot implements Runnable {
     private HboForumManager hboForumManager;
     private DboForumManager dboForumManager;
 
-    public TSDBot(String channel) {
+    public TSDBot(String channel, String name) {
         chan = channel;
 
-        setName("TSDBot");
+        setName(name);
         setAutoNickChange(true);
         setLogin("tsdbot");
 

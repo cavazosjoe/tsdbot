@@ -6,11 +6,17 @@ package org.tsd.tsdbot;
 public class TSDBotLauncher {
 
     public static void main(String[] args) throws Exception {
+        String name = "TSDBot";
         String server = "localhost";
         String channel = args[0];
         if(!channel.startsWith("#")) channel = "#"+channel;
 
-        TSDBot bot = new TSDBot(channel);
+        if (args.length >= 3) {
+            server = args[1];
+            name = args[2];
+        }
+
+        TSDBot bot = new TSDBot(channel, name);
         bot.setVerbose(true);
         bot.connect(server);
         bot.joinChannel(channel);
