@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 /**
  * Created by Joe on 2/18/14.
  */
-public class HboForumManager extends NotificationManager {
+public class HboForumManager extends NotificationManager<HboForumManager.HboForumPost> {
 
     private static final Pattern newThreadPattern = Pattern.compile("<tr><td><a name='m_(\\d+)'");
     private static final Pattern postInfoPattern = Pattern.compile(
