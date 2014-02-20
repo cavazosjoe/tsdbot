@@ -1,11 +1,11 @@
 package org.tsd.tsdbot;
 
-import org.apache.http.client.HttpClient;
+import com.gargoylesoftware.htmlunit.BrowserVersion;
+import com.gargoylesoftware.htmlunit.WebClient;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.jibble.pircbotm.PircBot;
-import twitter4j.Twitter;
-import twitter4j.TwitterFactory;
+import org.tsd.tsdbot.util.IRCUtil;
 
 import java.util.LinkedList;
 
@@ -14,22 +14,30 @@ import java.util.LinkedList;
  */
 public class TSDBot extends PircBot implements Runnable {
 
-    private static final String chan = "#tsd";
+    private static String chan;
     
     private Thread mainThread;
 
     private CloseableHttpClient httpClient;
+    private WebClient webClient;
 
     private HboForumManager hboForumManager;
+    private DboForumManager dboForumManager;
 
-    public TSDBot() {
+    public TSDBot(String channel) {
+        chan = channel;
+
         setName("TSDBot");
         setAutoNickChange(true);
         setLogin("tsdbot");
 
         httpClient = HttpClients.createMinimal();
 
+        webClient = new WebClient(BrowserVersion.CHROME);
+        webClient.getCookieManager().setCookiesEnabled(true);
+
         hboForumManager = new HboForumManager();
+        dboForumManager = new DboForumManager();
 
         mainThread = new Thread(this);
         mainThread.start();
@@ -44,74 +52,126 @@ public class TSDBot extends PircBot implements Runnable {
         if(action == null) return;
 
         switch(action) {
-            case HBO_FORUM:
-                if(cmdParts.length == 1) {
-                    sendMessage(chan,".hbof usage: .hbof [ list | pv [postId (optional)] ]");
-                } else if(cmdParts[1].equals("list")) {
-                    for(HboForumManager.HboForumPost post : hboForumManager.history()) {
-                        sendMessage(chan,post.getInline());
-                    }
-                } else if(cmdParts[1].equals("pv")) {
-                    if(hboForumManager.history().isEmpty()) {
-                        sendMessage(chan,"No HBO Forum threads in recent history");
-                    } else if(cmdParts.length == 2) {
-                        sendMessage(chan,hboForumManager.history().getFirst().getPreview());
-                    } else {
-                        try {
-                            int postId = Integer.parseInt(cmdParts[2]);
-                            boolean found = false;
-                            for(HboForumManager.HboForumPost post : hboForumManager.history()) {
-                                if(post.getPostId() == postId) {
-                                    sendMessage(chan, post.getPreview());
-                                    found = true;
-                                    break;
-                                }
-                            }
-                            if(!found) sendMessage(chan,"Could not find HBO Forum thread with ID " + postId + " in recent history");
-                        } catch (NumberFormatException nfe) {
-                            sendMessage(chan,cmdParts[2] + " does not appear to be a number");
-                        }
-                    }
-                }
-                break;
-            case TOM_CRUISE:
-                if(cmdParts.length == 1) {
-                    sendMessage(chan,TomCruise.getRandom());
-                } else if(cmdParts[1].equals("quote")) {
-                    sendMessage(chan,TomCruise.getRandomQuote());
-                } else if(cmdParts[1].equals("clip")) {
-                    sendMessage(chan,TomCruise.getRandomClip());
-                } else {
-                    sendMessage(chan,".tc usage: .tc [ clip | quote ] (optional)");
-                }
-                break;
+            case HBO_FORUM: hbof(cmdParts); break;
+            case DBO_FORUM: dbof(cmdParts); break;
+            case TOM_CRUISE: tc(cmdParts); break;
         }
 
+    }
+
+    private void hbof(String[] cmdParts) {
+        if(cmdParts.length == 1) {
+            sendLine(".hbof usage: .hbof [ list | pv [postId (optional)] ]");
+        } else if(cmdParts[1].equals("list")) {
+            for(HboForumManager.HboForumPost post : hboForumManager.history()) {
+                sendLine(post.getInline());
+            }
+        } else if(cmdParts[1].equals("pv")) {
+            if(hboForumManager.history().isEmpty()) {
+                sendLine("No HBO Forum threads in recent history");
+            } else if(cmdParts.length == 2) {
+                sendLines(hboForumManager.history().getFirst().getPreview());
+            } else {
+                try {
+                    int postId = Integer.parseInt(cmdParts[2]);
+                    boolean found = false;
+                    for(HboForumManager.HboForumPost post : hboForumManager.history()) {
+                        if(post.getPostId() == postId) {
+                            sendLines(post.getPreview());
+                            found = true;
+                            break;
+                        }
+                    }
+                    if(!found) sendLine("Could not find HBO Forum thread with ID " + postId + " in recent history");
+                } catch (NumberFormatException nfe) {
+                    sendLine(cmdParts[2] + " does not appear to be a number");
+                }
+            }
+        }
+    }
+
+    private void dbof(String[] cmdParts) {
+        if(cmdParts.length == 1) {
+            sendLine(".dbof usage: .dbof [ list | pv [postId (optional)] ]");
+        } else if(cmdParts[1].equals("list")) {
+            for(DboForumManager.DboForumPost post : dboForumManager.history()) {
+                sendLine(post.getInline());
+            }
+        } else if(cmdParts[1].equals("pv")) {
+            if(dboForumManager.history().isEmpty()) {
+                sendLine("No HBO Forum threads in recent history");
+            } else if(cmdParts.length == 2) {
+                sendLines(dboForumManager.history().getFirst().getPreview());
+            } else {
+                try {
+                    int postId = Integer.parseInt(cmdParts[2]);
+                    boolean found = false;
+                    for(DboForumManager.DboForumPost post : dboForumManager.history()) {
+                        if(post.getPostId() == postId) {
+                            sendLines(post.getPreview());
+                            found = true;
+                            break;
+                        }
+                    }
+                    if(!found) sendLine("Could not find DBO Forum thread with ID " + postId + " in recent history");
+                } catch (NumberFormatException nfe) {
+                    sendLine(cmdParts[2] + " does not appear to be a number");
+                }
+            }
+        }
+    }
+
+    private void tc(String[] cmdParts) {
+        if(cmdParts.length == 1) {
+            sendLine(TomCruise.getRandom());
+        } else if(cmdParts[1].equals("quote")) {
+            sendLine(TomCruise.getRandomQuote());
+        } else if(cmdParts[1].equals("clip")) {
+            sendLine(TomCruise.getRandomClip());
+        } else {
+            sendLine(".tc usage: .tc [ clip | quote ] (optional)");
+        }
     }
 
     @Override
     public synchronized void run() {
 
         LinkedList<HboForumManager.HboForumPost> hboForumNotifications;
+        LinkedList<DboForumManager.DboForumPost> dboForumNotifications;
 
         while(true) {
             try {
-                wait(120 * 1000); // check every 2 minutes
+                wait(30 * 1000); // check every 2 minutes
             } catch (InterruptedException e) {
                 // something notified this thread, panic.blimp
             }
 
             hboForumNotifications = hboForumManager.sweep(httpClient);
             for(HboForumManager.HboForumPost post : hboForumNotifications) {
-                sendMessage(chan,post.getInline());
+                sendLine(post.getInline());
+            }
+
+            dboForumNotifications = dboForumManager.sweep(webClient);
+            for(DboForumManager.DboForumPost post : dboForumNotifications) {
+                sendLine(post.getInline());
             }
 
         }
     }
+    
+    private void sendLine(String line) {
+        if(line.length() > 510) sendLines(IRCUtil.splitLongString(line));
+        else sendMessage(chan, line);
+    }
+    
+    private void sendLines(String[] lines) {
+        for(String line : lines) sendMessage(chan, line);
+    }
 
     public enum Action {
         TOM_CRUISE(".tc"),
-        HBO_FORUM(".hbof");
+        HBO_FORUM(".hbof"),
+        DBO_FORUM(".dbof");
 
         public String cmd;
 

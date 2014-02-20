@@ -1,6 +1,10 @@
 package org.tsd.tsdbot;
 
-import java.util.*;
+import org.tsd.tsdbot.util.IRCUtil;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Random;
 
 /**
  * Created by Joe on 2/19/14.
@@ -99,6 +103,6 @@ public class TomCruise {
     }
 
     public static String getRandomQuote() {
-        return clips[rand.nextInt(quotes.length)];
+        return quotes[rand.nextInt(quotes.length)];
     }
 }

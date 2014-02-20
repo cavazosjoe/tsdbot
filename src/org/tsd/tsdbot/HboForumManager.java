@@ -1,14 +1,16 @@
 package org.tsd.tsdbot;
 
+import com.gargoylesoftware.htmlunit.WebClient;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
-import org.owasp.html.PolicyFactory;
-import org.owasp.html.Sanitizers;
+import org.tsd.tsdbot.util.HtmlSanitizer;
 
+import javax.naming.OperationNotSupportedException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,18 +19,23 @@ import java.util.regex.Pattern;
  */
 public class HboForumManager extends NotificationManager {
 
-    private static final int MAX_HISTORY = 5;
     private static final Pattern newThreadPattern = Pattern.compile("<tr><td><a name='m_(\\d+)'");
     private static final Pattern postInfoPattern = Pattern.compile(
             "<div class='msg_headln'>(.*?)</div>.*?<span class='msg_poster'><a.*?>(.*?)</a>.*?" +
                     "<span class=\"msg_date\">(.*?)</span>.*?<div class=\"msg_text\">(.*?)<hr width=\"510\" " +
                     "align=\"left\" size=\"1\">", Pattern.DOTALL
     );
+
     private static SimpleDateFormat hboSdf = null;
-    private static final PolicyFactory bodyHtmlPolicy = Sanitizers.FORMATTING;
+    static {
+        HtmlSanitizer.allowedTags = Pattern.compile("^()$");
+        HtmlSanitizer.forbiddenTags = Pattern.compile("^(b|p|i|s|a|img|table|thead|tbody|tfoot|tr|th|td|dd|dl|dt|em|h1|h2|h3|h4|h5|h6|li|ul|ol|span|div|strike|strong|"
+                + "sub|sup|pre|del|code|blockquote|strike|kbd|br|hr|area|map|object|embed|param|link|form|small|big|script|object|embed|link|style|form|input)$");
+    }
 
     // first = newest
-    private LinkedList<HboForumPost> threadList = new LinkedList<>();
+    protected static final int MAX_HISTORY = 5;
+    protected LinkedList<HboForumPost> threadList = new LinkedList<>();
 
     public HboForumManager() {
         hboSdf = new SimpleDateFormat("MM/dd/yy HH:mm");
@@ -36,8 +43,12 @@ public class HboForumManager extends NotificationManager {
     }
 
     @Override
+    public LinkedList<HboForumPost> sweep(WebClient webClient) throws OperationNotSupportedException {
+        throw new OperationNotSupportedException("sweep(): Must provide an HttpClient to sweep the HBO Forum");
+    }
+
+    @Override
     public LinkedList<HboForumPost> sweep(HttpClient client) {
-        //new threads found by sweep -- can be larger than MAX_HISTORY but is unlikely
         LinkedList<HboForumPost> notifications = new LinkedList<>();
         try {
             HboForumPost foundPost = null;
@@ -52,7 +63,7 @@ public class HboForumManager extends NotificationManager {
             Matcher indexMatcher = newThreadPattern.matcher(indexResponse);
 
             int postId = -1;
-            while(indexMatcher.find()) {
+            while(indexMatcher.find() && notifications.size() < 5) {
                 postId = Integer.parseInt(indexMatcher.group(1));
                 if( (!threadList.isEmpty()) &&
                         (postId < threadList.getLast().getPostId() || threadListContainsPost(postId)) ) continue;
@@ -68,8 +79,8 @@ public class HboForumManager extends NotificationManager {
                     foundPost.setSubject(postMatcher.group(1));
 
                     String rawBody = postMatcher.group(4);
-                    String sanitizedBody = bodyHtmlPolicy.sanitize(rawBody); // TODO: fix this
-                    sanitizedBody = sanitizedBody.replaceAll("<BR>"," ").trim();
+                    String sanitizedBody = HtmlSanitizer.sanitize(rawBody);
+                    sanitizedBody = sanitizedBody.trim();
                     foundPost.setBody(sanitizedBody);
 
                     notifications.addLast(foundPost);
@@ -78,7 +89,6 @@ public class HboForumManager extends NotificationManager {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return null;
         }
 
         threadList.addAll(0,notifications);
@@ -87,7 +97,7 @@ public class HboForumManager extends NotificationManager {
     }
 
     private void trimHistory() {
-        while(threadList.size() > MAX_HISTORY) threadList.removeFirst();
+        while(threadList.size() > MAX_HISTORY) threadList.removeLast();
     }
 
     private boolean threadListContainsPost(int postId) {
@@ -103,7 +113,7 @@ public class HboForumManager extends NotificationManager {
     }
 
     @Override
-    public NotificationEntity expand(String key) {
+    public HboForumPost expand(String key) {
         return null;
     }
 
@@ -165,14 +175,16 @@ public class HboForumManager extends NotificationManager {
         }
 
         @Override
-        public String getPreview() {
-            if(body.length() < 350) return body;
-            else return body.substring(0,350) + "... (snip)";
+        public String[] getPreview() {
+            String ret = getInline() + "\n" + body;
+            if(ret.length() > 350) ret = ret.substring(0,350) + "... (snip)";
+            return ret.split("\n");
         }
 
         @Override
-        public String getFullText() {
-            return body;
+        public String[] getFullText() {
+            String ret = getInline() + "\n" + body;
+            return ret.split("\n");
         }
 
     }
