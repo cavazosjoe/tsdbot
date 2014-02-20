@@ -26,6 +26,7 @@ public class TSDBot extends PircBot implements Runnable {
 
     private HboForumManager hboForumManager;
     private DboForumManager dboForumManager;
+    private HboNewsManager hboNewsManager;
 
     private ExecutorService threadPool = Executors.newFixedThreadPool(10);
     private Strawpoll runningPoll;
@@ -44,6 +45,7 @@ public class TSDBot extends PircBot implements Runnable {
 
         hboForumManager = new HboForumManager();
         dboForumManager = new DboForumManager();
+        hboNewsManager = new HboNewsManager();
 
         mainThread = new Thread(this);
         mainThread.start();
@@ -59,6 +61,7 @@ public class TSDBot extends PircBot implements Runnable {
 
         switch(action) {
             case HBO_FORUM: hbof(cmdParts); break;
+            case HBO_NEWS: hbon(cmdParts); break;
             case DBO_FORUM: dbof(cmdParts); break;
             case TOM_CRUISE: tc(cmdParts); break;
             case STRAWPOLL: poll(message.split(";")); break;
@@ -91,6 +94,37 @@ public class TSDBot extends PircBot implements Runnable {
                         }
                     }
                     if(!found) sendLine("Could not find HBO Forum thread with ID " + postId + " in recent history");
+                } catch (NumberFormatException nfe) {
+                    sendLine(cmdParts[2] + " does not appear to be a number");
+                }
+            }
+        }
+    }
+
+    private void hbon(String[] cmdParts) {
+        if(cmdParts.length == 1) {
+            sendLine(".hbon usage: .hbon [ list | pv [postId (optional)] ]");
+        } else if(cmdParts[1].equals("list")) {
+            for(HboNewsManager.HboNewsPost post : hboNewsManager.history()) {
+                sendLine(post.getInline());
+            }
+        } else if(cmdParts[1].equals("pv")) {
+            if(hboNewsManager.history().isEmpty()) {
+                sendLine("No HBO Forum threads in recent history");
+            } else if(cmdParts.length == 2) {
+                sendLines(hboNewsManager.history().getFirst().getPreview());
+            } else {
+                try {
+                    int postId = Integer.parseInt(cmdParts[2]);
+                    boolean found = false;
+                    for(HboNewsManager.HboNewsPost post : hboNewsManager.history()) {
+                        if(post.getPostId() == postId) {
+                            sendLines(post.getPreview());
+                            found = true;
+                            break;
+                        }
+                    }
+                    if(!found) sendLine("Could not find HBO news post with ID " + postId + " in recent history");
                 } catch (NumberFormatException nfe) {
                     sendLine(cmdParts[2] + " does not appear to be a number");
                 }
@@ -224,17 +258,23 @@ public class TSDBot extends PircBot implements Runnable {
     public synchronized void run() {
 
         LinkedList<HboForumManager.HboForumPost> hboForumNotifications;
+        LinkedList<HboNewsManager.HboNewsPost> hboNewsNotifications;
         LinkedList<DboForumManager.DboForumPost> dboForumNotifications;
 
         while(true) {
             try {
-                wait(120 * 1000); // check every 2 minutes
+                wait(30 * 1000); // check every 2 minutes
             } catch (InterruptedException e) {
                 // something notified this thread, panic.blimp
             }
 
             hboForumNotifications = hboForumManager.sweep(httpClient);
             for(HboForumManager.HboForumPost post : hboForumNotifications) {
+                sendLine(post.getInline());
+            }
+
+            hboNewsNotifications = hboNewsManager.sweep();
+            for(HboNewsManager.HboNewsPost post : hboNewsNotifications) {
                 sendLine(post.getInline());
             }
 
@@ -258,6 +298,7 @@ public class TSDBot extends PircBot implements Runnable {
     public enum Action {
         TOM_CRUISE(".tc"),
         HBO_FORUM(".hbof"),
+        HBO_NEWS(".hbon"),
         DBO_FORUM(".dbof"),
         STRAWPOLL(".poll"),
         VOTE(".vote");

@@ -46,13 +46,17 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
     }
 
     @Override
+    public LinkedList<DboForumPost> sweep() throws OperationNotSupportedException {
+        throw new OperationNotSupportedException("Please use sweep(WebClient) to sweep the DBO Forum");
+    }
+
+    @Override
     public LinkedList<DboForumPost> sweep(HttpClient client) throws OperationNotSupportedException {
-        throw new OperationNotSupportedException("sweep(HttpClient): Don't use this method you baka");
+        throw new OperationNotSupportedException("Please use sweep(WebClient) to sweep the DBO Forum");
     }
 
     @Override
     public LinkedList<DboForumPost> sweep(WebClient webClient) {
-        //new threads found by sweep -- can be larger than MAX_HISTORY but is unlikely
         LinkedList<DboForumPost> notifications = new LinkedList<>();
         try {
             final XmlPage rssPage =  webClient.getPage("http://destiny.bungie.org/forum/index.php?mode=rss&items=thread_starts");

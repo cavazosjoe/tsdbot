@@ -43,8 +43,13 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
     }
 
     @Override
+    public LinkedList<HboForumPost> sweep() throws OperationNotSupportedException {
+        throw new OperationNotSupportedException("Please use sweep(HttpClient) to sweep the HBO Forum");
+    }
+
+    @Override
     public LinkedList<HboForumPost> sweep(WebClient webClient) throws OperationNotSupportedException {
-        throw new OperationNotSupportedException("sweep(): Must provide an HttpClient to sweep the HBO Forum");
+        throw new OperationNotSupportedException("Please use sweep(HttpClient) to sweep the HBO Forum");
     }
 
     @Override
@@ -66,7 +71,7 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
             while(indexMatcher.find() && notifications.size() < MAX_HISTORY) {
                 postId = Integer.parseInt(indexMatcher.group(1));
                 if( (!threadList.isEmpty()) &&
-                        (postId < threadList.getLast().getPostId() || threadListContainsPost(postId)) ) continue;
+                        (postId <= threadList.getLast().getPostId() || threadListContainsPost(postId)) ) continue;
                 postGet = new HttpGet("http://carnage.bungie.org/haloforum/halo.forum.pl?read=" + postId);
                 postResponse = client.execute(postGet, responseHandler);
                 if(postResponse.contains("<div class=\"msg_prev\">")) continue; // stale reply

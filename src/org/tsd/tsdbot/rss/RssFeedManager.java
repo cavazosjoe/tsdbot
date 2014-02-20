@@ -30,6 +30,11 @@ public class RssFeedManager extends NotificationManager<RssItem> {
     }
 
     @Override
+    public LinkedList<RssItem> sweep() throws OperationNotSupportedException {
+        throw new OperationNotSupportedException("Please use the WebClient version instead.");
+    }
+
+    @Override
     public LinkedList<RssItem> sweep(HttpClient client) throws OperationNotSupportedException {
         throw new OperationNotSupportedException("Please use the WebClient version instead.");
     }
