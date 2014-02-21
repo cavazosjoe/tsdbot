@@ -183,6 +183,7 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
         public String[] getPreview() {
             String ret = getInline() + "\n" + body;
             if(ret.length() > 350) ret = ret.substring(0,350) + "... (snip)";
+            setOpened(true);
             return ret.split("\n");
         }
 
