@@ -21,11 +21,9 @@ public class TSDBot extends PircBot implements Runnable {
     
     private Thread mainThread;
 
-    private CloseableHttpClient httpClient;
-    private WebClient webClient;
-
     private HboForumManager hboForumManager;
     private DboForumManager dboForumManager;
+    private HboNewsManager hboNewsManager;
 
     private ExecutorService threadPool = Executors.newFixedThreadPool(10);
     private Strawpoll runningPoll;
@@ -37,14 +35,15 @@ public class TSDBot extends PircBot implements Runnable {
         setAutoNickChange(true);
         setLogin("tsdbot");
 
-        httpClient = HttpClients.createMinimal();
+        CloseableHttpClient httpClient = HttpClients.createMinimal();
 
-        webClient = new WebClient(BrowserVersion.CHROME);
+        WebClient webClient = new WebClient(BrowserVersion.CHROME);
         webClient.getCookieManager().setCookiesEnabled(true);
 
-        hboForumManager = new HboForumManager();
-        dboForumManager = new DboForumManager();
-
+        hboForumManager = new HboForumManager(httpClient);
+        dboForumManager = new DboForumManager(webClient);
+        hboNewsManager = new HboNewsManager();
+        
         mainThread = new Thread(this);
         mainThread.start();
     }
@@ -59,6 +58,7 @@ public class TSDBot extends PircBot implements Runnable {
 
         switch(action) {
             case HBO_FORUM: hbof(cmdParts); break;
+            case HBO_NEWS: hbon(cmdParts); break;
             case DBO_FORUM: dbof(cmdParts); break;
             case TOM_CRUISE: tc(cmdParts); break;
             case STRAWPOLL: poll(message.split(";")); break;
@@ -78,19 +78,56 @@ public class TSDBot extends PircBot implements Runnable {
             if(hboForumManager.history().isEmpty()) {
                 sendLine("No HBO Forum threads in recent history");
             } else if(cmdParts.length == 2) {
-                sendLines(hboForumManager.history().getFirst().getPreview());
+                HboForumManager.HboForumPost mostRecent = hboForumManager.history().getFirst();
+                if(mostRecent.isOpened()) sendLine("Post " + mostRecent.getPostId() + " has already been opened");
+                else sendLines(mostRecent.getPreview());
             } else {
                 try {
                     int postId = Integer.parseInt(cmdParts[2]);
                     boolean found = false;
                     for(HboForumManager.HboForumPost post : hboForumManager.history()) {
                         if(post.getPostId() == postId) {
-                            sendLines(post.getPreview());
+                            if(post.isOpened()) sendLine("Post " + post.getPostId() + " has already been opened");
+                            else sendLines(post.getPreview());
                             found = true;
                             break;
                         }
                     }
                     if(!found) sendLine("Could not find HBO Forum thread with ID " + postId + " in recent history");
+                } catch (NumberFormatException nfe) {
+                    sendLine(cmdParts[2] + " does not appear to be a number");
+                }
+            }
+        }
+    }
+
+    private void hbon(String[] cmdParts) {
+        if(cmdParts.length == 1) {
+            sendLine(".hbon usage: .hbon [ list | pv [postId (optional)] ]");
+        } else if(cmdParts[1].equals("list")) {
+            for(HboNewsManager.HboNewsPost post : hboNewsManager.history()) {
+                sendLine(post.getInline());
+            }
+        } else if(cmdParts[1].equals("pv")) {
+            if(hboNewsManager.history().isEmpty()) {
+                sendLine("No HBO Forum threads in recent history");
+            } else if(cmdParts.length == 2) {
+                HboNewsManager.HboNewsPost mostRecent = hboNewsManager.history().getFirst();
+                if(mostRecent.isOpened()) sendLine("Post " + mostRecent.getPostId() + " has already been opened");
+                else sendLines(mostRecent.getPreview());
+            } else {
+                try {
+                    int postId = Integer.parseInt(cmdParts[2]);
+                    boolean found = false;
+                    for(HboNewsManager.HboNewsPost post : hboNewsManager.history()) {
+                        if(post.getPostId() == postId) {
+                            if(post.isOpened()) sendLine("Post " + post.getPostId() + " has already been opened");
+                            else sendLines(post.getPreview());
+                            found = true;
+                            break;
+                        }
+                    }
+                    if(!found) sendLine("Could not find HBO news post with ID " + postId + " in recent history");
                 } catch (NumberFormatException nfe) {
                     sendLine(cmdParts[2] + " does not appear to be a number");
                 }
@@ -107,16 +144,19 @@ public class TSDBot extends PircBot implements Runnable {
             }
         } else if(cmdParts[1].equals("pv")) {
             if(dboForumManager.history().isEmpty()) {
-                sendLine("No HBO Forum threads in recent history");
+                sendLine("No DBO Forum threads in recent history");
             } else if(cmdParts.length == 2) {
-                sendLines(dboForumManager.history().getFirst().getPreview());
+                DboForumManager.DboForumPost mostRecent = dboForumManager.history().getFirst();
+                if(mostRecent.isOpened()) sendLine("Post " + mostRecent.getPostId() + " has already been opened");
+                else sendLines(mostRecent.getPreview());
             } else {
                 try {
                     int postId = Integer.parseInt(cmdParts[2]);
                     boolean found = false;
                     for(DboForumManager.DboForumPost post : dboForumManager.history()) {
                         if(post.getPostId() == postId) {
-                            sendLines(post.getPreview());
+                            if(post.isOpened()) sendLine("Post " + post.getPostId() + " has already been opened");
+                            else sendLines(post.getPreview());
                             found = true;
                             break;
                         }
@@ -224,6 +264,7 @@ public class TSDBot extends PircBot implements Runnable {
     public synchronized void run() {
 
         LinkedList<HboForumManager.HboForumPost> hboForumNotifications;
+        LinkedList<HboNewsManager.HboNewsPost> hboNewsNotifications;
         LinkedList<DboForumManager.DboForumPost> dboForumNotifications;
 
         while(true) {
@@ -233,12 +274,17 @@ public class TSDBot extends PircBot implements Runnable {
                 // something notified this thread, panic.blimp
             }
 
-            hboForumNotifications = hboForumManager.sweep(httpClient);
+            hboForumNotifications = hboForumManager.sweep();
             for(HboForumManager.HboForumPost post : hboForumNotifications) {
                 sendLine(post.getInline());
             }
 
-            dboForumNotifications = dboForumManager.sweep(webClient);
+            hboNewsNotifications = hboNewsManager.sweep();
+            for(HboNewsManager.HboNewsPost post : hboNewsNotifications) {
+                sendLine(post.getInline());
+            }
+
+            dboForumNotifications = dboForumManager.sweep();
             for(DboForumManager.DboForumPost post : dboForumNotifications) {
                 sendLine(post.getInline());
             }
@@ -258,6 +304,7 @@ public class TSDBot extends PircBot implements Runnable {
     public enum Action {
         TOM_CRUISE(".tc"),
         HBO_FORUM(".hbof"),
+        HBO_NEWS(".hbon"),
         DBO_FORUM(".dbof"),
         STRAWPOLL(".poll"),
         VOTE(".vote");

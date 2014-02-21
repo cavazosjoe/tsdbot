@@ -19,6 +19,8 @@ import java.util.regex.Pattern;
  */
 public class HboForumManager extends NotificationManager<HboForumManager.HboForumPost> {
 
+    private HttpClient client;
+
     private static final Pattern newThreadPattern = Pattern.compile("<tr><td><a name='m_(\\d+)'");
     private static final Pattern postInfoPattern = Pattern.compile(
             "<div class='msg_headln'>(.*?)</div>.*?<span class='msg_poster'><a.*?>(.*?)</a>.*?" +
@@ -37,18 +39,14 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
     protected static final int MAX_HISTORY = 5;
     protected LinkedList<HboForumPost> threadList = new LinkedList<>();
 
-    public HboForumManager() {
+    public HboForumManager(HttpClient client) {
         hboSdf = new SimpleDateFormat("MM/dd/yy HH:mm");
         hboSdf.setTimeZone(TimeZone.getTimeZone("America/New_York"));
+        this.client = client;
     }
 
     @Override
-    public LinkedList<HboForumPost> sweep(WebClient webClient) throws OperationNotSupportedException {
-        throw new OperationNotSupportedException("sweep(): Must provide an HttpClient to sweep the HBO Forum");
-    }
-
-    @Override
-    public LinkedList<HboForumPost> sweep(HttpClient client) {
+    public LinkedList<HboForumPost> sweep() {
         LinkedList<HboForumPost> notifications = new LinkedList<>();
         try {
             HboForumPost foundPost = null;
@@ -66,7 +64,7 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
             while(indexMatcher.find() && notifications.size() < MAX_HISTORY) {
                 postId = Integer.parseInt(indexMatcher.group(1));
                 if( (!threadList.isEmpty()) &&
-                        (postId < threadList.getLast().getPostId() || threadListContainsPost(postId)) ) continue;
+                        (postId <= threadList.getLast().getPostId() || threadListContainsPost(postId)) ) continue;
                 postGet = new HttpGet("http://carnage.bungie.org/haloforum/halo.forum.pl?read=" + postId);
                 postResponse = client.execute(postGet, responseHandler);
                 if(postResponse.contains("<div class=\"msg_prev\">")) continue; // stale reply
@@ -178,6 +176,7 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
         public String[] getPreview() {
             String ret = getInline() + "\n" + body;
             if(ret.length() > 350) ret = ret.substring(0,350) + "... (snip)";
+            setOpened(true);
             return ret.split("\n");
         }
 
