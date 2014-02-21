@@ -1,20 +1,13 @@
 package org.tsd.tsdbot;
 
-import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.xml.XmlPage;
-import it.sauronsoftware.feed4j.FeedParser;
-import it.sauronsoftware.feed4j.bean.Feed;
-import it.sauronsoftware.feed4j.bean.FeedItem;
-import org.apache.http.client.HttpClient;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import javax.naming.OperationNotSupportedException;
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.LinkedList;
 import java.util.TimeZone;
@@ -30,6 +23,8 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
     private static final Pattern postIdPattern = Pattern.compile("(\\d+)");
     private static SimpleDateFormat dboSdf; //Thu, 20 Feb 2014 01:59:08 +0000
 
+    private WebClient webClient;
+
     static {
         HtmlSanitizer.allowedTags = Pattern.compile("^()$");
         HtmlSanitizer.forbiddenTags = Pattern.compile("^(b|p|i|s|a|img|table|thead|tbody|tfoot|tr|th|td|dd|dl|dt|em|h1|h2|h3|h4|h5|h6|li|ul|ol|span|div|strike|strong|"
@@ -40,18 +35,14 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
     protected static final int MAX_HISTORY = 5;
     protected LinkedList<DboForumPost> threadList = new LinkedList<>();
 
-    public DboForumManager() {
+    public DboForumManager(WebClient webClient) {
         dboSdf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z");
         dboSdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+        this.webClient = webClient;
     }
 
     @Override
-    public LinkedList<DboForumPost> sweep(HttpClient client) throws OperationNotSupportedException {
-        throw new OperationNotSupportedException("sweep(HttpClient): Don't use this method you baka");
-    }
-
-    @Override
-    public LinkedList<DboForumPost> sweep(WebClient webClient) {
+    public LinkedList<DboForumPost> sweep() {
         //new threads found by sweep -- can be larger than MAX_HISTORY but is unlikely
         LinkedList<DboForumPost> notifications = new LinkedList<>();
         try {
