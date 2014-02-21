@@ -9,10 +9,19 @@ import java.util.LinkedList;
 public abstract class NotificationEntity {
 
     protected Date date;
+    protected boolean opened = false;
 
     public abstract String getInline();
     public abstract String[] getPreview();
     public abstract String[] getFullText();
+
+    public boolean isOpened() {
+        return opened;
+    }
+
+    public void setOpened(boolean opened) {
+        this.opened = opened;
+    }
 
     public Date getDate() {
         return date;
