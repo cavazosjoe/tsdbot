@@ -5,7 +5,7 @@ import org.tsd.tsdbot.NotificationEntity;
 import java.net.URL;
 
 public class RssItem extends NotificationEntity {
-    public static final int DESCRIPTION_LENGTH = 200;
+    public static final int DESCRIPTION_LENGTH = 100;
     private String title;
     private String description;
     private String content;
@@ -41,7 +41,11 @@ public class RssItem extends NotificationEntity {
 
     @Override
     public String[] getFullText() {
-        return new String[] {content};
+        if (content != null) {
+            return new String[] {content};
+        }
+
+        return null;
     }
 
     @Override
