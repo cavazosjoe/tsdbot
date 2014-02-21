@@ -6,6 +6,7 @@ import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.tsd.tsdbot.util.HtmlSanitizer;
+import org.tsd.tsdbot.util.IRCUtil;
 
 import javax.naming.OperationNotSupportedException;
 import java.text.SimpleDateFormat;
@@ -17,7 +18,7 @@ import java.util.regex.Pattern;
 /**
  * Created by Joe on 2/18/14.
  */
-public class HboForumManager extends NotificationManager<HboForumManager.HboForumPost> {
+public class HboForumManager extends NotificationManager {
 
     private HttpClient client;
 
@@ -111,8 +112,8 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
     }
 
     @Override
-    public HboForumPost expand(String key) {
-        return null;
+    public NotificationOrigin getOrigin() {
+        return NotificationOrigin.HBO_FORUM;
     }
 
     public class HboForumPost extends NotificationEntity {
@@ -173,17 +174,20 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
         }
 
         @Override
-        public String[] getPreview() {
-            String ret = getInline() + "\n" + body;
-            if(ret.length() > 350) ret = ret.substring(0,350) + "... (snip)";
+        public String getPreview() {
             setOpened(true);
-            return ret.split("\n");
+            return IRCUtil.trimToSingleMsg(body);
         }
 
         @Override
         public String[] getFullText() {
-            String ret = getInline() + "\n" + body;
-            return ret.split("\n");
+            setOpened(true);
+            return IRCUtil.splitLongString(body);
+        }
+
+        @Override
+        public String getKey() {
+            return "" + postId;
         }
 
     }

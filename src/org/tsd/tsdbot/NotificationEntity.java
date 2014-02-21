@@ -12,8 +12,9 @@ public abstract class NotificationEntity {
     protected boolean opened = false;
 
     public abstract String getInline();
-    public abstract String[] getPreview();
+    public abstract String getPreview();
     public abstract String[] getFullText();
+    public abstract String getKey();
 
     public boolean isOpened() {
         return opened;
@@ -30,4 +31,5 @@ public abstract class NotificationEntity {
     public void setDate(Date date) {
         this.date = date;
     }
+
 }

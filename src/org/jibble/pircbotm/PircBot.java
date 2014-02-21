@@ -1173,6 +1173,18 @@ public abstract class PircBot implements ReplyConstants {
                     // User is an operator in this channel.
                     prefix = "@";
                 }
+                else if (nick.startsWith("~")) {
+                    // User is owner in this channel.
+                    prefix = "~";
+                }
+                else if (nick.startsWith("&")) {
+                    // User is admin in this channel.
+                    prefix = "&";
+                }
+                else if (nick.startsWith("%")) {
+                    // User is half-op in this channel.
+                    prefix = "%";
+                }
                 else if (nick.startsWith("+")) {
                     // User is voiced in this channel.
                     prefix = "+";

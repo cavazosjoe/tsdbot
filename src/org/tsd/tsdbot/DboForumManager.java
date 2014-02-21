@@ -3,6 +3,7 @@ package org.tsd.tsdbot;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.xml.XmlPage;
 import org.tsd.tsdbot.util.HtmlSanitizer;
+import org.tsd.tsdbot.util.IRCUtil;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -101,8 +102,8 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
     }
 
     @Override
-    public DboForumPost expand(String key) {
-        return null;
+    public NotificationOrigin getOrigin() {
+        return NotificationOrigin.DBO_FORUM;
     }
 
     public class DboForumPost extends NotificationEntity {
@@ -163,17 +164,20 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
         }
 
         @Override
-        public String[] getPreview() {
-            String ret = getInline() + "\n" + body;
-            if(ret.length() > 350) ret = ret.substring(0,350) + "... (snip)";
+        public String getPreview() {
             setOpened(true);
-            return ret.split("\n");
+            return IRCUtil.trimToSingleMsg(body);
         }
 
         @Override
         public String[] getFullText() {
-            String ret = getInline() + "\n" + body;
-            return ret.split("\n");
+            setOpened(true);
+            return IRCUtil.splitLongString(body);
+        }
+
+        @Override
+        public String getKey() {
+            return "" + postId;
         }
 
     }

@@ -67,7 +67,10 @@ public class User {
      * @return true if the user is an operator in the channel.
      */
     public boolean isOp() {
-        return _prefix.indexOf('@') >= 0;
+        return _prefix.indexOf('@') >= 0
+                || _prefix.indexOf('~') >= 0
+                || _prefix.indexOf('&') >= 0
+                || _prefix.indexOf('%') >= 0;
     }
     
     
