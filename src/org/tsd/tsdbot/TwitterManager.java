@@ -14,6 +14,9 @@ import java.util.LinkedList;
  */
 public class TwitterManager extends NotificationManager {
 
+    /**
+     * //TODO: GET THESE CODES OFF GITHUB
+     */
     private static final String CONSUMER_KEY = "f8H6BJg8J6ddnE5IwFROZA";
     private static final String CONSUMER_KEY_SECRET = "CwKXxwsyAlMJYyT1XZCpRZ0OjbwuxTBmQfJwvhcU8";
 
