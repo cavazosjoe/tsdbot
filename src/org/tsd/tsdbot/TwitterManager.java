@@ -41,12 +41,12 @@ public class TwitterManager extends NotificationManager {
 
     @Override
     public LinkedList<Tweet> sweep() {
-        return null;
+        return new LinkedList<>();
     }
 
     @Override
     public LinkedList<Tweet> history() {
-        return null;
+        return new LinkedList<>();
     }
 
     @Override

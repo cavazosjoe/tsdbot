@@ -44,6 +44,11 @@ public class RssItem extends NotificationEntity {
         return new String[] {content};
     }
 
+    @Override
+    public String getKey() {
+        return ""; //TODO:
+    }
+
     public void setTitle(String title) {
         this.title = title;
     }

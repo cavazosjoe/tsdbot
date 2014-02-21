@@ -18,7 +18,7 @@ import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
 
-public class RssFeedManager extends NotificationManager<RssItem> {
+public class RssFeedManager extends NotificationManager {
 
     private URL rssUrl;
     private WebClient webClient;
@@ -91,7 +91,7 @@ public class RssFeedManager extends NotificationManager<RssItem> {
     }
 
     @Override
-    public RssItem expand(String key) {
-        return null;
+    public NotificationOrigin getOrigin() {
+        return null; //TODO: hmm
     }
 }
