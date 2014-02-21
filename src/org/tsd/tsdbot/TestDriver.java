@@ -18,7 +18,14 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import twitter4j.Twitter;
+import twitter4j.TwitterException;
+import twitter4j.TwitterFactory;
+import twitter4j.auth.AccessToken;
+import twitter4j.auth.RequestToken;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.regex.Pattern;
@@ -61,17 +68,23 @@ public class TestDriver {
 //        String indexResponse = httpClient.execute(indexGet, responseHandler);
 //        Feed feed = FeedParser.parse(url);
 
-        final WebClient webClient = new WebClient(BrowserVersion.CHROME);
-        webClient.getCookieManager().setCookiesEnabled(true);
-        final XmlPage rssPage =  webClient.getPage("http://destiny.bungie.org/forum/index.php?mode=rss&items=thread_starts");
-        Document rssDoc = rssPage.getXmlDocument();
-        NodeList nlist = rssDoc.getElementsByTagName("item");
-        for(int i=0 ; i < nlist.getLength() ; i++) {
-            Node n = nlist.item(i);
-            if(n.getNodeType() == Node.ELEMENT_NODE) {
-                Element e = (Element)n;
-                System.out.println(e.getElementsByTagName("title").item(0).getTextContent());
-            }
-        }
+//        final WebClient webClient = new WebClient(BrowserVersion.CHROME);
+//        webClient.getCookieManager().setCookiesEnabled(true);
+//        final XmlPage rssPage =  webClient.getPage("http://destiny.bungie.org/forum/index.php?mode=rss&items=thread_starts");
+//        Document rssDoc = rssPage.getXmlDocument();
+//        NodeList nlist = rssDoc.getElementsByTagName("item");
+//        for(int i=0 ; i < nlist.getLength() ; i++) {
+//            Node n = nlist.item(i);
+//            if(n.getNodeType() == Node.ELEMENT_NODE) {
+//                Element e = (Element)n;
+//                System.out.println(e.getElementsByTagName("title").item(0).getTextContent());
+//            }
+//        }
+
+        //---------------------
+
+        TwitterManager twitterManager = new TwitterManager();
+        twitterManager.postTweet();
+
     }
 }
