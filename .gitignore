@@ -2,3 +2,5 @@
 *.iml
 *.iws
 out/
+db/
+

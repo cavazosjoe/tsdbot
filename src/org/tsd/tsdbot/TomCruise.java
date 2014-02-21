@@ -1,9 +1,15 @@
 package org.tsd.tsdbot;
 
+import org.tsd.tsdbot.database.TSDDatabase;
 import org.tsd.tsdbot.util.IRCUtil;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -93,16 +99,42 @@ public class TomCruise {
     };
 
     public static String getRandom() {
-        ArrayList<String> bigList = new ArrayList<>(Arrays.asList(quotes));
-        bigList.addAll(Arrays.asList(clips));
-        return bigList.get(rand.nextInt(bigList.size()));
+
+        if (rand.nextBoolean()) { // flip a coin
+            return getRandomClip();
+        }
+
+        return getRandomQuote();
     }
 
     public static String getRandomClip() {
-        return clips[rand.nextInt(clips.length)];
+        String sql = "select clip from TomCruiseClips order by rand() limit 1";
+        try (Connection conn = TSDDatabase.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return null; // Maybe return something from an emergency collection defined in this class
     }
 
     public static String getRandomQuote() {
-        return quotes[rand.nextInt(quotes.length)];
+
+        String sql = "select quote from TomCruiseQuotes order by rand() limit 1";
+        try (Connection conn = TSDDatabase.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return null; // Maybe return something from an emergency collection defined in this class
     }
 }
