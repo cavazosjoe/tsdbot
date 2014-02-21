@@ -41,6 +41,7 @@ public class TSDBot extends PircBot implements Runnable {
         notificationManagers.put(NotificationManager.NotificationOrigin.HBO_FORUM, new HboForumManager(httpClient));
         notificationManagers.put(NotificationManager.NotificationOrigin.DBO_FORUM, new DboForumManager(webClient));
         notificationManagers.put(NotificationManager.NotificationOrigin.HBO_NEWS, new HboNewsManager());
+        notificationManagers.put(NotificationManager.NotificationOrigin.DBO_NEWS, new DboNewsManager());
         notificationManagers.put(NotificationManager.NotificationOrigin.TWITTER, new TwitterManager());
         
         mainThread = new Thread(this);
@@ -59,6 +60,7 @@ public class TSDBot extends PircBot implements Runnable {
             case HBO_FORUM: omniPostCmd(command, cmdParts); break;
             case HBO_NEWS: omniPostCmd(command, cmdParts); break;
             case DBO_FORUM: omniPostCmd(command, cmdParts); break;
+            case DBO_NEWS: omniPostCmd(command, cmdParts); break;
             case TOM_CRUISE: tc(cmdParts); break;
             case STRAWPOLL: poll(message.split(";")); break;
             case VOTE: vote(sender, login, cmdParts); break;
@@ -225,6 +227,7 @@ public class TSDBot extends PircBot implements Runnable {
         HBO_FORUM(".hbof", NotificationManager.NotificationOrigin.HBO_FORUM),
         HBO_NEWS(".hbon", NotificationManager.NotificationOrigin.HBO_NEWS),
         DBO_FORUM(".dbof", NotificationManager.NotificationOrigin.DBO_FORUM),
+        DBO_NEWS(".dbon", NotificationManager.NotificationOrigin.DBO_NEWS),
         STRAWPOLL(".poll", null),
         VOTE(".vote", null);
 
