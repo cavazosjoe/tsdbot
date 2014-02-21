@@ -40,17 +40,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     }
 
     @Override
-    public LinkedList<Tweet> sweep() throws OperationNotSupportedException {
-        return null;
-    }
-
-    @Override
-    public LinkedList<Tweet> sweep(HttpClient client) throws OperationNotSupportedException {
-        return null;
-    }
-
-    @Override
-    public LinkedList<Tweet> sweep(WebClient webClient) throws OperationNotSupportedException {
+    public LinkedList<Tweet> sweep() {
         return null;
     }
 
