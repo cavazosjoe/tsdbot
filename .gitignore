@@ -3,4 +3,5 @@
 *.iws
 out/
 db/
+*.db
 
