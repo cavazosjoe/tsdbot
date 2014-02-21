@@ -10,6 +10,22 @@ public abstract class NotificationManager {
     public abstract LinkedList<? extends NotificationEntity> history();
     public abstract NotificationOrigin getOrigin();
 
+    public LinkedList<NotificationEntity> getNotificationByTail(String q) {
+        LinkedList<NotificationEntity> matchedNotifications = new LinkedList<>();
+        for(NotificationEntity notification : history()) {
+            if(q.equals(notification.getKey()) || notification.getKey().endsWith(q))
+                matchedNotifications.add(notification);
+        }
+        return matchedNotifications;
+    }
+
+    public NotificationEntity getNotificationExact(String key) {
+        for(NotificationEntity notification : history()) {
+            if(key.equals(notification.getKey())) return notification;
+        }
+        return null;
+    }
+
     public enum NotificationOrigin {
         HBO_FORUM("HBO Forum"),
         HBO_NEWS("HBO News"),

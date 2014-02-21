@@ -85,17 +85,18 @@ public class TSDBot extends PircBot implements Runnable {
                 else sendLines(mostRecent.getPreview());
             } else {
                 String postKey = cmdParts[2].trim();
-                boolean found = false;
-                for(NotificationEntity post : mgr.history()) {
-                    if(post.getKey().equals(postKey)) {
-                        if(post.isOpened()) sendLine("Post " + post.getKey() + " has already been opened");
-                        else sendLines(post.getPreview());
-                        found = true;
-                        break;
-                    }
+                LinkedList<NotificationEntity> ret = mgr.getNotificationByTail(postKey);
+                if(ret.size() == 0) sendLine("Could not find " + command.getOrigin() + " post with ID " + postKey + " in recent history");
+                else if(ret.size() > 1) {
+                    String returnString = "Found multiple matching " + command.getOrigin() + " posts in recent history:";
+                    for(NotificationEntity not : ret) returnString += (" " + not.getKey());
+                    returnString += ". Help me out here";
+                    sendLine(returnString);
                 }
-                if(!found) sendLine("Could not find " + command.getOrigin() + " post with ID " + postKey + " in recent history");
+                else sendLines(ret.get(0).getPreview());
             }
+        } else {
+            sendLine("USAGE: " + command.getCmd() + " [ list | pv [postId (optional)] ]");
         }
 
     }
