@@ -1,17 +1,30 @@
 package org.tsd.tsdbot;
 
-import com.gargoylesoftware.htmlunit.WebClient;
-import org.apache.http.client.HttpClient;
-
-import javax.naming.OperationNotSupportedException;
 import java.util.LinkedList;
-import java.util.List;
 
 /**
  * Created by Joe on 2/18/14.
  */
-public abstract class NotificationManager<T extends NotificationEntity> {
-    public abstract LinkedList<T> sweep();
-    public abstract LinkedList<T> history();
-    public abstract T expand(String key);
+public abstract class NotificationManager {
+    public abstract LinkedList<? extends NotificationEntity> sweep();
+    public abstract LinkedList<? extends NotificationEntity> history();
+    public abstract NotificationOrigin getOrigin();
+
+    public enum NotificationOrigin {
+        HBO_FORUM("HBO Forum"),
+        HBO_NEWS("HBO News"),
+        DBO_FORUM("DBO Forum"),
+        DBO_NEWS("DBO News"),
+        TWITTER("Twitter");
+
+        private String displayString;
+
+        NotificationOrigin(String displayString) {
+            this.displayString = displayString;
+        }
+
+        public String getDisplayString() {
+            return displayString;
+        }
+    }
 }

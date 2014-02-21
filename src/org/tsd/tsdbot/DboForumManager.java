@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 /**
  * Created by Joe on 2/18/14.
  */
-public class DboForumManager extends NotificationManager<DboForumManager.DboForumPost> {
+public class DboForumManager extends NotificationManager {
 
     private static final String threadsRss = "http://destiny.bungie.org/forum/index.php?mode=rss&items=thread_starts";
     private static final Pattern postIdPattern = Pattern.compile("(\\d+)");
@@ -101,8 +101,8 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
     }
 
     @Override
-    public DboForumPost expand(String key) {
-        return null;
+    public NotificationOrigin getOrigin() {
+        return NotificationOrigin.DBO_FORUM;
     }
 
     public class DboForumPost extends NotificationEntity {
@@ -174,6 +174,11 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
         public String[] getFullText() {
             String ret = getInline() + "\n" + body;
             return ret.split("\n");
+        }
+
+        @Override
+        public String getKey() {
+            return "" + postId;
         }
 
     }

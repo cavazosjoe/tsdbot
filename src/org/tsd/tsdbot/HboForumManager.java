@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 /**
  * Created by Joe on 2/18/14.
  */
-public class HboForumManager extends NotificationManager<HboForumManager.HboForumPost> {
+public class HboForumManager extends NotificationManager {
 
     private HttpClient client;
 
@@ -111,8 +111,8 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
     }
 
     @Override
-    public HboForumPost expand(String key) {
-        return null;
+    public NotificationOrigin getOrigin() {
+        return NotificationOrigin.HBO_FORUM;
     }
 
     public class HboForumPost extends NotificationEntity {
@@ -184,6 +184,11 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
         public String[] getFullText() {
             String ret = getInline() + "\n" + body;
             return ret.split("\n");
+        }
+
+        @Override
+        public String getKey() {
+            return "" + postId;
         }
 
     }

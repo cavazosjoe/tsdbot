@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 /**
  * Created by Joe on 2/18/14.
  */
-public class HboNewsManager extends NotificationManager<HboNewsManager.HboNewsPost> {
+public class HboNewsManager extends NotificationManager {
 
     private static final Pattern authorPattern = Pattern.compile("\\((.*?)\\s{1}\\d{2}:\\d{2}:\\d{2}\\s{1}\\+\\d{4}\\)",Pattern.DOTALL);
     private static final Pattern postIdPattern = Pattern.compile("(\\d+)");
@@ -71,16 +71,6 @@ public class HboNewsManager extends NotificationManager<HboNewsManager.HboNewsPo
         return notifications;
     }
 
-    @Override
-    public LinkedList<HboNewsPost> sweep(WebClient webClient) throws OperationNotSupportedException {
-        throw new OperationNotSupportedException("Please use sweep() to sweep the HBO Forum");
-    }
-
-    @Override
-    public LinkedList<HboNewsPost> sweep(HttpClient client) throws OperationNotSupportedException {
-        throw new OperationNotSupportedException("Please use sweep() to sweep the HBO Forum");
-    }
-
     private void trimHistory() {
         while(newsList.size() > MAX_HISTORY) newsList.removeLast();
     }
@@ -107,8 +97,8 @@ public class HboNewsManager extends NotificationManager<HboNewsManager.HboNewsPo
     }
 
     @Override
-    public HboNewsPost expand(String key) {
-        return null;
+    public NotificationOrigin getOrigin() {
+        return NotificationOrigin.HBO_NEWS;
     }
 
     public class HboNewsPost extends NotificationEntity {
@@ -167,6 +157,11 @@ public class HboNewsManager extends NotificationManager<HboNewsManager.HboNewsPo
         public String[] getFullText() {
             String ret = getInline() + "\n" + body;
             return ret.split("\n");
+        }
+
+        @Override
+        public String getKey() {
+            return ""+postId;
         }
 
     }

@@ -12,7 +12,7 @@ import java.util.LinkedList;
 /**
  * Created by Joe on 2/20/14.
  */
-public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
+public class TwitterManager extends NotificationManager {
 
     private static final String CONSUMER_KEY = "f8H6BJg8J6ddnE5IwFROZA";
     private static final String CONSUMER_KEY_SECRET = "CwKXxwsyAlMJYyT1XZCpRZ0OjbwuxTBmQfJwvhcU8";
@@ -50,8 +50,8 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     }
 
     @Override
-    public Tweet expand(String key) {
-        return null;
+    public NotificationOrigin getOrigin() {
+        return NotificationOrigin.TWITTER;
     }
 
     public class Tweet extends NotificationEntity {
@@ -69,6 +69,11 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
         @Override
         public String[] getFullText() {
             return new String[0];
+        }
+
+        @Override
+        public String getKey() {
+            return "";
         }
     }
 }

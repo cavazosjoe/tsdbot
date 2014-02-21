@@ -21,9 +21,7 @@ public class TSDBot extends PircBot implements Runnable {
     
     private Thread mainThread;
 
-    private HboForumManager hboForumManager;
-    private DboForumManager dboForumManager;
-    private HboNewsManager hboNewsManager;
+    private HashMap<NotificationManager.NotificationOrigin, NotificationManager> notificationManagers = new HashMap<>();
 
     private ExecutorService threadPool = Executors.newFixedThreadPool(10);
     private Strawpoll runningPoll;
@@ -40,9 +38,10 @@ public class TSDBot extends PircBot implements Runnable {
         WebClient webClient = new WebClient(BrowserVersion.CHROME);
         webClient.getCookieManager().setCookiesEnabled(true);
 
-        hboForumManager = new HboForumManager(httpClient);
-        dboForumManager = new DboForumManager(webClient);
-        hboNewsManager = new HboNewsManager();
+        notificationManagers.put(NotificationManager.NotificationOrigin.HBO_FORUM, new HboForumManager(httpClient));
+        notificationManagers.put(NotificationManager.NotificationOrigin.DBO_FORUM, new DboForumManager(webClient));
+        notificationManagers.put(NotificationManager.NotificationOrigin.HBO_NEWS, new HboNewsManager());
+        notificationManagers.put(NotificationManager.NotificationOrigin.TWITTER, new TwitterManager());
         
         mainThread = new Thread(this);
         mainThread.start();
@@ -53,13 +52,13 @@ public class TSDBot extends PircBot implements Runnable {
         if(!message.startsWith(".")) return; //not a command, ignore
         String[] cmdParts = message.split("\\s+");
 
-        Action action = Action.fromString(cmdParts[0]);
-        if(action == null) return;
+        Command command = Command.fromString(cmdParts[0]);
+        if(command == null) return;
 
-        switch(action) {
-            case HBO_FORUM: hbof(cmdParts); break;
-            case HBO_NEWS: hbon(cmdParts); break;
-            case DBO_FORUM: dbof(cmdParts); break;
+        switch(command) {
+            case HBO_FORUM: omniPostCmd(command, cmdParts); break;
+            case HBO_NEWS: omniPostCmd(command, cmdParts); break;
+            case DBO_FORUM: omniPostCmd(command, cmdParts); break;
             case TOM_CRUISE: tc(cmdParts); break;
             case STRAWPOLL: poll(message.split(";")); break;
             case VOTE: vote(sender, login, cmdParts); break;
@@ -67,106 +66,38 @@ public class TSDBot extends PircBot implements Runnable {
 
     }
 
-    private void hbof(String[] cmdParts) {
-        if(cmdParts.length == 1) {
-            sendLine(".hbof usage: .hbof [ list | pv [postId (optional)] ]");
-        } else if(cmdParts[1].equals("list")) {
-            for(HboForumManager.HboForumPost post : hboForumManager.history()) {
-                sendLine(post.getInline());
-            }
-        } else if(cmdParts[1].equals("pv")) {
-            if(hboForumManager.history().isEmpty()) {
-                sendLine("No HBO Forum threads in recent history");
-            } else if(cmdParts.length == 2) {
-                HboForumManager.HboForumPost mostRecent = hboForumManager.history().getFirst();
-                if(mostRecent.isOpened()) sendLine("Post " + mostRecent.getPostId() + " has already been opened");
-                else sendLines(mostRecent.getPreview());
-            } else {
-                try {
-                    int postId = Integer.parseInt(cmdParts[2]);
-                    boolean found = false;
-                    for(HboForumManager.HboForumPost post : hboForumManager.history()) {
-                        if(post.getPostId() == postId) {
-                            if(post.isOpened()) sendLine("Post " + post.getPostId() + " has already been opened");
-                            else sendLines(post.getPreview());
-                            found = true;
-                            break;
-                        }
-                    }
-                    if(!found) sendLine("Could not find HBO Forum thread with ID " + postId + " in recent history");
-                } catch (NumberFormatException nfe) {
-                    sendLine(cmdParts[2] + " does not appear to be a number");
-                }
-            }
-        }
-    }
+    private void omniPostCmd(Command command, String[] cmdParts) {
 
-    private void hbon(String[] cmdParts) {
-        if(cmdParts.length == 1) {
-            sendLine(".hbon usage: .hbon [ list | pv [postId (optional)] ]");
-        } else if(cmdParts[1].equals("list")) {
-            for(HboNewsManager.HboNewsPost post : hboNewsManager.history()) {
-                sendLine(post.getInline());
-            }
-        } else if(cmdParts[1].equals("pv")) {
-            if(hboNewsManager.history().isEmpty()) {
-                sendLine("No HBO Forum threads in recent history");
-            } else if(cmdParts.length == 2) {
-                HboNewsManager.HboNewsPost mostRecent = hboNewsManager.history().getFirst();
-                if(mostRecent.isOpened()) sendLine("Post " + mostRecent.getPostId() + " has already been opened");
-                else sendLines(mostRecent.getPreview());
-            } else {
-                try {
-                    int postId = Integer.parseInt(cmdParts[2]);
-                    boolean found = false;
-                    for(HboNewsManager.HboNewsPost post : hboNewsManager.history()) {
-                        if(post.getPostId() == postId) {
-                            if(post.isOpened()) sendLine("Post " + post.getPostId() + " has already been opened");
-                            else sendLines(post.getPreview());
-                            found = true;
-                            break;
-                        }
-                    }
-                    if(!found) sendLine("Could not find HBO news post with ID " + postId + " in recent history");
-                } catch (NumberFormatException nfe) {
-                    sendLine(cmdParts[2] + " does not appear to be a number");
-                }
-            }
-        }
-    }
+        NotificationManager mgr = notificationManagers.get(command.getOrigin());
 
-    private void dbof(String[] cmdParts) {
         if(cmdParts.length == 1) {
-            sendLine(".dbof usage: .dbof [ list | pv [postId (optional)] ]");
+            sendLine("USAGE: " + command.getCmd() + " [ list | pv [postId (optional)] ]");
         } else if(cmdParts[1].equals("list")) {
-            for(DboForumManager.DboForumPost post : dboForumManager.history()) {
-                sendLine(post.getInline());
+            for(NotificationEntity notification : mgr.history()) {
+                sendLine(notification.getInline());
             }
         } else if(cmdParts[1].equals("pv")) {
-            if(dboForumManager.history().isEmpty()) {
-                sendLine("No DBO Forum threads in recent history");
+            if(mgr.history().isEmpty()) {
+                sendLine("No " + command.getOrigin().getDisplayString() +" posts in recent history");
             } else if(cmdParts.length == 2) {
-                DboForumManager.DboForumPost mostRecent = dboForumManager.history().getFirst();
-                if(mostRecent.isOpened()) sendLine("Post " + mostRecent.getPostId() + " has already been opened");
+                NotificationEntity mostRecent = mgr.history().getFirst();
+                if(mostRecent.isOpened()) sendLine("Post " + mostRecent.getKey() + " has already been opened");
                 else sendLines(mostRecent.getPreview());
             } else {
-                try {
-                    int postId = Integer.parseInt(cmdParts[2]);
-                    boolean found = false;
-                    for(DboForumManager.DboForumPost post : dboForumManager.history()) {
-                        if(post.getPostId() == postId) {
-                            if(post.isOpened()) sendLine("Post " + post.getPostId() + " has already been opened");
-                            else sendLines(post.getPreview());
-                            found = true;
-                            break;
-                        }
+                String postKey = cmdParts[2].trim();
+                boolean found = false;
+                for(NotificationEntity post : mgr.history()) {
+                    if(post.getKey().equals(postKey)) {
+                        if(post.isOpened()) sendLine("Post " + post.getKey() + " has already been opened");
+                        else sendLines(post.getPreview());
+                        found = true;
+                        break;
                     }
-                    if(!found) sendLine("Could not find DBO Forum thread with ID " + postId + " in recent history");
-                } catch (NumberFormatException nfe) {
-                    sendLine(cmdParts[2] + " does not appear to be a number");
                 }
+                if(!found) sendLine("Could not find " + command.getOrigin() + " post with ID " + postKey + " in recent history");
             }
         }
+
     }
 
     private void tc(String[] cmdParts) {
@@ -183,7 +114,7 @@ public class TSDBot extends PircBot implements Runnable {
 
     private void poll(String[] cmdParts) {
         if(runningPoll != null) {
-            sendMessage(chan,"There is already a poll running. It will end in " + runningPoll.getMinutes() + " minute(s)");
+            sendMessage(chan, "There is already a poll running. It will end in " + runningPoll.getMinutes() + " minute(s)");
             return;
         }
 
@@ -263,10 +194,6 @@ public class TSDBot extends PircBot implements Runnable {
     @Override
     public synchronized void run() {
 
-        LinkedList<HboForumManager.HboForumPost> hboForumNotifications;
-        LinkedList<HboNewsManager.HboNewsPost> hboNewsNotifications;
-        LinkedList<DboForumManager.DboForumPost> dboForumNotifications;
-
         while(true) {
             try {
                 wait(120 * 1000); // check every 2 minutes
@@ -274,19 +201,10 @@ public class TSDBot extends PircBot implements Runnable {
                 // something notified this thread, panic.blimp
             }
 
-            hboForumNotifications = hboForumManager.sweep();
-            for(HboForumManager.HboForumPost post : hboForumNotifications) {
-                sendLine(post.getInline());
-            }
-
-            hboNewsNotifications = hboNewsManager.sweep();
-            for(HboNewsManager.HboNewsPost post : hboNewsNotifications) {
-                sendLine(post.getInline());
-            }
-
-            dboForumNotifications = dboForumManager.sweep();
-            for(DboForumManager.DboForumPost post : dboForumNotifications) {
-                sendLine(post.getInline());
+            for(NotificationManager sweeper : notificationManagers.values()) {
+                for(NotificationEntity notification : sweeper.sweep()) {
+                    sendLine(notification.getInline());
+                }
             }
 
         }
@@ -301,25 +219,36 @@ public class TSDBot extends PircBot implements Runnable {
         for(String line : lines) sendMessage(chan, line);
     }
 
-    public enum Action {
-        TOM_CRUISE(".tc"),
-        HBO_FORUM(".hbof"),
-        HBO_NEWS(".hbon"),
-        DBO_FORUM(".dbof"),
-        STRAWPOLL(".poll"),
-        VOTE(".vote");
+    public enum Command {
+        TOM_CRUISE(".tc", null),
+        HBO_FORUM(".hbof", NotificationManager.NotificationOrigin.HBO_FORUM),
+        HBO_NEWS(".hbon", NotificationManager.NotificationOrigin.HBO_NEWS),
+        DBO_FORUM(".dbof", NotificationManager.NotificationOrigin.DBO_FORUM),
+        STRAWPOLL(".poll", null),
+        VOTE(".vote", null);
 
-        public String cmd;
+        private String cmd;
+        private NotificationManager.NotificationOrigin origin;
 
-        Action(String cmd) {
+        Command(String cmd, NotificationManager.NotificationOrigin origin) {
             this.cmd = cmd;
+            this.origin = origin;
         }
 
-        public static Action fromString(String s) {
-            for(Action a : values()) {
+        public String getCmd() {
+            return cmd;
+        }
+
+        public NotificationManager.NotificationOrigin getOrigin() {
+            return origin;
+        }
+
+        public static Command fromString(String s) {
+            for(Command a : values()) {
                 if(a.cmd.equals(s)) return a;
             }
             return null;
         }
+
     }
 }
