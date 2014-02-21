@@ -7,13 +7,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.tsd.tsdbot.rss.RssFeedManager;
 import org.tsd.tsdbot.rss.RssItem;
+import org.tsd.tsdbot.util.HtmlSanitizer;
 
 import javax.naming.OperationNotSupportedException;
 import java.net.MalformedURLException;
 import java.util.List;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @RunWith(JUnit4.class)
 public class RssTest {
@@ -40,7 +40,16 @@ public class RssTest {
         RssItem firstItem = items.get(0);
         assertNotNull(firstItem.getInline());
         assertTrue(firstItem.getPreview().length > 0);
-        assertTrue(firstItem.getFullText().length > 0);
+        if (firstItem.getFullText() != null) {
+            assertTrue(firstItem.getFullText().length > 0);
+        }
+
+        // Make sure everything has already been converted to plain text. This may break if we change the implementation.
+        if (firstItem.getFullText() != null) {
+            assertEquals(firstItem.getFullText()[0], HtmlSanitizer.getText(firstItem.getFullText()[0]));
+        }
+        assertEquals(firstItem.getPreview()[0], HtmlSanitizer.getText(firstItem.getPreview()[0]));
+        assertEquals(firstItem.getInline(), HtmlSanitizer.getText(firstItem.getInline()));
     }
 
 

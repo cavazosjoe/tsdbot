@@ -9,8 +9,8 @@ import com.sun.syndication.io.FeedException;
 import com.sun.syndication.io.SyndFeedInput;
 import com.sun.syndication.io.XmlReader;
 import org.apache.http.client.HttpClient;
-import org.tsd.tsdbot.NotificationEntity;
 import org.tsd.tsdbot.NotificationManager;
+import org.tsd.tsdbot.util.HtmlSanitizer;
 
 import javax.naming.OperationNotSupportedException;
 import java.io.ByteArrayInputStream;
@@ -73,22 +73,28 @@ public class RssFeedManager extends NotificationManager<RssItem> {
     private RssItem syndToRss(SyndEntry entry) throws MalformedURLException {
         RssItem item = new RssItem();
         item.setDate(entry.getPublishedDate());
-        item.setTitle(entry.getTitle());
+        item.setTitle(sanitize(entry.getTitle()));
         SyndContent description = entry.getDescription();
         List contents = entry.getContents();
 
         if (contents != null && !contents.isEmpty()) {
             SyndContent cont = (SyndContent) contents.get(0);
-            item.setContent(cont.getValue());
+            String sanitizedContent = sanitize(cont.getValue());
+            item.setContent(sanitizedContent);
         }
 
         if (description != null) {
-            item.setDescription(entry.getDescription().getValue());
+            String sanitizedDescription = sanitize(entry.getDescription().getValue());
+            item.setDescription(sanitizedDescription);
         }
 
         item.setLink(new URL(entry.getLink()));
 
         return item;
+    }
+
+    private static String sanitize(String html) {
+        return HtmlSanitizer.getText(html);
     }
 
     @Override
