@@ -5,9 +5,9 @@ import java.util.LinkedList;
 /**
  * Created by Joe on 2/18/14.
  */
-public abstract class NotificationManager {
-    public abstract LinkedList<? extends NotificationEntity> sweep();
-    public abstract LinkedList<? extends NotificationEntity> history();
+public abstract class NotificationManager<T extends NotificationEntity> {
+    public abstract LinkedList<T> sweep();
+    public abstract LinkedList<T> history();
     public abstract NotificationOrigin getOrigin();
 
     public LinkedList<NotificationEntity> getNotificationByTail(String q) {

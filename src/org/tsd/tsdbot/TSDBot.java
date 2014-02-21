@@ -68,7 +68,7 @@ public class TSDBot extends PircBot implements Runnable {
 
     private void omniPostCmd(Command command, String[] cmdParts) {
 
-        NotificationManager mgr = notificationManagers.get(command.getOrigin());
+        NotificationManager<NotificationEntity> mgr = notificationManagers.get(command.getOrigin());
 
         if(cmdParts.length == 1) {
             sendLine("USAGE: " + command.getCmd() + " [ list | pv [postId (optional)] ]");
@@ -202,7 +202,7 @@ public class TSDBot extends PircBot implements Runnable {
                 // something notified this thread, panic.blimp
             }
 
-            for(NotificationManager sweeper : notificationManagers.values()) {
+            for(NotificationManager<NotificationEntity> sweeper : notificationManagers.values()) {
                 for(NotificationEntity notification : sweeper.sweep()) {
                     sendLine(notification.getInline());
                 }
