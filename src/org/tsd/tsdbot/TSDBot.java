@@ -21,9 +21,6 @@ public class TSDBot extends PircBot implements Runnable {
     
     private Thread mainThread;
 
-    private CloseableHttpClient httpClient;
-    private WebClient webClient;
-
     private HboForumManager hboForumManager;
     private DboForumManager dboForumManager;
     private HboNewsManager hboNewsManager;
@@ -38,15 +35,15 @@ public class TSDBot extends PircBot implements Runnable {
         setAutoNickChange(true);
         setLogin("tsdbot");
 
-        httpClient = HttpClients.createMinimal();
+        CloseableHttpClient httpClient = HttpClients.createMinimal();
 
-        webClient = new WebClient(BrowserVersion.CHROME);
+        WebClient webClient = new WebClient(BrowserVersion.CHROME);
         webClient.getCookieManager().setCookiesEnabled(true);
 
-        hboForumManager = new HboForumManager();
-        dboForumManager = new DboForumManager();
+        hboForumManager = new HboForumManager(httpClient);
+        dboForumManager = new DboForumManager(webClient);
         hboNewsManager = new HboNewsManager();
-
+        
         mainThread = new Thread(this);
         mainThread.start();
     }
@@ -277,7 +274,7 @@ public class TSDBot extends PircBot implements Runnable {
                 // something notified this thread, panic.blimp
             }
 
-            hboForumNotifications = hboForumManager.sweep(httpClient);
+            hboForumNotifications = hboForumManager.sweep();
             for(HboForumManager.HboForumPost post : hboForumNotifications) {
                 sendLine(post.getInline());
             }
@@ -287,7 +284,7 @@ public class TSDBot extends PircBot implements Runnable {
                 sendLine(post.getInline());
             }
 
-            dboForumNotifications = dboForumManager.sweep(webClient);
+            dboForumNotifications = dboForumManager.sweep();
             for(DboForumManager.DboForumPost post : dboForumNotifications) {
                 sendLine(post.getInline());
             }

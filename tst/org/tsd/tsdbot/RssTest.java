@@ -32,9 +32,9 @@ public class RssTest {
     }
 
     private void testFeed(String url) throws MalformedURLException, OperationNotSupportedException {
-        RssFeedManager man = new RssFeedManager(url);
         WebClient webClient = new WebClient(BrowserVersion.CHROME);
-        List<RssItem> items = man.sweep(webClient);
+        RssFeedManager man = new RssFeedManager(url, webClient);
+        List<RssItem> items = man.sweep();
         assertNotNull(items);
         assertTrue(items.size() > 0);
         RssItem firstItem = items.get(0);

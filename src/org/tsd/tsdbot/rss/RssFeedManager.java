@@ -8,11 +8,8 @@ import com.sun.syndication.feed.synd.SyndFeed;
 import com.sun.syndication.io.FeedException;
 import com.sun.syndication.io.SyndFeedInput;
 import com.sun.syndication.io.XmlReader;
-import org.apache.http.client.HttpClient;
-import org.tsd.tsdbot.NotificationEntity;
 import org.tsd.tsdbot.NotificationManager;
 
-import javax.naming.OperationNotSupportedException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,23 +21,15 @@ import java.util.List;
 public class RssFeedManager extends NotificationManager<RssItem> {
 
     private URL rssUrl;
+    private WebClient webClient;
 
-    public RssFeedManager(String rssUrl) throws MalformedURLException {
+    public RssFeedManager(String rssUrl, WebClient webClient) throws MalformedURLException {
         this.rssUrl = new URL(rssUrl);
+        this.webClient = webClient;
     }
 
     @Override
-    public LinkedList<RssItem> sweep() throws OperationNotSupportedException {
-        throw new OperationNotSupportedException("Please use the WebClient version instead.");
-    }
-
-    @Override
-    public LinkedList<RssItem> sweep(HttpClient client) throws OperationNotSupportedException {
-        throw new OperationNotSupportedException("Please use the WebClient version instead.");
-    }
-
-    @Override
-    public LinkedList<RssItem> sweep(WebClient webClient) throws OperationNotSupportedException {
+    public LinkedList<RssItem> sweep() {
 
         webClient.getCookieManager().setCookiesEnabled(true);
         final XmlPage rssPage;
