@@ -12,7 +12,7 @@ public abstract class NotificationEntity {
     protected boolean opened = false;
 
     public abstract String getInline();
-    public abstract String[] getPreview();
+    public abstract String getPreview();
     public abstract String[] getFullText();
     public abstract String getKey();
 

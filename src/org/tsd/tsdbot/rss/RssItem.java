@@ -17,12 +17,12 @@ public class RssItem extends NotificationEntity {
     }
 
     @Override
-    public String[] getPreview() {
-        if (description != null) {
-            return new String[] { description };
-        } else if (content != null) {
-            return new String[] { trimWithEllipsis(content, DESCRIPTION_LENGTH) };
-        }
+    public String getPreview() {
+//        if (description != null) {
+//            return new String[] { description };
+//        } else if (content != null) {
+//            return new String[] { trimWithEllipsis(content, DESCRIPTION_LENGTH) };
+//        }
 
         return null;
     }

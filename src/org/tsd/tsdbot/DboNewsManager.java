@@ -4,6 +4,7 @@ import it.sauronsoftware.feed4j.FeedParser;
 import it.sauronsoftware.feed4j.bean.Feed;
 import it.sauronsoftware.feed4j.bean.FeedItem;
 import org.tsd.tsdbot.util.HtmlSanitizer;
+import org.tsd.tsdbot.util.IRCUtil;
 
 import java.net.URL;
 import java.util.LinkedList;
@@ -137,17 +138,15 @@ public class DboNewsManager extends NotificationManager<DboNewsManager.DboNewsPo
         }
 
         @Override
-        public String[] getPreview() {
-            String ret = getInline() + "\n" + body;
-            if(ret.length() > 350) ret = ret.substring(0,350) + "... (snip)";
+        public String getPreview() {
             setOpened(true);
-            return ret.split("\n");
+            return IRCUtil.trimToSingleMsg(body);
         }
 
         @Override
         public String[] getFullText() {
-            String ret = getInline() + "\n" + body;
-            return ret.split("\n");
+            setOpened(true);
+            return IRCUtil.splitLongString(body);
         }
 
         @Override

@@ -18,6 +18,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import twitter4j.IDs;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
@@ -83,8 +84,16 @@ public class TestDriver {
 
         //---------------------
 
-        TwitterManager twitterManager = new TwitterManager();
-        twitterManager.postTweet();
+        try {
+            TwitterManager twitterManager = new TwitterManager(TwitterFactory.getSingleton());
+            twitterManager.postTweet(Math.random() + "");
+            twitterManager.follow("schooly");
+            twitterManager.follow("schooly");
+
+            twitterManager.getFollowing();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
     }
 }

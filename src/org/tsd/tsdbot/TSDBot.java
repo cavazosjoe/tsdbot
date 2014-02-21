@@ -5,8 +5,12 @@ import com.gargoylesoftware.htmlunit.WebClient;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.jibble.pircbotm.PircBot;
+import org.jibble.pircbotm.User;
 import org.tsd.tsdbot.runnable.Strawpoll;
 import org.tsd.tsdbot.util.IRCUtil;
+import twitter4j.Twitter;
+import twitter4j.TwitterException;
+import twitter4j.TwitterFactory;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -38,11 +42,13 @@ public class TSDBot extends PircBot implements Runnable {
         WebClient webClient = new WebClient(BrowserVersion.CHROME);
         webClient.getCookieManager().setCookiesEnabled(true);
 
+        Twitter twitterClient = TwitterFactory.getSingleton();
+
         notificationManagers.put(NotificationManager.NotificationOrigin.HBO_FORUM, new HboForumManager(httpClient));
         notificationManagers.put(NotificationManager.NotificationOrigin.DBO_FORUM, new DboForumManager(webClient));
         notificationManagers.put(NotificationManager.NotificationOrigin.HBO_NEWS, new HboNewsManager());
         notificationManagers.put(NotificationManager.NotificationOrigin.DBO_NEWS, new DboNewsManager());
-        notificationManagers.put(NotificationManager.NotificationOrigin.TWITTER, new TwitterManager());
+        notificationManagers.put(NotificationManager.NotificationOrigin.TWITTER, new TwitterManager(twitterClient));
         
         mainThread = new Thread(this);
         mainThread.start();
@@ -64,6 +70,7 @@ public class TSDBot extends PircBot implements Runnable {
             case TOM_CRUISE: tc(cmdParts); break;
             case STRAWPOLL: poll(message.split(";")); break;
             case VOTE: vote(sender, login, cmdParts); break;
+            case TWITTER: tw(sender, cmdParts); break;
         }
 
     }
@@ -84,7 +91,7 @@ public class TSDBot extends PircBot implements Runnable {
             } else if(cmdParts.length == 2) {
                 NotificationEntity mostRecent = mgr.history().getFirst();
                 if(mostRecent.isOpened()) sendLine("Post " + mostRecent.getKey() + " has already been opened");
-                else sendLines(mostRecent.getPreview());
+                else sendLine(mostRecent.getPreview());
             } else {
                 String postKey = cmdParts[2].trim();
                 LinkedList<NotificationEntity> ret = mgr.getNotificationByTail(postKey);
@@ -95,7 +102,7 @@ public class TSDBot extends PircBot implements Runnable {
                     returnString += ". Help me out here";
                     sendLine(returnString);
                 }
-                else sendLines(ret.get(0).getPreview());
+                else sendLine(ret.get(0).getPreview());
             }
         } else {
             sendLine("USAGE: " + command.getCmd() + " [ list | pv [postId (optional)] ]");
@@ -172,6 +179,43 @@ public class TSDBot extends PircBot implements Runnable {
         }
     }
 
+    public void tw(String sender, String[] cmdParts) {
+
+        if(!getUserFromNick(sender).isOp()) {
+            sendMessage(chan,"Only ops can use the twitter function");
+            return;
+        }
+
+        TwitterManager mgr = (TwitterManager) notificationManagers.get(NotificationManager.NotificationOrigin.TWITTER);
+
+        if(cmdParts.length == 1) {
+            sendMessage(chan,"USAGE: .tw [ tweet <message> | follow <handle> | unfollow <handle> ]");
+        } else {
+            try {
+                String subCmd = cmdParts[1];
+                if(subCmd.equals("list")) {
+                    for(String s : mgr.getFollowing()) sendMessage(chan,s);
+                } else if(cmdParts.length < 3) {
+                    sendMessage(chan,"USAGE: .tw [ tweet <message> | follow <handle> | unfollow <handle> | list ]");
+                } else if(subCmd.equals("tweet") ) {
+                    String tweet = "";
+                    for(int i=2 ; i < cmdParts.length ; i++) {
+                        tweet += (cmdParts[i] + " ");
+                    }
+                    mgr.postTweet(tweet);
+                } else if(subCmd.equals("follow")) {
+                    mgr.follow(cmdParts[2]);
+                } else if(subCmd.equals("unfollow")) {
+                    mgr.unfollow(cmdParts[2]);
+                } else {
+                    sendMessage(chan,"USAGE: .tw [ tweet <message> | follow <handle> | unfollow <handle> | list ]");
+                }
+            } catch (TwitterException t) {
+                sendMessage(chan,"Error: " + t.getMessage());
+            }
+        }
+    }
+
     public void handlePollStart(String question, int minutes, TreeMap<Integer, String> choices) {
         String[] displayTable = new String[choices.size()+2];
         displayTable[0] = "NEW STRAWPOLL: " + question;
@@ -222,6 +266,19 @@ public class TSDBot extends PircBot implements Runnable {
         for(String line : lines) sendMessage(chan, line);
     }
 
+    private User getUserFromNick(String nick) {
+        User user = null;
+        String prefixlessNick;
+        for(User u : getUsers(chan)) {
+            prefixlessNick = u.getNick().replaceAll(u.getPrefix(),"");
+            if(prefixlessNick.equals(nick)) {
+                user = u;
+                break;
+            }
+        }
+        return user;
+    }
+
     public enum Command {
         TOM_CRUISE(".tc", null),
         HBO_FORUM(".hbof", NotificationManager.NotificationOrigin.HBO_FORUM),
@@ -229,7 +286,8 @@ public class TSDBot extends PircBot implements Runnable {
         DBO_FORUM(".dbof", NotificationManager.NotificationOrigin.DBO_FORUM),
         DBO_NEWS(".dbon", NotificationManager.NotificationOrigin.DBO_NEWS),
         STRAWPOLL(".poll", null),
-        VOTE(".vote", null);
+        VOTE(".vote", null),
+        TWITTER(".tw", NotificationManager.NotificationOrigin.TWITTER);
 
         private String cmd;
         private NotificationManager.NotificationOrigin origin;

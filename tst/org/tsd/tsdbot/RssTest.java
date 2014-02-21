@@ -39,7 +39,7 @@ public class RssTest {
         assertTrue(items.size() > 0);
         RssItem firstItem = items.get(0);
         assertNotNull(firstItem.getInline());
-        assertTrue(firstItem.getPreview().length > 0);
+        assertTrue(firstItem.getPreview().length() > 0);
         if (firstItem.getFullText() != null) {
             assertTrue(firstItem.getFullText().length > 0);
         }
@@ -48,7 +48,7 @@ public class RssTest {
         if (firstItem.getFullText() != null) {
             assertEquals(firstItem.getFullText()[0], HtmlSanitizer.getText(firstItem.getFullText()[0]));
         }
-        assertEquals(firstItem.getPreview()[0], HtmlSanitizer.getText(firstItem.getPreview()[0]));
+        assertEquals(firstItem.getPreview(), HtmlSanitizer.getText(firstItem.getPreview()));
         assertEquals(firstItem.getInline(), HtmlSanitizer.getText(firstItem.getInline()));
     }
 

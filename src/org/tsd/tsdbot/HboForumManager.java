@@ -6,6 +6,7 @@ import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.tsd.tsdbot.util.HtmlSanitizer;
+import org.tsd.tsdbot.util.IRCUtil;
 
 import javax.naming.OperationNotSupportedException;
 import java.text.SimpleDateFormat;
@@ -173,17 +174,15 @@ public class HboForumManager extends NotificationManager {
         }
 
         @Override
-        public String[] getPreview() {
-            String ret = getInline() + "\n" + body;
-            if(ret.length() > 350) ret = ret.substring(0,350) + "... (snip)";
+        public String getPreview() {
             setOpened(true);
-            return ret.split("\n");
+            return IRCUtil.trimToSingleMsg(body);
         }
 
         @Override
         public String[] getFullText() {
-            String ret = getInline() + "\n" + body;
-            return ret.split("\n");
+            setOpened(true);
+            return IRCUtil.splitLongString(body);
         }
 
         @Override
