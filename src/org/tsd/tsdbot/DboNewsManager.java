@@ -25,11 +25,8 @@ public class DboNewsManager extends NotificationManager<DboNewsManager.DboNewsPo
                 + "sub|sup|pre|del|code|blockquote|strike|kbd|br|hr|area|map|object|embed|param|link|form|small|big|script|object|embed|link|style|form|input)$");
     }
 
-    // first = newest
-    protected static final int MAX_HISTORY = 5;
-    protected LinkedList<DboNewsPost> newsList = new LinkedList<>();
-
     public DboNewsManager() {
+        super(5);
     }
 
     @Override
@@ -44,7 +41,7 @@ public class DboNewsManager extends NotificationManager<DboNewsManager.DboNewsPo
             for (int i = 0; i < Math.min(items,MAX_HISTORY); i++) {
                 FeedItem item = feed.getItem(i);
                 int postId = getPostNumFromLink(item.getLink().toString());
-                if((!newsList.isEmpty()) && postId <= newsList.getFirst().getPostId()) break;
+                if((!recentNotifications.isEmpty()) && postId <= recentNotifications.getFirst().getPostId()) break;
                 newsPost = new DboNewsPost();
                 newsPost.setPostId(postId);
                 newsPost.setDate(item.getPubDate());
@@ -58,13 +55,9 @@ public class DboNewsManager extends NotificationManager<DboNewsManager.DboNewsPo
             e.printStackTrace();
         }
 
-        newsList.addAll(0,notifications);
+        recentNotifications.addAll(0,notifications);
         trimHistory();
         return notifications;
-    }
-
-    private void trimHistory() {
-        while(newsList.size() > MAX_HISTORY) newsList.removeLast();
     }
 
     private int getPostNumFromLink(String url) throws Exception {
@@ -81,11 +74,6 @@ public class DboNewsManager extends NotificationManager<DboNewsManager.DboNewsPo
             return m.group(1);
         }
         return "Unknown";
-    }
-
-    @Override
-    public LinkedList<DboNewsPost> history() {
-        return newsList;
     }
 
     @Override

@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
 /**
  * Created by Joe on 2/18/14.
  */
-public class HboNewsManager extends NotificationManager {
+public class HboNewsManager extends NotificationManager<HboNewsManager.HboNewsPost> {
 
     private static final Pattern authorPattern = Pattern.compile("\\((.*?)\\d{2}:\\d{2}:\\d{2}\\s{1}\\+\\d{4}\\)",Pattern.DOTALL);
     private static final Pattern postIdPattern = Pattern.compile("(\\d+)");
@@ -34,11 +34,8 @@ public class HboNewsManager extends NotificationManager {
                 + "sub|sup|pre|del|code|blockquote|strike|kbd|br|hr|area|map|object|embed|param|link|form|small|big|script|object|embed|link|style|form|input)$");
     }
 
-    // first = newest
-    protected static final int MAX_HISTORY = 5;
-    protected LinkedList<HboNewsPost> newsList = new LinkedList<>();
-
     public HboNewsManager() {
+        super(5);
     }
 
     @Override
@@ -53,7 +50,7 @@ public class HboNewsManager extends NotificationManager {
             for (int i = 0; i < Math.min(items,MAX_HISTORY); i++) {
                 FeedItem item = feed.getItem(i);
                 int postId = getPostNumFromLink(item.getLink().toString());
-                if((!newsList.isEmpty()) && postId <= newsList.getFirst().getPostId()) break;
+                if((!recentNotifications.isEmpty()) && postId <= recentNotifications.getFirst().getPostId()) break;
                 newsPost = new HboNewsPost();
                 newsPost.setPostId(postId);
                 newsPost.setDate(item.getPubDate());
@@ -67,13 +64,9 @@ public class HboNewsManager extends NotificationManager {
             e.printStackTrace();
         }
 
-        newsList.addAll(0,notifications);
+        recentNotifications.addAll(0,notifications);
         trimHistory();
         return notifications;
-    }
-
-    private void trimHistory() {
-        while(newsList.size() > MAX_HISTORY) newsList.removeLast();
     }
 
     private int getPostNumFromLink(String url) throws Exception {
@@ -90,11 +83,6 @@ public class HboNewsManager extends NotificationManager {
             return m.group(1);
         }
         return "Unknown";
-    }
-
-    @Override
-    public LinkedList<HboNewsPost> history() {
-        return newsList;
     }
 
     @Override

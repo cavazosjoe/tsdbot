@@ -18,9 +18,6 @@ import java.util.*;
  */
 public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
 
-    /**
-     * //TODO: GET THESE CODES OFF GITHUB
-     */
     private static final String USER_HANDLE = "TSD_IRC";
     private static final long USER_ID = 2349834990l;
 
@@ -34,12 +31,8 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     private TwitterStream stream;
     private HashSet<Long> following;
 
-    // first = most recent
-    private static final int MAX_HISTORY = 5;
-    private LinkedList<Tweet> recentTweets = new LinkedList<>();
-
     public TwitterManager(final TSDBot bot, Twitter twitter) {
-
+        super(5);
         try {
             this.twitter = twitter;
             this.twitter.setOAuthConsumer(CONSUMER_KEY, CONSUMER_KEY_SECRET);
@@ -58,7 +51,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
                     if(status.getUser().getId() == USER_ID) return;
                     if(!following.contains(status.getUser().getId())) return;
                     Tweet newTweet = new Tweet(status);
-                    recentTweets.addFirst(newTweet);
+                    recentNotifications.addFirst(newTweet);
                     trimHistory();
                     bot.sendLine(newTweet.getInline());
                 }
@@ -165,15 +158,6 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     @Override
     public LinkedList<Tweet> sweep() {
         return new LinkedList<>();
-    }
-
-    private void trimHistory() {
-        while(recentTweets.size() > MAX_HISTORY) recentTweets.removeLast();
-    }
-
-    @Override
-    public LinkedList<Tweet> history() {
-        return recentTweets;
     }
 
     @Override

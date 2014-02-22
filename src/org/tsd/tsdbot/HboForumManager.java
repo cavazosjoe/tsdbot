@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 /**
  * Created by Joe on 2/18/14.
  */
-public class HboForumManager extends NotificationManager {
+public class HboForumManager extends NotificationManager<HboForumManager.HboForumPost> {
 
     private HttpClient client;
 
@@ -36,11 +36,8 @@ public class HboForumManager extends NotificationManager {
                 + "sub|sup|pre|del|code|blockquote|strike|kbd|br|hr|area|map|object|embed|param|link|form|small|big|script|object|embed|link|style|form|input)$");
     }
 
-    // first = newest
-    protected static final int MAX_HISTORY = 5;
-    protected LinkedList<HboForumPost> threadList = new LinkedList<>();
-
     public HboForumManager(HttpClient client) {
+        super(5);
         hboSdf = new SimpleDateFormat("MM/dd/yy HH:mm");
         hboSdf.setTimeZone(TimeZone.getTimeZone("America/New_York"));
         this.client = client;
@@ -64,8 +61,8 @@ public class HboForumManager extends NotificationManager {
             int postId = -1;
             while(indexMatcher.find() && notifications.size() < MAX_HISTORY) {
                 postId = Integer.parseInt(indexMatcher.group(1));
-                if( (!threadList.isEmpty()) &&
-                        (postId <= threadList.getLast().getPostId() || threadListContainsPost(postId)) ) continue;
+                if( (!recentNotifications.isEmpty()) &&
+                        (postId <= recentNotifications.getLast().getPostId() ) ) continue;
                 postGet = new HttpGet("http://carnage.bungie.org/haloforum/halo.forum.pl?read=" + postId);
                 postResponse = client.execute(postGet, responseHandler);
                 if(postResponse.contains("<div class=\"msg_prev\">")) continue; // stale reply
@@ -90,25 +87,9 @@ public class HboForumManager extends NotificationManager {
             e.printStackTrace();
         }
 
-        threadList.addAll(0,notifications);
+        recentNotifications.addAll(0,notifications);
         trimHistory();
         return notifications;
-    }
-
-    private void trimHistory() {
-        while(threadList.size() > MAX_HISTORY) threadList.removeLast();
-    }
-
-    private boolean threadListContainsPost(int postId) {
-        for(HboForumPost post : threadList) {
-            if(post.getPostId() == postId) return true;
-        }
-        return false;
-    }
-
-    @Override
-    public LinkedList<HboForumPost> history() {
-        return threadList;
     }
 
     @Override

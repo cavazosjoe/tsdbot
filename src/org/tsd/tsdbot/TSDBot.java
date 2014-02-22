@@ -56,7 +56,11 @@ public class TSDBot extends PircBot implements Runnable {
 
     @Override
     protected synchronized void onPrivateMessage(String sender, String login, String hostname, String message) {
+        if(!message.startsWith(".")) return; //not a command, ignore
+        String[] cmdParts = message.split("\\s+");
 
+        Command command = Command.fromString(cmdParts[0]);
+        if(command == null) return;
     }
 
     @Override
