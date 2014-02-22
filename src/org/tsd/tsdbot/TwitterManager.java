@@ -18,6 +18,7 @@ import java.util.*;
  */
 public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
 
+    private static final String SCHOOLY = "Schooly_D";
     private static final String USER_HANDLE = "TSD_IRC";
     private static final long USER_ID = 2349834990l;
 
@@ -71,7 +72,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
                 @Override
                 public void onException(Exception e) {
                     e.printStackTrace();
-                    bot.sendLine("Twitter stream error: " + e.getMessage());
+                    bot.sendMessage(SCHOOLY,"Twitter stream error: " + e.getMessage());
                 }
             });
 

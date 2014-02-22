@@ -6,7 +6,9 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.jibble.pircbotm.PircBot;
 import org.jibble.pircbotm.User;
+import org.tsd.tsdbot.runnable.IRCListenerThread;
 import org.tsd.tsdbot.runnable.Strawpoll;
+import org.tsd.tsdbot.runnable.ThreadManager;
 import org.tsd.tsdbot.runnable.TweetPoll;
 import org.tsd.tsdbot.util.IRCUtil;
 import twitter4j.Twitter;
@@ -28,9 +30,10 @@ public class TSDBot extends PircBot implements Runnable {
 
     private HashMap<NotificationManager.NotificationOrigin, NotificationManager> notificationManagers = new HashMap<>();
 
-    private ExecutorService threadPool = Executors.newFixedThreadPool(10);
-    private Strawpoll runningPoll;
-    private TweetPoll runningTweetPoll;
+    private ThreadManager threadManager = new ThreadManager(5);
+//    private ExecutorService threadPool = Executors.newFixedThreadPool(10);
+//    private Strawpoll runningPoll;
+//    private TweetPoll runningTweetPoll;
 
     public TSDBot(String channel, String name) {
         chan = channel;
@@ -58,15 +61,24 @@ public class TSDBot extends PircBot implements Runnable {
 
     @Override
     protected synchronized void onPrivateMessage(String sender, String login, String hostname, String message) {
+
+        for(IRCListenerThread listenerThread : threadManager.getRunningThreads())
+            listenerThread.onPrivateMessage(sender, login, hostname, message);
+
         if(!message.startsWith(".")) return; //not a command, ignore
         String[] cmdParts = message.split("\\s+");
 
         Command command = Command.fromString(cmdParts[0]);
         if(command == null) return;
+
     }
 
     @Override
     protected synchronized void onMessage(String channel, String sender, String login, String hostname, String message) {
+
+        for(IRCListenerThread listenerThread : threadManager.getRunningThreads())
+            listenerThread.onMessage(channel, sender, login, hostname, message);
+
         if(!message.startsWith(".")) return; //not a command, ignore
         String[] cmdParts = message.split("\\s+");
 
@@ -466,5 +478,10 @@ public class TSDBot extends PircBot implements Runnable {
             return null;
         }
 
+    }
+
+    public enum ThreadType {
+        STRAWPOLL,
+        TWEETPOLL
     }
 }

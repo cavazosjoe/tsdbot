@@ -3,7 +3,6 @@ package org.tsd.tsdbot.runnable;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.TwitterManager;
 import twitter4j.Status;
-import twitter4j.Twitter;
 import twitter4j.TwitterException;
 
 import java.util.HashSet;
@@ -11,7 +10,7 @@ import java.util.HashSet;
 /**
  * Created by Joe on 2/22/14.
  */
-public class TweetPoll implements Runnable {
+public class TweetPoll implements IRCListenerThread {
 
     private TSDBot bot;
     private TwitterManager twitterManager;
@@ -26,29 +25,13 @@ public class TweetPoll implements Runnable {
     public TweetPoll(TSDBot bot, String proposer, TwitterManager twitterManager, int numUsers, String proposedTweet, TwitterManager.Tweet replyTo) throws Exception {
         this.bot = bot;
         this.twitterManager = twitterManager;
-
-//        if(replyTo != null && proposedTweet.startsWith("@" + replyTo.getUser().getScreenName()))
-//            this.proposedTweet = proposedTweet.replace("@" + replyTo.getUser().getScreenName(),"");
-//        else this.proposedTweet = proposedTweet;
         this.proposedTweet = proposedTweet;
-
         this.proposer = proposer;
         this.requiredVotes = Math.min(numUsers,(int)(3*Math.log(numUsers)));
         this.replyTo = replyTo;
 
         if(proposedTweet == null || proposedTweet.isEmpty())
             throw new Exception("Proposed tweet cannot be blank");
-    }
-
-    @Override
-    public void run() {
-        handlePollStart();
-        try {
-            Thread.sleep(duration * 60 * 1000); // 2 minute duration
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        handlePollEnd();
     }
 
     public String castVote(String voter) {
@@ -94,4 +77,25 @@ public class TweetPoll implements Runnable {
         }
     }
 
+    @Override
+    public void onMessage(String channel, String sender, String login, String hostname, String message) {
+
+    }
+
+    @Override
+    public void onPrivateMessage(String sender, String login, String hostname, String message) {
+
+    }
+
+    @Override
+    public Object call() throws Exception {
+        handlePollStart();
+        try {
+            Thread.sleep(duration * 60 * 1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        handlePollEnd();
+        return null;
+    }
 }
