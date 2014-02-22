@@ -55,7 +55,12 @@ public class TSDBot extends PircBot implements Runnable {
     }
 
     @Override
-    public synchronized void onMessage(String channel, String sender, String login, String hostname, String message) {
+    protected synchronized void onPrivateMessage(String sender, String login, String hostname, String message) {
+
+    }
+
+    @Override
+    protected synchronized void onMessage(String channel, String sender, String login, String hostname, String message) {
         if(!message.startsWith(".")) return; //not a command, ignore
         String[] cmdParts = message.split("\\s+");
 
@@ -80,7 +85,7 @@ public class TSDBot extends PircBot implements Runnable {
         NotificationManager<NotificationEntity> mgr = notificationManagers.get(command.getOrigin());
 
         if(cmdParts.length == 1) {
-            sendLine("USAGE: " + command.getCmd() + " [ list | pv [postId (optional)] ]");
+            sendLine(command.getUsage());
         } else if(cmdParts[1].equals("list")) {
             for(NotificationEntity notification : mgr.history()) {
                 sendLine(notification.getInline());
@@ -105,7 +110,7 @@ public class TSDBot extends PircBot implements Runnable {
                 else sendLine(ret.get(0).getPreview());
             }
         } else {
-            sendLine("USAGE: " + command.getCmd() + " [ list | pv [postId (optional)] ]");
+            sendLine(command.getUsage());
         }
 
     }
@@ -118,18 +123,18 @@ public class TSDBot extends PircBot implements Runnable {
         } else if(cmdParts[1].equals("clip")) {
             sendLine(TomCruise.getRandomClip());
         } else {
-            sendLine(".tc usage: .tc [ clip | quote ] (optional)");
+            sendLine(Command.TOM_CRUISE.getUsage());
         }
     }
 
     private void poll(String[] cmdParts) {
         if(runningPoll != null) {
-            sendMessage(chan, "There is already a poll running. It will end in " + runningPoll.getMinutes() + " minute(s)");
+            sendLine("There is already a poll running. It will end in " + runningPoll.getMinutes() + " minute(s)");
             return;
         }
 
         if(cmdParts.length < 4) {
-            sendMessage(chan,".poll usage: .poll <question> ; <duration (integer)> ; choice 1 ; choice 2 [ choice 3 ...]");
+            sendLine(Command.STRAWPOLL.getUsage());
             return;
         }
 
@@ -156,12 +161,12 @@ public class TSDBot extends PircBot implements Runnable {
 
     private void vote(String sender, String login, String[] cmdParts) {
         if(runningPoll == null) {
-            sendMessage(chan,"There is no poll running");
+            sendLine("There is no poll running");
             return;
         }
 
         if(cmdParts.length != 2) {
-            sendMessage(chan,".vote <number of your choice>");
+            sendLine(Command.VOTE.getUsage());
             return;
         }
 
@@ -169,27 +174,29 @@ public class TSDBot extends PircBot implements Runnable {
         try {
             selection = Integer.parseInt(cmdParts[1]);
         } catch (NumberFormatException nfe) {
-            sendMessage(chan,".vote <number of your choice>");
+            sendLine(Command.VOTE.getUsage());
             return;
         }
 
         String voteResult = runningPoll.castVote(login, selection);
         if(voteResult != null) {
-            sendMessage(chan, voteResult + ", " + sender);
+            sendLine(voteResult + ", " + sender);
         }
     }
 
-    public void tw(String sender, String[] cmdParts) {
+    private void tw(String sender, String[] cmdParts) {
 
         if(!getUserFromNick(sender).isOp()) {
-            sendMessage(chan,"Only ops can use the twitter function");
+            sendLine("Only ops can use the twitter function");
             return;
         }
 
         TwitterManager mgr = (TwitterManager) notificationManagers.get(NotificationManager.NotificationOrigin.TWITTER);
 
+        Command cmd = Command.TWITTER;
+
         if(cmdParts.length == 1) {
-            sendMessage(chan, "USAGE: .tw [ following | timeline | tweet <message> | follow <handle> | unfollow <handle> ]");
+            sendLine(cmd.getUsage());
         } else {
             try {
                 String subCmd = cmdParts[1];
@@ -199,7 +206,7 @@ public class TSDBot extends PircBot implements Runnable {
                     if(mgr.history().isEmpty()) sendLine("I don't have any tweets in my recent history");
                     else for(TwitterManager.Tweet t : mgr.history()) sendLine(t.getInline());
                 } else if(cmdParts.length < 3) {
-                    sendLine("USAGE: .tw [ following | timeline | tweet <message> | follow <handle> | unfollow <handle> ]");
+                    sendLine(cmd.getUsage());
                 } else if(subCmd.equals("tweet") ) {
                     String tweet = "";
                     for(int i=2 ; i < cmdParts.length ; i++) {
@@ -228,34 +235,12 @@ public class TSDBot extends PircBot implements Runnable {
                 } else if(subCmd.equals("unfollow")) {
                     mgr.unfollow(cmdParts[2]);
                 } else {
-                    sendLine("USAGE: .tw [ following | timeline | tweet <message> | follow <handle> | unfollow <handle> ]");
+                    sendLine(cmd.getUsage());
                 }
             } catch (TwitterException t) {
                 sendLine("Error: " + t.getMessage());
             }
         }
-    }
-
-    public void handlePollStart(String question, int minutes, TreeMap<Integer, String> choices) {
-        String[] displayTable = new String[choices.size()+2];
-        displayTable[0] = "NEW STRAWPOLL: " + question;
-        for(Integer i : choices.keySet()) {
-            displayTable[i] = i + ": " + choices.get(i);
-        }
-        displayTable[displayTable.length-1] = "The voting will end in " + minutes + " minute(s)";
-        sendLines(displayTable);
-    }
-
-    public void handlePollResult(String question, HashMap<String, Integer> results) {
-        String[] resultsTable = new String[results.size()+1];
-        resultsTable[0] = question + " | RESULTS:";
-        int i=1;
-        for(String choice : results.keySet()) {
-            resultsTable[i] = choice + ": " + results.get(choice);
-            i++;
-        }
-        this.runningPoll = null;
-        sendLines(resultsTable);
     }
 
     @Override
@@ -307,22 +292,68 @@ public class TSDBot extends PircBot implements Runnable {
         return user;
     }
 
+    public Strawpoll getRunningPoll() {
+        return runningPoll;
+    }
+
+    public void setRunningPoll(Strawpoll runningPoll) {
+        this.runningPoll = runningPoll;
+    }
+
     public enum Command {
-        TOM_CRUISE(".tc", null),
-        HBO_FORUM(".hbof", NotificationManager.NotificationOrigin.HBO_FORUM),
-        HBO_NEWS(".hbon", NotificationManager.NotificationOrigin.HBO_NEWS),
-        DBO_FORUM(".dbof", NotificationManager.NotificationOrigin.DBO_FORUM),
-        DBO_NEWS(".dbon", NotificationManager.NotificationOrigin.DBO_NEWS),
-        STRAWPOLL(".poll", null),
-        VOTE(".vote", null),
-        TWITTER(".tw", NotificationManager.NotificationOrigin.TWITTER);
+
+        TOM_CRUISE(
+                ".tc",
+                "USAGE: .tc [ clip | quote ]",
+                null),
+
+        HBO_FORUM(
+                ".hbof",
+                "USAGE: .hbof [ list | pv [postId (optional)] ]",
+                NotificationManager.NotificationOrigin.HBO_FORUM),
+
+        HBO_NEWS(
+                ".hbon",
+                "USAGE: .hbon [ list | pv [postId (optional)] ]",
+                NotificationManager.NotificationOrigin.HBO_NEWS),
+
+        DBO_FORUM(
+                ".dbof",
+                "USAGE: .dbof [ list | pv [postId (optional)] ]",
+                NotificationManager.NotificationOrigin.DBO_FORUM),
+
+        DBO_NEWS(
+                ".dbon",
+                "USAGE: .dbon [ list | pv [postId (optional)] ]",
+                NotificationManager.NotificationOrigin.DBO_NEWS),
+
+        STRAWPOLL(
+                ".poll",
+                ".poll usage: .poll <question> ; <duration (integer)> ; choice 1 ; choice 2 [ choice 3 ...]",
+                null),
+
+        VOTE(
+                ".vote",
+                ".vote <number of your choice>",
+                null),
+
+        TWITTER(
+                ".tw",
+                "USAGE: .tw [ following | timeline | tweet <message> | reply <reply-to-id> <message> | follow <handle> | unfollow <handle> ]",
+                NotificationManager.NotificationOrigin.TWITTER);
 
         private String cmd;
+        private String usage;
         private NotificationManager.NotificationOrigin origin;
 
-        Command(String cmd, NotificationManager.NotificationOrigin origin) {
+        Command(String cmd, String usage, NotificationManager.NotificationOrigin origin) {
             this.cmd = cmd;
             this.origin = origin;
+            this.usage = usage;
+        }
+
+        public String getUsage() {
+            return usage;
         }
 
         public String getCmd() {

@@ -53,7 +53,7 @@ public class Strawpoll implements Runnable {
     @Override
     public void run() {
         System.out.println("starting poll");
-        bot.handlePollStart(question, minutes, optionsTable);
+        handlePollStart();
         try {
             Thread.sleep(minutes * 60 * 1000);
         } catch (InterruptedException e) {
@@ -68,7 +68,29 @@ public class Strawpoll implements Runnable {
         for(Vote vote : votes) {
             results.put(vote.choice, results.get(vote.choice)+1);
         }
-        bot.handlePollResult(question, results);
+        handlePollResult(results);
+    }
+
+    private void handlePollStart() {
+        String[] displayTable = new String[optionsTable.size()+2];
+        displayTable[0] = "NEW STRAWPOLL: " + question;
+        for(Integer i : optionsTable.keySet()) {
+            displayTable[i] = i + ": " + optionsTable.get(i);
+        }
+        displayTable[displayTable.length-1] = "The voting will end in " + minutes + " minute(s)";
+        bot.sendLines(displayTable);
+    }
+
+    private void handlePollResult(HashMap<String, Integer> results) {
+        String[] resultsTable = new String[results.size()+1];
+        resultsTable[0] = question + " | RESULTS:";
+        int i=1;
+        for(String choice : results.keySet()) {
+            resultsTable[i] = choice + ": " + results.get(choice);
+            i++;
+        }
+        bot.setRunningPoll(null);
+        bot.sendLines(resultsTable);
     }
 
     public int getMinutes() {
