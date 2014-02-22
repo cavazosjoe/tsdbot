@@ -100,12 +100,12 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
         }
     }
 
-    public void postTweet(String text) throws TwitterException {
+    public Status postTweet(String text) throws TwitterException {
         if(text.length() > 140) throw new TwitterException("Must be 140 characters or less");
-        twitter.updateStatus(text);
+        return twitter.updateStatus(text);
     }
 
-    public void postReply(Tweet replyTo, String text) throws TwitterException {
+    public Status postReply(Tweet replyTo, String text) throws TwitterException {
 
         if(text.startsWith("@")) { // text = @whoever I thought you were dead!
             String[] parts = text.split(" ",2);
@@ -123,7 +123,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
         StatusUpdate reply = new StatusUpdate(text);
         reply.setInReplyToStatusId(replyTo.getStatus().getId());
 
-        twitter.updateStatus(reply);
+        return twitter.updateStatus(reply);
     }
 
     public void follow(String handle) throws TwitterException {
