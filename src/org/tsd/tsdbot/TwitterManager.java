@@ -29,7 +29,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
 
     private Twitter twitter;
     private TwitterStream stream;
-    private HashSet<Long> following;
+    private HashMap<Long,User> following;
 
     public TwitterManager(final TSDBot bot, Twitter twitter) {
         super(5);
@@ -49,7 +49,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
                 @Override
                 public void onStatus(Status status) {
                     if(status.getUser().getId() == USER_ID) return;
-                    if(!following.contains(status.getUser().getId())) return;
+                    if(!following.containsValue(status.getUser())) return;
                     Tweet newTweet = new Tweet(status);
                     recentNotifications.addFirst(newTweet);
                     trimHistory();
@@ -76,8 +76,9 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
             });
 
             Long[] followingIds = ArrayUtils.toObject(twitter.getFriendsIDs(USER_ID, -1).getIDs());
-            following = new HashSet<>(Arrays.asList(followingIds));
-            FilterQuery fq = new FilterQuery(ArrayUtils.toPrimitive(following.toArray(new Long[]{})));
+            following = new HashMap<>();
+            for(Long id : followingIds) following.put(id, twitter.showUser(id));
+            FilterQuery fq = new FilterQuery(ArrayUtils.toPrimitive(following.keySet().toArray(new Long[]{})));
             stream.filter(fq);
 
         } catch (TwitterException e) {
@@ -129,7 +130,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     public void follow(String handle) throws TwitterException {
         User followed = twitter.createFriendship(handle);
         if(followed != null) {
-            following.add(followed.getId());
+            following.put(followed.getId(), followed);
             refreshFollowersFilter();
         }
     }
@@ -142,17 +143,23 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
         }
     }
 
-    public List<String> getFollowing() throws TwitterException {
-        LinkedList<String> following = new LinkedList<>();
-        IDs ids = twitter.getFriendsIDs(USER_ID, -1);
-        for(long l : ids.getIDs()) {
-            following.add(twitter.showUser(l).getScreenName());
+    public LinkedList<String> getFollowing() throws TwitterException {
+        LinkedList<String> ret = new LinkedList<>();
+        for(Long id : following.keySet()) {
+            User f = following.get(id);
+            ret.add(f.getName() + " (@" + f.getScreenName() + ")");
         }
-        return following;
+        return ret;
+
+//        IDs ids = twitter.getFriendsIDs(USER_ID, -1);
+//        for(long l : ids.getIDs()) {
+//            following.add(twitter.showUser(l).getScreenName());
+//        }
+//        return following;
     }
 
     private void refreshFollowersFilter() throws TwitterException {
-        stream.filter(new FilterQuery(ArrayUtils.toPrimitive(following.toArray(new Long[]{}))));
+        stream.filter(new FilterQuery(ArrayUtils.toPrimitive(following.keySet().toArray(new Long[]{}))));
     }
 
     @Override

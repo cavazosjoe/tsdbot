@@ -62,7 +62,7 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
             while(indexMatcher.find() && notifications.size() < MAX_HISTORY) {
                 postId = Integer.parseInt(indexMatcher.group(1));
                 if( (!recentNotifications.isEmpty()) &&
-                        (postId <= recentNotifications.getLast().getPostId() ) ) continue;
+                        (postId <= recentNotifications.getFirst().getPostId() ) ) continue;
                 postGet = new HttpGet("http://carnage.bungie.org/haloforum/halo.forum.pl?read=" + postId);
                 postResponse = client.execute(postGet, responseHandler);
                 if(postResponse.contains("<div class=\"msg_prev\">")) continue; // stale reply
