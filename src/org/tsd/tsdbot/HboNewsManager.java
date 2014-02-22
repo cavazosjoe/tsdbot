@@ -78,7 +78,8 @@ public class HboNewsManager extends NotificationManager<HboNewsManager.HboNewsPo
     }
     
     private String getAuthorFromBody(String body) {
-        Matcher m = authorPattern.matcher(body);
+        String credit = body.substring(body.lastIndexOf("("));
+        Matcher m = authorPattern.matcher(credit);
         while(m.find()) {
             return m.group(1);
         }

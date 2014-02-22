@@ -67,9 +67,10 @@ public class DboNewsManager extends NotificationManager<DboNewsManager.DboNewsPo
         }
         throw new Exception("Could not parse " + url + " for post ID");
     }
-    
+
     private String getAuthorFromBody(String body) {
-        Matcher m = authorPattern.matcher(body);
+        String credit = body.substring(body.lastIndexOf("("));
+        Matcher m = authorPattern.matcher(credit);
         while(m.find()) {
             return m.group(1);
         }
