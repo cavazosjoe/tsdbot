@@ -48,7 +48,7 @@ public class TSDBot extends PircBot implements Runnable {
         notificationManagers.put(NotificationManager.NotificationOrigin.DBO_FORUM, new DboForumManager(webClient));
         notificationManagers.put(NotificationManager.NotificationOrigin.HBO_NEWS, new HboNewsManager());
         notificationManagers.put(NotificationManager.NotificationOrigin.DBO_NEWS, new DboNewsManager());
-        notificationManagers.put(NotificationManager.NotificationOrigin.TWITTER, new TwitterManager(twitterClient));
+        notificationManagers.put(NotificationManager.NotificationOrigin.TWITTER, new TwitterManager(this,twitterClient));
         
         mainThread = new Thread(this);
         mainThread.start();
@@ -189,29 +189,49 @@ public class TSDBot extends PircBot implements Runnable {
         TwitterManager mgr = (TwitterManager) notificationManagers.get(NotificationManager.NotificationOrigin.TWITTER);
 
         if(cmdParts.length == 1) {
-            sendMessage(chan,"USAGE: .tw [ tweet <message> | follow <handle> | unfollow <handle> ]");
+            sendMessage(chan, "USAGE: .tw [ following | timeline | tweet <message> | follow <handle> | unfollow <handle> ]");
         } else {
             try {
                 String subCmd = cmdParts[1];
-                if(subCmd.equals("list")) {
+                if(subCmd.equals("following")) {
                     for(String s : mgr.getFollowing()) sendMessage(chan,s);
+                } else if(subCmd.equals("timeline")) {
+                    if(mgr.history().isEmpty()) sendLine("I don't have any tweets in my recent history");
+                    else for(TwitterManager.Tweet t : mgr.history()) sendLine(t.getInline());
                 } else if(cmdParts.length < 3) {
-                    sendMessage(chan,"USAGE: .tw [ tweet <message> | follow <handle> | unfollow <handle> | list ]");
+                    sendLine("USAGE: .tw [ following | timeline | tweet <message> | follow <handle> | unfollow <handle> ]");
                 } else if(subCmd.equals("tweet") ) {
                     String tweet = "";
                     for(int i=2 ; i < cmdParts.length ; i++) {
                         tweet += (cmdParts[i] + " ");
                     }
                     mgr.postTweet(tweet);
+                } else if(subCmd.equals("reply")) {
+                    String replyToString = cmdParts[2];
+                    LinkedList<TwitterManager.Tweet> matchedTweets = mgr.getNotificationByTail(replyToString);
+                    if(matchedTweets.size() == 0) sendLine("Could not find tweet with ID matching" + replyToString + " in recent history");
+                    else if(matchedTweets.size() > 1) {
+                        String returnString = "Found multiple matching Tweets in recent history:";
+                        for(NotificationEntity not : matchedTweets) returnString += (" " + not.getKey());
+                        returnString += ". Help me out here";
+                        sendLine(returnString);
+                    }
+                    else {
+                        String tweet = "";
+                        for(int i=3 ; i < cmdParts.length ; i++) {
+                            tweet += (cmdParts[i] + " ");
+                        }
+                        mgr.postReply(matchedTweets.get(0),tweet);
+                    }
                 } else if(subCmd.equals("follow")) {
                     mgr.follow(cmdParts[2]);
                 } else if(subCmd.equals("unfollow")) {
                     mgr.unfollow(cmdParts[2]);
                 } else {
-                    sendMessage(chan,"USAGE: .tw [ tweet <message> | follow <handle> | unfollow <handle> | list ]");
+                    sendLine("USAGE: .tw [ following | timeline | tweet <message> | follow <handle> | unfollow <handle> ]");
                 }
             } catch (TwitterException t) {
-                sendMessage(chan,"Error: " + t.getMessage());
+                sendLine("Error: " + t.getMessage());
             }
         }
     }
@@ -241,28 +261,36 @@ public class TSDBot extends PircBot implements Runnable {
     @Override
     public synchronized void run() {
 
+        boolean firstPass = true; //TODO: use DB to avoid this
+
         while(true) {
             try {
-                wait(30 * 1000); // check every 2 minutes
+                wait(120 * 1000); // check every 2 minutes
             } catch (InterruptedException e) {
                 // something notified this thread, panic.blimp
             }
 
-            for(NotificationManager<NotificationEntity> sweeper : notificationManagers.values()) {
-                for(NotificationEntity notification : sweeper.sweep()) {
-                    sendLine(notification.getInline());
+            try {
+                for(NotificationManager<NotificationEntity> sweeper : notificationManagers.values()) {
+                    for(NotificationEntity notification : sweeper.sweep()) {
+                        if(!firstPass) sendLine(notification.getInline());
+                    }
                 }
+
+            } catch (Exception e) {
+                e.printStackTrace();
             }
 
+            firstPass = false;
         }
     }
 
-    private void sendLine(String line) {
+    public void sendLine(String line) {
         if(line.length() > 510) sendLines(IRCUtil.splitLongString(line));
         else sendMessage(chan, line);
     }
     
-    private void sendLines(String[] lines) {
+    public void sendLines(String[] lines) {
         for(String line : lines) sendMessage(chan, line);
     }
 

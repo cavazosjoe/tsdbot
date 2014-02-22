@@ -1,7 +1,8 @@
 package org.tsd.tsdbot.util;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
+
+import static com.rosaloves.bitlyj.Bitly.*;
 
 /**
  * Created by Joe on 2/19/14.
@@ -29,5 +30,10 @@ public class IRCUtil {
         int len = input.length();
         if(len <= MAX_MSG_LEN) return input;
         else return input.substring(0,MAX_MSG_LEN-3) + "...";
+    }
+
+    public static String shortenUrl(String url) {
+        return as("o_181ooefbmh","R_7adf723e32a4493b92bf9014439137a6")
+                .call(shorten(url)).getShortUrl();
     }
 }

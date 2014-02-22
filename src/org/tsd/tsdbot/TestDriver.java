@@ -85,12 +85,11 @@ public class TestDriver {
         //---------------------
 
         try {
-            TwitterManager twitterManager = new TwitterManager(TwitterFactory.getSingleton());
-            twitterManager.postTweet(Math.random() + "");
-            twitterManager.follow("schooly");
-            twitterManager.follow("schooly");
-
-            twitterManager.getFollowing();
+//            TwitterManager twitterManager = new TwitterManager(TwitterFactory.getSingleton());
+//            twitterManager.postTweet(Math.random() + "");
+//            twitterManager.follow("schooly");
+//            twitterManager.sweep();
+//            twitterManager.checkRateLimit();
         } catch (Exception e) {
             e.printStackTrace();
         }
