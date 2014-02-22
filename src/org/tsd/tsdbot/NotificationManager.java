@@ -1,5 +1,6 @@
 package org.tsd.tsdbot;
 
+import javax.naming.OperationNotSupportedException;
 import java.util.LinkedList;
 
 /**
@@ -10,17 +11,17 @@ public abstract class NotificationManager<T extends NotificationEntity> {
     public abstract LinkedList<T> history();
     public abstract NotificationOrigin getOrigin();
 
-    public LinkedList<NotificationEntity> getNotificationByTail(String q) {
-        LinkedList<NotificationEntity> matchedNotifications = new LinkedList<>();
-        for(NotificationEntity notification : history()) {
+    public LinkedList<T> getNotificationByTail(String q) {
+        LinkedList<T> matchedNotifications = new LinkedList<>();
+        for(T notification : history()) {
             if(q.equals(notification.getKey()) || notification.getKey().endsWith(q))
                 matchedNotifications.add(notification);
         }
         return matchedNotifications;
     }
 
-    public NotificationEntity getNotificationExact(String key) {
-        for(NotificationEntity notification : history()) {
+    public T getNotificationExact(String key) {
+        for(T notification : history()) {
             if(key.equals(notification.getKey())) return notification;
         }
         return null;

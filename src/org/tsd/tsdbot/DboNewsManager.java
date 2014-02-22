@@ -134,7 +134,7 @@ public class DboNewsManager extends NotificationManager<DboNewsManager.DboNewsPo
 
         @Override
         public String getInline() {
-            return "[DBO News] " + "(" + postId + ") " + author + " -- " + title + " -- http://destiny.bungie.org/n/" + postId;
+            return "[DBO News] " + "(" + postId + ") " + author + " -- " + title + " -- " + IRCUtil.shortenUrl("http://destiny.bungie.org/n/" + postId);
         }
 
         @Override

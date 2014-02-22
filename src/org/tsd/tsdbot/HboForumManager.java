@@ -170,7 +170,7 @@ public class HboForumManager extends NotificationManager {
 
         @Override
         public String getInline() {
-            return "[HBO Forum] " + "(" + postId + ") " + author + " -- " + subject + " -- http://carnage.bungie.org/haloforum/halo.forum.pl?read=" + postId;
+            return "[HBO Forum] " + "(" + postId + ") " + author + " -- " + subject + " -- " + IRCUtil.shortenUrl("http://carnage.bungie.org/haloforum/halo.forum.pl?read=" + postId);
         }
 
         @Override

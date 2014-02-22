@@ -160,7 +160,7 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
 
         @Override
         public String getInline() {
-            return "[DBO Forum] " + "(" + postId + ") " + author + " -- " + subject + " -- http://destiny.bungie.org/forum/index.php?id=" + postId;
+            return "[DBO Forum] " + "(" + postId + ") " + author + " -- " + subject + " -- " + IRCUtil.shortenUrl("http://destiny.bungie.org/forum/index.php?id=" + postId);
         }
 
         @Override

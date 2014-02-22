@@ -143,7 +143,7 @@ public class HboNewsManager extends NotificationManager {
 
         @Override
         public String getInline() {
-            return "[HBO News] " + "(" + postId + ") " + author + " -- " + title + " -- http://halo.bungie.org/news.html?item=" + postId;
+            return "[HBO News] " + "(" + postId + ") " + author + " -- " + title + " -- " + IRCUtil.shortenUrl("http://halo.bungie.org/news.html?item=" + postId);
         }
 
         @Override
