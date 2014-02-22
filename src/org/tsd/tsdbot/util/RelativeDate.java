@@ -17,7 +17,7 @@ public class RelativeDate {
      * the Calendar being passed in and the number of years,
      * months, days, etc. that differ. This will compute both
      * past and future relative dates. E.g., "one day ago" and
-     * "one day from now".
+     * "one day ago".
      * <p>
      * <strong>NOTE:</strong> If the calendar date relative
      * to "now" is older than one day, we display the actual date in
@@ -55,23 +55,23 @@ public class RelativeDate {
 
             // Hour
 
-        else if ( hours == 1 ) return 1 + " hour from now";
+        else if ( hours == 1 ) return 1 + " hour ago";
         else if ( hours == -1 ) return 1 + " hour ago";
-        else if ( hours > 0 ) return hours + " hours from now";
+        else if ( hours > 0 ) return hours + " hours ago";
         else if ( hours < 0 ) return Math.abs( hours ) + " hours ago";
 
             // Minute
 
-        else if ( minutes == 1 ) return 1 + " minute from now";
+        else if ( minutes == 1 ) return 1 + " minute ago";
         else if ( minutes == -1 ) return 1 + " minute ago";
-        else if ( minutes > 0 ) return minutes + " minutes from now";
+        else if ( minutes > 0 ) return minutes + " minutes ago";
         else if ( minutes < 0 ) return Math.abs( minutes ) + " minutes ago";
 
             // Second
 
-        else if ( seconds == 1 ) return 1 + " second from now";
+        else if ( seconds == 1 ) return 1 + " second ago";
         else if ( seconds == -1 ) return 1 + " second ago";
-        else if ( seconds > 0 ) return seconds + " seconds from now";
+        else if ( seconds > 0 ) return seconds + " seconds ago";
         else if ( seconds < 0 ) return Math.abs( seconds ) + " seconds ago";
 
             // Must be now (date and times are identical)

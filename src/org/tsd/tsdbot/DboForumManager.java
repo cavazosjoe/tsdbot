@@ -32,11 +32,8 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
                 + "sub|sup|pre|del|code|blockquote|strike|kbd|br|hr|area|map|object|embed|param|link|form|small|big|script|object|embed|link|style|form|input)$");
     }
 
-    // first = newest
-    protected static final int MAX_HISTORY = 5;
-    protected LinkedList<DboForumPost> threadList = new LinkedList<>();
-
     public DboForumManager(WebClient webClient) {
+        super(5);
         dboSdf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z");
         dboSdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         this.webClient = webClient;
@@ -59,7 +56,7 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
                     System.out.println();
                     int postId = getPostNumFromLink(getField(e, "guid"));
 
-                    if((!threadList.isEmpty()) && postId <= threadList.getFirst().getPostId()) break;
+                    if((!recentNotifications.isEmpty()) && postId <= recentNotifications.getFirst().getPostId()) break;
 
                     newPost = new DboForumPost();
                     newPost.setPostId(postId);
@@ -75,7 +72,7 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
             e.printStackTrace();
         }
 
-        threadList.addAll(0,notifications);
+        recentNotifications.addAll(0,notifications);
         trimHistory();
         return notifications;
     }
@@ -84,21 +81,12 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
         return e.getElementsByTagName(fieldName).item(0).getTextContent();
     }
 
-    private void trimHistory() {
-        while(threadList.size() > MAX_HISTORY) threadList.removeLast();
-    }
-
     private int getPostNumFromLink(String url) throws Exception {
         Matcher m = postIdPattern.matcher(url);
         while(m.find()) {
             return Integer.parseInt(m.group(1));
         }
         throw new Exception("Could not parse " + url + " for post ID");
-    }
-
-    @Override
-    public LinkedList<DboForumPost> history() {
-        return threadList;
     }
 
     @Override

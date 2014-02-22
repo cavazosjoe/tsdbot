@@ -18,9 +18,6 @@ import java.util.*;
  */
 public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
 
-    /**
-     * //TODO: GET THESE CODES OFF GITHUB
-     */
     private static final String USER_HANDLE = "TSD_IRC";
     private static final long USER_ID = 2349834990l;
 
@@ -33,17 +30,11 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     private Twitter twitter;
     private TwitterStream stream;
     private HashSet<Long> following;
-    private TSDBot bot;
-
-    // first = most recent
-    private static final int MAX_HISTORY = 5;
-    private LinkedList<Tweet> recentTweets = new LinkedList<>();
 
     public TwitterManager(final TSDBot bot, Twitter twitter) {
-
+        super(5);
         try {
             this.twitter = twitter;
-            this.bot = bot;
             this.twitter.setOAuthConsumer(CONSUMER_KEY, CONSUMER_KEY_SECRET);
             this.twitter.setOAuthAccessToken(new AccessToken(ACCESS_TOKEN, ACCESS_TOKEN_SECRET));
 
@@ -58,8 +49,9 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
                 @Override
                 public void onStatus(Status status) {
                     if(status.getUser().getId() == USER_ID) return;
+                    if(!following.contains(status.getUser().getId())) return;
                     Tweet newTweet = new Tweet(status);
-                    recentTweets.addFirst(newTweet);
+                    recentNotifications.addFirst(newTweet);
                     trimHistory();
                     bot.sendLine(newTweet.getInline());
                 }
@@ -79,6 +71,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
                 @Override
                 public void onException(Exception e) {
                     e.printStackTrace();
+                    bot.sendLine("Twitter stream error: " + e.getMessage());
                 }
             });
 
@@ -107,12 +100,12 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
         }
     }
 
-    public void postTweet(String text) throws TwitterException {
+    public Status postTweet(String text) throws TwitterException {
         if(text.length() > 140) throw new TwitterException("Must be 140 characters or less");
-        twitter.updateStatus(text);
+        return twitter.updateStatus(text);
     }
 
-    public void postReply(Tweet replyTo, String text) throws TwitterException {
+    public Status postReply(Tweet replyTo, String text) throws TwitterException {
 
         if(text.startsWith("@")) { // text = @whoever I thought you were dead!
             String[] parts = text.split(" ",2);
@@ -125,10 +118,12 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
 
         // text = @whoever I thought you were dead!
 
+        if(text.length() > 140) throw new TwitterException("Must be 140 characters or less");
+
         StatusUpdate reply = new StatusUpdate(text);
         reply.setInReplyToStatusId(replyTo.getStatus().getId());
 
-        twitter.updateStatus(reply);
+        return twitter.updateStatus(reply);
     }
 
     public void follow(String handle) throws TwitterException {
@@ -163,31 +158,6 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     @Override
     public LinkedList<Tweet> sweep() {
         return new LinkedList<>();
-//        LinkedList<Tweet> notifications = new LinkedList<>();
-//        try {
-//            Tweet newTweet = null;
-//            for (Status status : twitter.getHomeTimeline(new Paging(1,20))) {
-//                if(status.getUser().getId() == USER_ID) continue;
-//                if(notifications.size() >= 5) break; //flood filter, consider generalizing to other mgrs
-//                if((!recentTweets.isEmpty()) && status.getId() <= recentTweets.getFirst().getStatus().getId()) break;
-//                newTweet = new Tweet(status);
-//                notifications.addLast(newTweet);
-//            }
-//        } catch (TwitterException e) {
-//            e.printStackTrace();
-//        }
-//        recentTweets.addAll(0,notifications);
-//        trimHistory();
-//        return notifications;
-    }
-
-    private void trimHistory() {
-        while(recentTweets.size() > MAX_HISTORY) recentTweets.removeLast();
-    }
-
-    @Override
-    public LinkedList<Tweet> history() {
-        return recentTweets;
     }
 
     @Override

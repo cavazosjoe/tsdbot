@@ -25,6 +25,7 @@ public class RssFeedManager extends NotificationManager<RssItem> {
     private WebClient webClient;
 
     public RssFeedManager(String rssUrl, WebClient webClient) throws MalformedURLException {
+        super(5);
         this.rssUrl = new URL(rssUrl);
         this.webClient = webClient;
     }
