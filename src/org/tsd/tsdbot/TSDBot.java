@@ -206,6 +206,7 @@ public class TSDBot extends PircBot implements Runnable {
             try {
                 String subCmd = cmdParts[1];
                 if(subCmd.equals("following")) {
+                    sendMessage(sender,"Here is a list of the people I'm following: ");
                     for(String s : mgr.getFollowing()) sendMessage(sender,s);
                 } else if(subCmd.equals("timeline")) {
                     if(mgr.history().isEmpty()) sendLine("I don't have any tweets in my recent history");
