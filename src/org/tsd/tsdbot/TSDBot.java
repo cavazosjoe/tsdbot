@@ -265,7 +265,7 @@ public class TSDBot extends PircBot implements Runnable {
 
         while(true) {
             try {
-                wait(15 * 1000); // check every 2 minutes
+                wait(120 * 1000); // check every 2 minutes
             } catch (InterruptedException e) {
                 // something notified this thread, panic.blimp
             }
