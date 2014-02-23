@@ -5,23 +5,25 @@ import org.tsd.tsdbot.TSDBot;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.TreeMap;
-import java.util.concurrent.Callable;
 
 /**
  * Created by Joe on 2/19/14.
  */
-public class Strawpoll implements Runnable {
-
-    private TSDBot bot;
+public class Strawpoll extends IRCListenerThread {
 
     private String question;
-    private int minutes;
+    private int duration; //minutes
     private TreeMap<Integer, String> optionsTable = new TreeMap<>(); // 1 -> choice1
     private HashSet<Vote> votes = new HashSet<>();
 
-    public Strawpoll(TSDBot bot, String question, int minutes, String[] options) throws Exception {
+    public Strawpoll(TSDBot bot, String channel, ThreadManager threadManager, String question, int duration, String[] options) throws Exception {
+
+        super(threadManager,channel);
 
         this.bot = bot;
+
+        listeningCommands.add(TSDBot.Command.STRAWPOLL);
+        listeningCommands.add(TSDBot.Command.VOTE);
 
         if(question == null || question.isEmpty())
             throw new Exception("Question cannot be blank");
@@ -29,9 +31,9 @@ public class Strawpoll implements Runnable {
             throw new Exception("You must phrase your question in the form of a question");
         this.question = question;
 
-        if(minutes < 1 || minutes > 5)
+        if(duration < 1 || duration > 5)
             throw new Exception("Minutes must be a whole number between 1 and 5 (inclusive)");
-        this.minutes = minutes;
+        this.duration = duration;
 
         int i=1;
         for(String o : options) {
@@ -42,6 +44,7 @@ public class Strawpoll implements Runnable {
             optionsTable.put(i,o);
             i++;
         }
+
     }
 
     public String castVote(String voter, Integer choice) {
@@ -50,12 +53,77 @@ public class Strawpoll implements Runnable {
         return null;
     }
 
+    private void handlePollStart() {
+        String[] displayTable = new String[optionsTable.size()+2];
+        displayTable[0] = "NEW STRAWPOLL: " + question;
+        for(Integer i : optionsTable.keySet()) {
+            displayTable[i] = i + ": " + optionsTable.get(i);
+        }
+        displayTable[displayTable.length-1] = "The voting will end in " + duration + " minute(s)";
+        bot.sendMessages(channel,displayTable);
+        startTime = System.currentTimeMillis();
+    }
+
+    private void handlePollResult(HashMap<String, Integer> results) {
+        String[] resultsTable = new String[results.size()+1];
+        resultsTable[0] = question + " | RESULTS:";
+        int i=1;
+        for(String choice : results.keySet()) {
+            resultsTable[i] = choice + ": " + results.get(choice);
+            i++;
+        }
+        bot.sendMessages(channel,resultsTable);
+    }
+
     @Override
-    public void run() {
+    public TSDBot.ThreadType getThreadType() {
+        return TSDBot.ThreadType.STRAWPOLL;
+    }
+
+    @Override
+    public void onMessage(TSDBot.Command command, String sender, String login, String hostname, String message) {
+        if(!listeningCommands.contains(command)) return;
+        String[] cmdParts = message.split("\\s+");
+
+        if(command.equals(TSDBot.Command.VOTE)) {
+
+            if(cmdParts.length != 2) {
+                bot.sendMessage(channel,command.getUsage());
+                return;
+            }
+
+            int selection = -1;
+            try {
+                selection = Integer.parseInt(cmdParts[1]);
+            } catch (NumberFormatException nfe) {
+                bot.sendMessage(channel,command.getUsage());
+                return;
+            }
+
+            String voteResult = castVote(login, selection);
+            if(voteResult != null) bot.sendMessage(channel,voteResult + ", " + sender);
+            else  bot.sendMessage(channel,"Your vote has been counted, " + sender);
+
+        }
+
+    }
+
+    @Override
+    public void onPrivateMessage(TSDBot.Command command, String sender, String login, String hostname, String message) {
+
+    }
+
+    @Override
+    public long getRemainingTime() {
+        return (duration * 60 * 1000) - (System.currentTimeMillis() - startTime);
+    }
+
+    @Override
+    public Object call() throws Exception {
         System.out.println("starting poll");
         handlePollStart();
         try {
-            Thread.sleep(minutes * 60 * 1000);
+            mutex.wait(duration * 60 * 1000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -69,32 +137,8 @@ public class Strawpoll implements Runnable {
             results.put(vote.choice, results.get(vote.choice)+1);
         }
         handlePollResult(results);
-    }
-
-    private void handlePollStart() {
-        String[] displayTable = new String[optionsTable.size()+2];
-        displayTable[0] = "NEW STRAWPOLL: " + question;
-        for(Integer i : optionsTable.keySet()) {
-            displayTable[i] = i + ": " + optionsTable.get(i);
-        }
-        displayTable[displayTable.length-1] = "The voting will end in " + minutes + " minute(s)";
-        bot.sendLines(displayTable);
-    }
-
-    private void handlePollResult(HashMap<String, Integer> results) {
-        String[] resultsTable = new String[results.size()+1];
-        resultsTable[0] = question + " | RESULTS:";
-        int i=1;
-        for(String choice : results.keySet()) {
-            resultsTable[i] = choice + ": " + results.get(choice);
-            i++;
-        }
-        bot.setRunningPoll(null);
-        bot.sendLines(resultsTable);
-    }
-
-    public int getMinutes() {
-        return minutes;
+        manager.removeThread(this);
+        return null;
     }
 
     public class Vote {
