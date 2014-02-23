@@ -54,7 +54,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
                     Tweet newTweet = new Tweet(status);
                     recentNotifications.addFirst(newTweet);
                     trimHistory();
-                    bot.sendLine(newTweet.getInline());
+                    bot.sendMessage("#tsd",newTweet.getInline()); //TODO: remove hard-coding
                 }
 
                 @Override

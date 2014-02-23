@@ -18,14 +18,13 @@ import twitter4j.TwitterFactory;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Created by Joe on 2/18/14.
  */
 public class TSDBot extends PircBot implements Runnable {
 
-    private static String chan;
-    
     private Thread mainThread;
 
     private HashMap<NotificationManager.NotificationOrigin, NotificationManager> notificationManagers = new HashMap<>();
@@ -35,9 +34,7 @@ public class TSDBot extends PircBot implements Runnable {
 //    private Strawpoll runningPoll;
 //    private TweetPoll runningTweetPoll;
 
-    public TSDBot(String channel, String name) {
-        chan = channel;
-
+    public TSDBot(String name) {
         setName(name);
         setAutoNickChange(true);
         setLogin("tsdbot");
@@ -62,9 +59,6 @@ public class TSDBot extends PircBot implements Runnable {
     @Override
     protected synchronized void onPrivateMessage(String sender, String login, String hostname, String message) {
 
-        for(IRCListenerThread listenerThread : threadManager.getRunningThreads())
-            listenerThread.onPrivateMessage(sender, login, hostname, message);
-
         if(!message.startsWith(".")) return; //not a command, ignore
         String[] cmdParts = message.split("\\s+");
 
@@ -76,83 +70,83 @@ public class TSDBot extends PircBot implements Runnable {
     @Override
     protected synchronized void onMessage(String channel, String sender, String login, String hostname, String message) {
 
-        for(IRCListenerThread listenerThread : threadManager.getRunningThreads())
-            listenerThread.onMessage(channel, sender, login, hostname, message);
-
         if(!message.startsWith(".")) return; //not a command, ignore
         String[] cmdParts = message.split("\\s+");
 
         Command command = Command.fromString(cmdParts[0]);
         if(command == null) return;
 
+        for(IRCListenerThread listenerThread : threadManager.getThreadsByChannel(channel))
+            listenerThread.onMessage(command, sender, login, hostname, message);
+
         switch(command) {
-            case HBO_FORUM: omniPostCmd(command, cmdParts); break;
-            case HBO_NEWS: omniPostCmd(command, cmdParts); break;
-            case DBO_FORUM: omniPostCmd(command, cmdParts); break;
-            case DBO_NEWS: omniPostCmd(command, cmdParts); break;
-            case TOM_CRUISE: tc(cmdParts); break;
-            case STRAWPOLL: poll(message.split(";")); break;
-            case VOTE: vote(sender, login, cmdParts); break;
-            case TWITTER: tw(sender, login, cmdParts); break;
+            case HBO_FORUM: omniPostCmd(command, channel, cmdParts); break;
+            case HBO_NEWS: omniPostCmd(command, channel, cmdParts); break;
+            case DBO_FORUM: omniPostCmd(command, channel, cmdParts); break;
+            case DBO_NEWS: omniPostCmd(command, channel, cmdParts); break;
+            case TOM_CRUISE: tc(command, channel, cmdParts); break;
+            case STRAWPOLL: poll(channel, message.split(";")); break;
+            case TWITTER: tw(command, channel, sender, login, cmdParts); break;
         }
 
     }
 
-    private void omniPostCmd(Command command, String[] cmdParts) {
+    private void omniPostCmd(Command command, String channel, String[] cmdParts) {
 
         NotificationManager<NotificationEntity> mgr = notificationManagers.get(command.getOrigin());
 
         if(cmdParts.length == 1) {
-            sendLine(command.getUsage());
+            sendMessage(channel,command.getUsage());
         } else if(cmdParts[1].equals("list")) {
             for(NotificationEntity notification : mgr.history()) {
-                sendLine(notification.getInline());
+                sendMessage(channel,notification.getInline());
             }
         } else if(cmdParts[1].equals("pv")) {
             if(mgr.history().isEmpty()) {
-                sendLine("No " + command.getOrigin().getDisplayString() +" posts in recent history");
+                sendMessage(channel,"No " + command.getOrigin().getDisplayString() +" posts in recent history");
             } else if(cmdParts.length == 2) {
                 NotificationEntity mostRecent = mgr.history().getFirst();
-                if(mostRecent.isOpened()) sendLine("Post " + mostRecent.getKey() + " has already been opened");
-                else sendLine(mostRecent.getPreview());
+                if(mostRecent.isOpened()) sendMessage(channel,"Post " + mostRecent.getKey() + " has already been opened");
+                else sendMessage(channel,mostRecent.getPreview());
             } else {
                 String postKey = cmdParts[2].trim();
                 LinkedList<NotificationEntity> ret = mgr.getNotificationByTail(postKey);
-                if(ret.size() == 0) sendLine("Could not find " + command.getOrigin() + " post with ID " + postKey + " in recent history");
+                if(ret.size() == 0) sendMessage(channel,"Could not find " + command.getOrigin() + " post with ID " + postKey + " in recent history");
                 else if(ret.size() > 1) {
                     String returnString = "Found multiple matching " + command.getOrigin() + " posts in recent history:";
                     for(NotificationEntity not : ret) returnString += (" " + not.getKey());
                     returnString += ". Help me out here";
-                    sendLine(returnString);
+                    sendMessage(channel,returnString);
                 }
-                else sendLine(ret.get(0).getPreview());
+                else sendMessage(channel,ret.get(0).getPreview());
             }
         } else {
-            sendLine(command.getUsage());
+            sendMessage(channel,command.getUsage());
         }
 
     }
 
-    private void tc(String[] cmdParts) {
+    private void tc(Command command, String channel, String[] cmdParts) {
         if(cmdParts.length == 1) {
-            sendLine(TomCruise.getRandom());
+            sendMessage(channel,TomCruise.getRandom());
         } else if(cmdParts[1].equals("quote")) {
-            sendLine(TomCruise.getRandomQuote());
+            sendMessage(channel,TomCruise.getRandomQuote());
         } else if(cmdParts[1].equals("clip")) {
-            sendLine(TomCruise.getRandomClip());
+            sendMessage(channel,TomCruise.getRandomClip());
         } else {
-            sendLine(Command.TOM_CRUISE.getUsage());
+            sendMessage(channel, command.getUsage());
         }
     }
 
-    private void poll(String[] cmdParts) {
-        if(runningPoll != null) {
-            sendLine("There is already a poll running. It will end in " + runningPoll.getMinutes() + " minute(s)");
+    private void poll(String channel, String[] cmdParts) {
+        Strawpoll currentPoll = (Strawpoll) threadManager.getIrcThread(ThreadType.STRAWPOLL, channel);
+        if(currentPoll != null) {
+            sendMessage(channel,"There is already a poll running. It will end in " + (currentPoll.getRemainingTime()/(60*1000)) + " minute(s)");
             return;
         }
 
         if(cmdParts.length < 4) {
-            sendLine(Command.STRAWPOLL.getUsage());
+            sendMessage(channel,Command.STRAWPOLL.getUsage());
             return;
         }
 
@@ -165,82 +159,47 @@ public class TSDBot extends PircBot implements Runnable {
         }
 
         try {
-            runningPoll = new Strawpoll(
+            currentPoll = new Strawpoll(
                     this,
+                    channel,
+                    threadManager,
                     question,
                     minutes,
                     choices
             );
-            threadPool.submit(runningPoll);
+            threadManager.addThread(currentPoll);
         } catch (Exception e) {
-            sendMessage(chan,e.getMessage());
+            sendMessage(channel,e.getMessage());
         }
     }
 
-    private void vote(String sender, String login, String[] cmdParts) {
-        if(runningPoll == null) {
-            sendLine("There is no poll running");
-            return;
-        }
+    private void tw(Command cmd, String channel, String sender, String login, String[] cmdParts) {
 
-        if(cmdParts.length != 2) {
-            sendLine(Command.VOTE.getUsage());
-            return;
-        }
-
-        int selection = -1;
-        try {
-            selection = Integer.parseInt(cmdParts[1]);
-        } catch (NumberFormatException nfe) {
-            sendLine(Command.VOTE.getUsage());
-            return;
-        }
-
-        String voteResult = runningPoll.castVote(login, selection);
-        if(voteResult != null) {
-            sendLine(voteResult + ", " + sender);
-        }
-    }
-
-    private void tw(String sender, String login, String[] cmdParts) {
-
-        User user = getUserFromNick(sender);
+        User user = getUserFromNick(channel,sender);
         boolean isOp = user.isOp();
 
 
         TwitterManager mgr = (TwitterManager) notificationManagers.get(NotificationManager.NotificationOrigin.TWITTER);
 
-        Command cmd = Command.TWITTER;
-
         if(cmdParts.length == 1) {
-            sendLine(cmd.getUsage());
+            sendMessage(channel,cmd.getUsage());
         } else {
             try {
                 String subCmd = cmdParts[1];
+
+                if(cmd.threadCmd(subCmd)) return;
+
                 if(subCmd.equals("following")) {
                     sendMessage(sender,"Here is a list of the people I'm following: ");
                     for(String s : mgr.getFollowing()) sendMessage(sender,s);
                 } else if(subCmd.equals("timeline")) {
-                    if(mgr.history().isEmpty()) sendLine("I don't have any tweets in my recent history");
-                    else for(TwitterManager.Tweet t : mgr.history()) sendLine(t.getInline());
-                } else if(subCmd.equals("aye")) {
-                    if(runningTweetPoll == null) sendLine("There is no proposed Tweet available for voting");
-                    else {
-                        String result = runningTweetPoll.castVote(login);
-                        String response;
-                        if(result == null) {
-                            response = "Your vote has been counted, " + sender + ". ";
-                            int votesNeeded = runningTweetPoll.getVotesNeeded();
-                            if(votesNeeded > 0) response += (votesNeeded + " more vote(s) needed!");
-                            else response += "No more votes needed! It's happening!";
-                            sendLine(response);
-                        } else sendLine(result + ", " + sender);
-                    }
+                    if(mgr.history().isEmpty()) sendMessage(channel,"I don't have any tweets in my recent history");
+                    else for(TwitterManager.Tweet t : mgr.history()) sendMessage(channel,t.getInline());
                 } else if(cmdParts.length < 3) { // below this clause, 3 args are always required
-                    sendLine(cmd.getUsage());
+                    sendMessage(channel,cmd.getUsage());
                 } else if(subCmd.equals("tweet") ) {
                     if(!isOp) {
-                        sendLine("Only ops can use .tw tweet");
+                        sendMessage(channel,"Only ops can use .tw tweet");
                         return;
                     }
                     String tweet = "";
@@ -248,17 +207,17 @@ public class TSDBot extends PircBot implements Runnable {
                     mgr.postTweet(tweet);
                 } else if(subCmd.equals("reply")) {
                     if(!isOp) {
-                        sendLine("Only ops can use .tw reply");
+                        sendMessage(channel,"Only ops can use .tw reply");
                         return;
                     }
                     String replyToString = cmdParts[2];
                     LinkedList<TwitterManager.Tweet> matchedTweets = mgr.getNotificationByTail(replyToString);
-                    if(matchedTweets.size() == 0) sendLine("Could not find tweet with ID matching" + replyToString + " in recent history");
+                    if(matchedTweets.size() == 0) sendMessage(channel,"Could not find tweet with ID matching" + replyToString + " in recent history");
                     else if(matchedTweets.size() > 1) {
                         String returnString = "Found multiple matching Tweets in recent history:";
                         for(NotificationEntity not : matchedTweets) returnString += (" " + not.getKey());
                         returnString += ". Help me out here";
-                        sendLine(returnString);
+                        sendMessage(channel,returnString);
                     }
                     else {
                         String tweet = "";
@@ -267,20 +226,22 @@ public class TSDBot extends PircBot implements Runnable {
                     }
                 } else if(subCmd.equals("follow")) {
                     if(!isOp) {
-                        sendLine("Only ops can use .tw follow");
+                        sendMessage(channel,"Only ops can use .tw follow");
                         return;
                     }
                     mgr.follow(cmdParts[2]);
                 } else if(subCmd.equals("unfollow")) {
                     if(!isOp) {
-                        sendLine("Only ops can use .tw unfollow");
+                        sendMessage(channel,"Only ops can use .tw unfollow");
                         return;
                     }
                     mgr.unfollow(cmdParts[2]);
                 } else if(subCmd.equals("propose")) {
 
-                    if(runningTweetPoll != null) {
-                        sendLine("There is already a tweet poll running. Be patient.");
+                    TweetPoll currentPoll = (TweetPoll) threadManager.getIrcThread(ThreadType.TWEETPOLL, channel);
+                    if(currentPoll != null) {
+                        sendMessage(channel,"There is already a tweet poll running. It will end in " 
+                                + (currentPoll.getRemainingTime()/(60*1000)) + " minutes");
                         return;
                     }
 
@@ -291,32 +252,34 @@ public class TSDBot extends PircBot implements Runnable {
                     if(cmdParts[2].equals("reply")) { // proposing a reply to someone
 
                         if(cmdParts.length == 3) {
-                            sendLine("Format for proposing a reply: .tw propose reply <reply-to-ID> <message>");
+                            sendMessage(channel,"Format for proposing a reply: .tw propose reply <reply-to-ID> <message>");
                             return;
                         }
 
                         String replyToId = cmdParts[3];
                         LinkedList<TwitterManager.Tweet> matchedTweets = mgr.getNotificationByTail(replyToId);
-                        if(matchedTweets.size() == 0) sendLine("Could not find tweet with ID matching " + replyToId + " in recent history");
+                        if(matchedTweets.size() == 0) sendMessage(channel,"Could not find tweet with ID matching " + replyToId + " in recent history");
                         else if(matchedTweets.size() > 1) {
                             String returnString = "Found multiple matching Tweets in recent history:";
                             for(NotificationEntity not : matchedTweets) returnString += (" " + not.getKey());
                             returnString += ". Help me out here";
-                            sendLine(returnString);
+                            sendMessage(channel,returnString);
                         } else {
                             TwitterManager.Tweet foundTweet = matchedTweets.get(0);
                             for(int i=4 ; i < cmdParts.length ; i++) proposedTweet += (cmdParts[i] + " ");
                             try {
-                                this.runningTweetPoll = new TweetPoll(
+                                currentPoll = new TweetPoll(
                                         this,
+                                        channel,
+                                        threadManager,
                                         sender,
                                         mgr,
-                                        getUsers(chan).length,
+                                        getNonBotUsers(channel).size(),
                                         proposedTweet,
                                         foundTweet);
-                                threadPool.submit(runningTweetPoll);
+                                threadManager.addThread(currentPoll);
                             } catch (Exception e) {
-                                sendLine(e.getMessage());
+                                sendMessage(channel,e.getMessage());
                             }
                         }
 
@@ -324,24 +287,26 @@ public class TSDBot extends PircBot implements Runnable {
 
                         for(int i=2 ; i < cmdParts.length ; i++) proposedTweet += (cmdParts[i] + " ");
                         try {
-                            this.runningTweetPoll = new TweetPoll(
+                            currentPoll = new TweetPoll(
                                     this,
+                                    channel,
+                                    threadManager,
                                     sender,
                                     mgr,
-                                    getUsers(chan).length,
+                                    getNonBotUsers(channel).size(),
                                     proposedTweet,
                                     null);
-                            threadPool.submit(runningTweetPoll);
+                            threadManager.addThread(currentPoll);
                         } catch (Exception e) {
-                            sendLine(e.getMessage());
+                            sendMessage(channel,e.getMessage());
                         }
                     }
 
                 } else {
-                    sendLine(cmd.getUsage());
+                    sendMessage(channel,cmd.getUsage());
                 }
             } catch (TwitterException t) {
-                sendLine("Error: " + t.getMessage());
+                sendMessage(channel,"Error: " + t.getMessage());
             }
         }
     }
@@ -361,7 +326,7 @@ public class TSDBot extends PircBot implements Runnable {
             try {
                 for(NotificationManager<NotificationEntity> sweeper : notificationManagers.values()) {
                     for(NotificationEntity notification : sweeper.sweep()) {
-                        if(!firstPass) sendLine(notification.getInline());
+                        if(!firstPass) sendMessage("#tsd",notification.getInline()); //TODO: remove hard-coding
                     }
                 }
 
@@ -373,19 +338,19 @@ public class TSDBot extends PircBot implements Runnable {
         }
     }
 
-    public void sendLine(String line) {
-        if(line.length() > 510) sendLines(IRCUtil.splitLongString(line));
-        else sendMessage(chan, line);
-    }
-    
-    public void sendLines(String[] lines) {
-        for(String line : lines) sendMessage(chan, line);
+    public LinkedList<User> getNonBotUsers(String channel) {
+        LinkedList<User> ret = new LinkedList<>();
+        for(User u : getUsers(channel)) {
+            if(!u.getNick().toLowerCase().contains("tsdbot"))
+                ret.add(u);
+        }
+        return ret;
     }
 
-    private User getUserFromNick(String nick) {
+    public User getUserFromNick(String channel, String nick) {
         User user = null;
         String prefixlessNick;
-        for(User u : getUsers(chan)) {
+        for(User u : getUsers(channel)) {
             prefixlessNick = u.getNick().replaceAll(u.getPrefix(),"");
             if(prefixlessNick.equals(nick)) {
                 user = u;
@@ -393,18 +358,9 @@ public class TSDBot extends PircBot implements Runnable {
             }
         }
         return user;
-    }
-
-    public Strawpoll getRunningPoll() {
-        return runningPoll;
-    }
-
-    public void setRunningPoll(Strawpoll runningPoll) {
-        this.runningPoll = runningPoll;
-    }
-
-    public void setRunningTweetPoll(TweetPoll tweetPoll) {
-        this.runningTweetPoll = tweetPoll;
+    } 
+    public void sendMessages(String channel, String[] messages) {
+        for(String m : messages) sendMessage(channel, m);
     }
 
     public enum Command {
@@ -412,51 +368,61 @@ public class TSDBot extends PircBot implements Runnable {
         TOM_CRUISE(
                 ".tc",
                 "USAGE: .tc [ clip | quote ]",
+                null,
                 null),
 
         HBO_FORUM(
                 ".hbof",
                 "USAGE: .hbof [ list | pv [postId (optional)] ]",
-                NotificationManager.NotificationOrigin.HBO_FORUM),
+                NotificationManager.NotificationOrigin.HBO_FORUM,
+                null),
 
         HBO_NEWS(
                 ".hbon",
                 "USAGE: .hbon [ list | pv [postId (optional)] ]",
-                NotificationManager.NotificationOrigin.HBO_NEWS),
+                NotificationManager.NotificationOrigin.HBO_NEWS,
+                null),
 
         DBO_FORUM(
                 ".dbof",
                 "USAGE: .dbof [ list | pv [postId (optional)] ]",
-                NotificationManager.NotificationOrigin.DBO_FORUM),
+                NotificationManager.NotificationOrigin.DBO_FORUM,
+                null),
 
         DBO_NEWS(
                 ".dbon",
                 "USAGE: .dbon [ list | pv [postId (optional)] ]",
-                NotificationManager.NotificationOrigin.DBO_NEWS),
+                NotificationManager.NotificationOrigin.DBO_NEWS,
+                null),
 
         STRAWPOLL(
                 ".poll",
                 ".poll usage: .poll <question> ; <duration (integer)> ; choice 1 ; choice 2 [ choice 3 ...]",
-                null),
+                null,
+                new String[] {"abort"}),
 
         VOTE(
                 ".vote",
                 ".vote <number of your choice>",
+                null,
                 null),
 
         TWITTER(
                 ".tw",
                 "USAGE: .tw [ following | timeline | tweet <message> | reply <reply-to-id> <message> | follow <handle> | unfollow <handle> | propose [ reply <reply-to-id> ] <message> ]",
-                NotificationManager.NotificationOrigin.TWITTER);
+                NotificationManager.NotificationOrigin.TWITTER,
+                new String[] {"abort","aye"});
 
         private String cmd;
         private String usage;
         private NotificationManager.NotificationOrigin origin;
+        private String[] threadCommands; // used by running threads, not entry point
 
-        Command(String cmd, String usage, NotificationManager.NotificationOrigin origin) {
+        Command(String cmd, String usage, NotificationManager.NotificationOrigin origin, String[] threadCommands) {
             this.cmd = cmd;
             this.origin = origin;
             this.usage = usage;
+            this.threadCommands = threadCommands;
         }
 
         public String getUsage() {
@@ -469,6 +435,14 @@ public class TSDBot extends PircBot implements Runnable {
 
         public NotificationManager.NotificationOrigin getOrigin() {
             return origin;
+        }
+
+        public boolean threadCmd(String cmd) {
+            if(threadCommands == null) return false;
+            for(String s : threadCommands) {
+                if(s.equals(cmd)) return true;
+            }
+            return false;
         }
 
         public static Command fromString(String s) {

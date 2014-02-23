@@ -1,12 +1,13 @@
 package org.tsd.tsdbot.runnable;
 
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
 import org.tsd.tsdbot.TSDBot;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Created by Joe on 2/22/14.
@@ -15,38 +16,53 @@ public class ThreadManager {
 
     private ExecutorService threadPool;
 
-    // STRAWPOLL -> [ poll1 in #chan1, poll2 in #chan2, poll3 in #chan3 ]
-    private HashMap<TSDBot.ThreadType,HashSet<IRCListenerThread>> runningIrcThreads;
+    // row: type
+    // col: channel
+    // value: thread
+    private Table<TSDBot.ThreadType,String,IRCListenerThread> runningIrcThreads;
 
     public ThreadManager(int poolSize) {
         threadPool = Executors.newFixedThreadPool(poolSize);
-
-        for(TSDBot.ThreadType type : TSDBot.ThreadType.values())
-            runningIrcThreads.put(type, new HashSet<IRCListenerThread>());
+        runningIrcThreads = HashBasedTable.create(TSDBot.ThreadType.values().length, 10);
     }
 
-    public void addThread(TSDBot.ThreadType threadType, IRCListenerThread thread) {
+    public synchronized void addThread(IRCListenerThread thread) throws DuplicateThreadException {
+
+        if(runningIrcThreads.contains(thread.getThreadType(), thread.getChannel()))
+            throw new DuplicateThreadException(
+                    "Duplicate threads: " + thread.getThreadType() + " / " + thread.getChannel()
+            );
+
         threadPool.submit(thread);
-
-        if()
-        runningIrcThreads.put(threadType,thread);
+        runningIrcThreads.put(thread.getThreadType(), thread.getChannel(), thread);
     }
 
-    public void removeThread(IRCListenerThread thread) {
-        runningIrcThreads.remove(thread);
+    public synchronized void removeThread(IRCListenerThread thread) {
+        runningIrcThreads.remove(thread.getThreadType(), thread.getChannel());
     }
 
-    public HashSet<IRCListenerThread> getRunningThreads() {
-        return runningIrcThreads;
+    public IRCListenerThread getIrcThread(TSDBot.ThreadType threadType, String channel) {
+        return runningIrcThreads.get(threadType,channel);
     }
 
-    public void propagateMsg(String channel, String sender, String login, String hostname, String message) {
-        for(IRCListenerThread thread : runningIrcThreads)
-            thread.onMessage(channel, sender, login, hostname, message);
+    public Collection<IRCListenerThread> getAllIrcThreads() {
+        return runningIrcThreads.values();
     }
 
-    public void propagatePrvMsg(String sender, String login, String hostname, String message) {
-        for(IRCListenerThread thread : runningIrcThreads)
-            thread.onPrivateMessage(sender, login, hostname, message);
+    public Collection<IRCListenerThread> getThreadsByType(TSDBot.ThreadType threadType) {
+        Map<String,IRCListenerThread> map = runningIrcThreads.row(threadType);
+        if(map != null)
+            return map.values();
+        else
+            return new LinkedList<>();
     }
+
+    public Collection<IRCListenerThread> getThreadsByChannel(String channel) {
+        Map<TSDBot.ThreadType,IRCListenerThread> map = runningIrcThreads.column(channel);
+        if(map != null)
+            return map.values();
+        else
+            return new LinkedList<>();
+    }
+
 }
