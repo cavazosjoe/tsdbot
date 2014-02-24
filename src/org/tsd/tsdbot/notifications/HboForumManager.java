@@ -23,8 +23,8 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
     private static final Pattern newThreadPattern = Pattern.compile("<tr><td><a name='m_(\\d+)'");
     private static final Pattern postInfoPattern = Pattern.compile(
             "<div class='msg_headln'>(.*?)</div>.*?<span class='msg_poster'><a.*?>(.*?)</a>.*?" +
-                    "<span class=\"msg_date\">(.*?)</span>.*?<div class=\"msg_text\">(.*?)<hr width=\"510\" " +
-                    "align=\"left\" size=\"1\">", Pattern.DOTALL
+                    "<span class=\"msg_date\">(.*?)</span>.*?<div class=\"msg_text\">(.*?)" +
+                    "[<hr width=\\\"510\\\" align=\"left\" size=\"1\"> | <div id=\"msg_form\">]", Pattern.DOTALL
     );
 
     private static SimpleDateFormat hboSdf = null;
@@ -36,7 +36,7 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
 
     public HboForumManager(HttpClient client) {
         super(5);
-        hboSdf = new SimpleDateFormat("MM/dd/yy HH:mm");
+        hboSdf = new SimpleDateFormat("MM/dd/yy HH:mm a");
         hboSdf.setTimeZone(TimeZone.getTimeZone("America/New_York"));
         this.client = client;
     }
