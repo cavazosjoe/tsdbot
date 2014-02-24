@@ -1,31 +1,22 @@
-package org.tsd.tsdbot;
+package org.tsd.tsdbot.notifications;
 
-import com.gargoylesoftware.htmlunit.WebClient;
 import it.sauronsoftware.feed4j.FeedParser;
 import it.sauronsoftware.feed4j.bean.Feed;
-import it.sauronsoftware.feed4j.bean.FeedHeader;
 import it.sauronsoftware.feed4j.bean.FeedItem;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.ResponseHandler;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.BasicResponseHandler;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
 
-import javax.naming.OperationNotSupportedException;
 import java.net.URL;
-import java.text.SimpleDateFormat;
 import java.util.LinkedList;
-import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Created by Joe on 2/18/14.
  */
-public class HboNewsManager extends NotificationManager<HboNewsManager.HboNewsPost> {
+public class DboNewsManager extends NotificationManager<DboNewsManager.DboNewsPost> {
 
-    private static final Pattern authorPattern = Pattern.compile("\\((.*?)\\d{2}:\\d{2}:\\d{2}\\s{1}\\+\\d{4}\\)",Pattern.DOTALL);
+    private static final Pattern authorPattern = Pattern.compile("\\((.*?)\\d{2}:\\d{2}:\\d{2}\\s{1}GMT\\)",Pattern.DOTALL);
     private static final Pattern postIdPattern = Pattern.compile("(\\d+)");
 
     static {
@@ -34,24 +25,24 @@ public class HboNewsManager extends NotificationManager<HboNewsManager.HboNewsPo
                 + "sub|sup|pre|del|code|blockquote|strike|kbd|br|hr|area|map|object|embed|param|link|form|small|big|script|object|embed|link|style|form|input)$");
     }
 
-    public HboNewsManager() {
+    public DboNewsManager() {
         super(5);
     }
 
     @Override
-    public LinkedList<HboNewsPost> sweep() {
-        LinkedList<HboNewsPost> notifications = new LinkedList<>();
+    public LinkedList<DboNewsPost> sweep() {
+        LinkedList<DboNewsPost> notifications = new LinkedList<>();
         try {
-            URL url = new URL("http://halo.bungie.org/rss/rss2channel_2.xml");
+            URL url = new URL("http://destiny.bungie.org/rss.xml");
             Feed feed = FeedParser.parse(url);
 
             int items = feed.getItemCount();
-            HboNewsPost newsPost = null;
+            DboNewsPost newsPost = null;
             for (int i = 0; i < Math.min(items,MAX_HISTORY); i++) {
                 FeedItem item = feed.getItem(i);
                 int postId = getPostNumFromLink(item.getLink().toString());
                 if((!recentNotifications.isEmpty()) && postId <= recentNotifications.getFirst().getPostId()) break;
-                newsPost = new HboNewsPost();
+                newsPost = new DboNewsPost();
                 newsPost.setPostId(postId);
                 newsPost.setDate(item.getPubDate());
                 newsPost.setTitle(item.getTitle());
@@ -76,7 +67,7 @@ public class HboNewsManager extends NotificationManager<HboNewsManager.HboNewsPo
         }
         throw new Exception("Could not parse " + url + " for post ID");
     }
-    
+
     private String getAuthorFromBody(String body) {
         String credit = body.substring(body.lastIndexOf("("));
         Matcher m = authorPattern.matcher(credit);
@@ -86,12 +77,7 @@ public class HboNewsManager extends NotificationManager<HboNewsManager.HboNewsPo
         return "Unknown";
     }
 
-    @Override
-    public NotificationOrigin getOrigin() {
-        return NotificationOrigin.HBO_NEWS;
-    }
-
-    public class HboNewsPost extends NotificationEntity {
+    public class DboNewsPost extends NotificationEntity {
 
         private int postId;
         private String author;
@@ -132,7 +118,7 @@ public class HboNewsManager extends NotificationManager<HboNewsManager.HboNewsPo
 
         @Override
         public String getInline() {
-            return "[HBO News] " + "(" + postId + ") " + author + " -- " + title + " -- " + IRCUtil.shortenUrl("http://halo.bungie.org/news.html?item=" + postId);
+            return "[DBO News] " + "(" + postId + ") " + author + " -- " + title + " -- " + IRCUtil.shortenUrl("http://destiny.bungie.org/n/" + postId);
         }
 
         @Override

@@ -16,9 +16,12 @@ public class TSDBotLauncher {
             name = args[2];
         }
 
-        TSDBot bot = new TSDBot(name);
+        TSDBot bot = new TSDBot(name,new String[]{channel});
         bot.setVerbose(true);
         bot.connect(server);
+        bot.identi
         bot.joinChannel(channel);
+
+
     }
 }

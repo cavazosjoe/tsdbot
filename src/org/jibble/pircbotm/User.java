@@ -163,5 +163,20 @@ public class User {
     private String _prefix;
     private String _nick;
     private String _lowerNick;
+
+    enum Priv {
+        OWNER("~"),
+        SUPEROP("&"),
+        OP("@"),
+        HALFOP("%"),
+        VOICE("+");
+
+        private String pfx;
+
+        Priv(String prefix) {
+            this.pfx = prefix;
+        }
+
+    }
     
 }

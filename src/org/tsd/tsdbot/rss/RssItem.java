@@ -1,6 +1,6 @@
 package org.tsd.tsdbot.rss;
 
-import org.tsd.tsdbot.NotificationEntity;
+import org.tsd.tsdbot.notifications.NotificationEntity;
 
 import java.net.URL;
 

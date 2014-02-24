@@ -1,16 +1,13 @@
-package org.tsd.tsdbot;
+package org.tsd.tsdbot.notifications;
 
-import com.gargoylesoftware.htmlunit.WebClient;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.http.client.HttpClient;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.IRCUtil;
 import org.tsd.tsdbot.util.RelativeDate;
 import twitter4j.*;
-import twitter4j.api.FriendsFollowersResources;
 import twitter4j.auth.AccessToken;
 import twitter4j.conf.ConfigurationBuilder;
 
-import javax.naming.OperationNotSupportedException;
 import java.util.*;
 
 /**
@@ -166,11 +163,6 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     @Override
     public LinkedList<Tweet> sweep() {
         return new LinkedList<>();
-    }
-
-    @Override
-    public NotificationOrigin getOrigin() {
-        return NotificationOrigin.TWITTER;
     }
 
     public class Tweet extends NotificationEntity {

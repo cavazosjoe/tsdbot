@@ -1,7 +1,7 @@
 package org.tsd.tsdbot.runnable;
 
 import org.tsd.tsdbot.TSDBot;
-import org.tsd.tsdbot.TwitterManager;
+import org.tsd.tsdbot.notifications.TwitterManager;
 import twitter4j.Status;
 import twitter4j.TwitterException;
 

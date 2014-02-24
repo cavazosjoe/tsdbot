@@ -1,6 +1,5 @@
-package org.tsd.tsdbot;
+package org.tsd.tsdbot.notifications;
 
-import com.gargoylesoftware.htmlunit.WebClient;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
@@ -8,7 +7,6 @@ import org.apache.http.impl.client.BasicResponseHandler;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
 
-import javax.naming.OperationNotSupportedException;
 import java.text.SimpleDateFormat;
 import java.util.LinkedList;
 import java.util.TimeZone;
@@ -90,11 +88,6 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
         recentNotifications.addAll(0,notifications);
         trimHistory();
         return notifications;
-    }
-
-    @Override
-    public NotificationOrigin getOrigin() {
-        return NotificationOrigin.HBO_FORUM;
     }
 
     public class HboForumPost extends NotificationEntity {

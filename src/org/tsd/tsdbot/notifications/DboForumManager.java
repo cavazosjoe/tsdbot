@@ -1,4 +1,4 @@
-package org.tsd.tsdbot;
+package org.tsd.tsdbot.notifications;
 
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.xml.XmlPage;
@@ -87,11 +87,6 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
             return Integer.parseInt(m.group(1));
         }
         throw new Exception("Could not parse " + url + " for post ID");
-    }
-
-    @Override
-    public NotificationOrigin getOrigin() {
-        return NotificationOrigin.DBO_FORUM;
     }
 
     public class DboForumPost extends NotificationEntity {
