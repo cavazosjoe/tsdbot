@@ -9,14 +9,14 @@ import java.util.TreeMap;
 /**
  * Created by Joe on 2/19/14.
  */
-public class Strawpoll extends IRCListenerThread {
+public class StrawPoll extends IRCListenerThread {
 
     private String question;
     private int duration; //minutes
     private TreeMap<Integer, String> optionsTable = new TreeMap<>(); // 1 -> choice1
     private HashSet<Vote> votes = new HashSet<>();
 
-    public Strawpoll(TSDBot bot, String channel, ThreadManager threadManager, String question, int duration, String[] options) throws Exception {
+    public StrawPoll(TSDBot bot, String channel, ThreadManager threadManager, String question, int duration, String[] options) throws Exception {
 
         super(threadManager,channel);
 
@@ -122,10 +122,12 @@ public class Strawpoll extends IRCListenerThread {
     public Object call() throws Exception {
         System.out.println("starting poll");
         handlePollStart();
-        try {
-            mutex.wait(duration * 60 * 1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        synchronized (mutex) {
+            try {
+                mutex.wait(duration * 60 * 1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
         System.out.println("poll over!");
         HashMap<String, Integer> results = new HashMap<>(); // choice -> numVotes TODO: ORDER THIS

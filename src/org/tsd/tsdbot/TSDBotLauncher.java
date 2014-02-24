@@ -1,5 +1,7 @@
 package org.tsd.tsdbot;
 
+import java.io.File;
+
 /**
  * Created by Joe on 2/18/14.
  */
@@ -17,11 +19,11 @@ public class TSDBotLauncher {
         }
 
         TSDBot bot = new TSDBot(name,new String[]{channel});
-        bot.setVerbose(true);
+        bot.setVerbose(false);
         bot.connect(server);
-        bot.identi
+
+        File pwFile = new File(System.getProperty("user.dir") + "/pw.txt");
+        bot.identify("cashmoneyrecords");
         bot.joinChannel(channel);
-
-
     }
 }

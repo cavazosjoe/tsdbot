@@ -1,5 +1,5 @@
 /* 
-Copyright Paul James Mutton, 2001-2004, http://www.jibble.org/
+Copyright Paul James Mutton, 2001-2009, http://www.jibble.org/
 
 This file is part of PircBot.
 
@@ -9,12 +9,9 @@ Since the GPL may be too restrictive for use in a proprietary application,
 a commercial license is also provided. Full license information can be
 found at http://www.jibble.org/licenses/
 
-$Author: pjm2 $
-$Id: User.java,v 1.24 2004/10/14 18:10:18 pjm2 Exp $
-
 */
 
-package org.jibble.pircbotm;
+package org.jibble.pircbot;
 
 /**
  * This class is used to represent a user on an IRC server.
@@ -27,7 +24,7 @@ package org.jibble.pircbotm;
  * @since   1.0.0
  * @author  Paul James Mutton,
  *          <a href="http://www.jibble.org/">http://www.jibble.org/</a>
- * @version    1.4.4 (Build time: Tue Mar 29 20:58:46 2005)
+ * @version    1.5.0 (Build time: Mon Dec 14 20:07:17 2009)
  */
 public class User {
     
@@ -67,10 +64,7 @@ public class User {
      * @return true if the user is an operator in the channel.
      */
     public boolean isOp() {
-        return _prefix.indexOf('@') >= 0
-                || _prefix.indexOf('~') >= 0
-                || _prefix.indexOf('&') >= 0
-                || _prefix.indexOf('%') >= 0;
+        return _prefix.indexOf('@') >= 0;
     }
     
     
@@ -163,20 +157,5 @@ public class User {
     private String _prefix;
     private String _nick;
     private String _lowerNick;
-
-    enum Priv {
-        OWNER("~"),
-        SUPEROP("&"),
-        OP("@"),
-        HALFOP("%"),
-        VOICE("+");
-
-        private String pfx;
-
-        Priv(String prefix) {
-            this.pfx = prefix;
-        }
-
-    }
     
 }

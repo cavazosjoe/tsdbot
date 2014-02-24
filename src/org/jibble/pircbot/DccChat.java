@@ -1,5 +1,5 @@
 /* 
-Copyright Paul James Mutton, 2001-2004, http://www.jibble.org/
+Copyright Paul James Mutton, 2001-2009, http://www.jibble.org/
 
 This file is part of PircBot.
 
@@ -9,13 +9,10 @@ Since the GPL may be too restrictive for use in a proprietary application,
 a commercial license is also provided. Full license information can be
 found at http://www.jibble.org/licenses/
 
-$Author: pjm2 $
-$Id: DccChat.java,v 1.26 2004/10/14 18:10:18 pjm2 Exp $
-
 */
 
 
-package org.jibble.pircbotm;
+package org.jibble.pircbot;
 
 import java.net.*;
 import java.io.*;
@@ -26,7 +23,7 @@ import java.io.*;
  * @since   0.9c
  * @author  Paul James Mutton,
  *          <a href="http://www.jibble.org/">http://www.jibble.org/</a>
- * @version    1.4.4 (Build time: Tue Mar 29 20:58:46 2005)
+ * @version    1.5.0 (Build time: Mon Dec 14 20:07:17 2009)
  */
 public class DccChat {
     
@@ -41,7 +38,7 @@ public class DccChat {
      * @param address The address to connect to.
      * @param port The port number to connect to.
      * 
-     * @throws java.io.IOException If the connection cannot be made.
+     * @throws IOException If the connection cannot be made.
      */
     DccChat(PircBot bot, String nick, String login, String hostname, long address, int port) {
         _bot = bot;
@@ -63,7 +60,7 @@ public class DccChat {
      * @param sourceNick The nick of the user we are sending the request to.
      * @param socket The socket which will be used for the DCC CHAT session.
      * 
-     * @throws java.io.IOException If the socket cannot be read from.
+     * @throws IOException If the socket cannot be read from.
      */
     DccChat(PircBot bot, String nick, Socket socket) throws IOException {
         _bot = bot;
@@ -101,7 +98,7 @@ public class DccChat {
      * @return The next line of text from the client.  Returns null if the
      *          connection has closed normally.
      * 
-     * @throws java.io.IOException If an I/O error occurs.
+     * @throws IOException If an I/O error occurs.
      */
     public String readLine() throws IOException {
         if (_acceptable) {
@@ -118,7 +115,7 @@ public class DccChat {
      * @param line The line of text to be sent.  This should not include
      *             linefeed characters.
      * 
-     * @throws java.io.IOException If an I/O error occurs.
+     * @throws IOException If an I/O error occurs.
      */
     public void sendLine(String line) throws IOException {
         if (_acceptable) {
@@ -133,7 +130,7 @@ public class DccChat {
     /**
      * Closes the DCC Chat connection.
      * 
-     * @throws java.io.IOException If an I/O error occurs.
+     * @throws IOException If an I/O error occurs.
      */
     public void close() throws IOException {
         if (_acceptable) {
@@ -193,6 +190,26 @@ public class DccChat {
      */
     public BufferedWriter getBufferedWriter() {
         return _writer;
+    }
+    
+    
+    /**
+     * Returns the raw Socket used by this DCC Chat.
+     * 
+     * @return the raw Socket used by this DCC Chat.
+     */
+    public Socket getSocket() {
+        return _socket;
+    }
+    
+    
+    /**
+     * Returns the address of the sender as a long.
+     *
+     * @return the address of the sender as a long.
+     */
+    public long getNumericalAddress() {
+        return _address;
     }
 
     
