@@ -63,6 +63,7 @@ public class User {
      * 
      * @return true if the user is an operator in the channel.
      */
+    @Deprecated
     public boolean isOp() {
         return _prefix.indexOf('@') >= 0;
     }
@@ -76,9 +77,20 @@ public class User {
      * 
      * @return true if the user has voice in the channel.
      */
+    @Deprecated
     public boolean hasVoice() {
         return _prefix.indexOf('+') >= 0;
-    }        
+    }
+
+    /**
+     * Returns whether or not this user has sufficient privileges
+     * @param priv
+     * @return true if the user has sufficient privs
+     * @author schoolyd
+     */
+    public boolean hasPriv(Priv priv) {
+        return Priv.fromPrefix(_prefix).sufficientPrivs(priv);
+    }
     
     
     /**
@@ -157,5 +169,47 @@ public class User {
     private String _prefix;
     private String _nick;
     private String _lowerNick;
+
+    /**
+     * Accurate model of IRC privileges
+     * @author schoolyd
+     */
+    public enum Priv {
+        OWNER("~",5),
+        SUPEROP("&",4),
+        OP("@",3),
+        HALFOP("%",2),
+        VOICE("+",1),
+        NONE("",0);
+
+        public String prefix;
+        public int level;
+
+        Priv(String prefix, int level) {
+            this.prefix = prefix;
+            this.level = level;
+        }
+
+        // SUPEROP.sufficientPrivs(HALFOP) == TRUE
+        public boolean sufficientPrivs(Priv target) {
+            return level >= target.level;
+        }
+
+        public static Priv fromLevel(int level) {
+            for(Priv priv : values()) {
+                if(priv.level == level) return priv;
+            }
+            return null;
+        }
+
+        public static Priv fromPrefix(String pfx) {
+            Priv maxPriv = NONE;
+            for(Priv priv : values()) {
+                if(pfx.contains(priv.prefix) && priv.level > maxPriv.level)
+                    maxPriv = priv;
+            }
+            return maxPriv;
+        }
+    }
     
 }

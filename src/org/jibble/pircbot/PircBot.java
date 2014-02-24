@@ -65,8 +65,22 @@ public abstract class PircBot implements ReplyConstants {
     
     private static final int OP_ADD = 1;
     private static final int OP_REMOVE = 2;
+
     private static final int VOICE_ADD = 3;
     private static final int VOICE_REMOVE = 4;
+
+    /**
+     * More accurate model of user privs
+     * @author schoolyd
+     */
+    private static final int OWNER_ADD = 5;
+    private static final int OWNER_REMOVE = 6;
+
+    private static final int SUPEROP_ADD = 7;
+    private static final int SUPEROP_REMOVE = 8;
+
+    private static final int HALFOP_ADD = 9;
+    private static final int HALFOP_REMOVE = 10;
     
     
     /**
@@ -1169,12 +1183,15 @@ public abstract class PircBot implements ReplyConstants {
             while (tokenizer.hasMoreTokens()) {
                 String nick = tokenizer.nextToken();
                 String prefix = "";
-                if (nick.startsWith("@")) {
-                    // User is an operator in this channel.
+                if (nick.startsWith("~")) { // User is the owner of this channel.
+                    prefix = "~";
+                } else if (nick.startsWith("&")) { // User is a super-op in this channel.
+                    prefix = "&";
+                } else if (nick.startsWith("@")) { // User is an operator in this channel.
                     prefix = "@";
-                }
-                else if (nick.startsWith("+")) {
-                    // User is voiced in this channel.
+                } else if (nick.startsWith("%")) { // User is a half-op in this channel.
+                    prefix = "%";
+                } else if (nick.startsWith("+")) { // User is voiced in this channel.
                     prefix = "+";
                 }
                 else if (nick.startsWith(".")) {
@@ -1488,6 +1505,28 @@ public abstract class PircBot implements ReplyConstants {
                 if (atPos == '+' || atPos == '-') {
                     pn = atPos;
                 }
+                else if (atPos == 'q') { // owner
+                    if (pn == '+') {
+                        this.updateUser(channel, OWNER_ADD, params[p]);
+                        onOp(channel, sourceNick, sourceLogin, sourceHostname, params[p]);
+                    }
+                    else {
+                        this.updateUser(channel, OWNER_REMOVE, params[p]);
+                        onDeop(channel, sourceNick, sourceLogin, sourceHostname, params[p]);
+                    }
+                    p++;
+                }
+                else if (atPos == 'a') {
+                    if (pn == '+') {
+                        this.updateUser(channel, SUPEROP_ADD, params[p]);
+                        onOp(channel, sourceNick, sourceLogin, sourceHostname, params[p]);
+                    }
+                    else {
+                        this.updateUser(channel, SUPEROP_REMOVE, params[p]);
+                        onDeop(channel, sourceNick, sourceLogin, sourceHostname, params[p]);
+                    }
+                    p++;
+                }
                 else if (atPos == 'o') {
                    if (pn == '+') {
                        this.updateUser(channel, OP_ADD, params[p]);
@@ -1499,6 +1538,17 @@ public abstract class PircBot implements ReplyConstants {
                    }
                    p++;
                }
+                else if (atPos == 'h') {
+                    if (pn == '+') {
+                        this.updateUser(channel, HALFOP_ADD, params[p]);
+                        onOp(channel, sourceNick, sourceLogin, sourceHostname, params[p]);
+                    }
+                    else {
+                        this.updateUser(channel, HALFOP_REMOVE, params[p]);
+                        onDeop(channel, sourceNick, sourceLogin, sourceHostname, params[p]);
+                    }
+                    p++;
+                }
                else if (atPos == 'v') {
                    if (pn == '+') {
                        this.updateUser(channel, VOICE_ADD, params[p]);
@@ -1530,7 +1580,7 @@ public abstract class PircBot implements ReplyConstants {
                 }
                 else if (atPos == 'b') {
                     if (pn == '+') {
-                        onSetChannelBan(channel, sourceNick, sourceLogin, sourceHostname,params[p]);
+                        onSetChannelBan(channel, sourceNick, sourceLogin, sourceHostname, params[p]);
                     }
                     else {
                         onRemoveChannelBan(channel, sourceNick, sourceLogin, sourceHostname, params[p]);
@@ -3007,38 +3057,91 @@ public abstract class PircBot implements ReplyConstants {
                 while(enumeration.hasMoreElements()) {
                     User userObj = (User) enumeration.nextElement();
                     if (userObj.getNick().equalsIgnoreCase(nick)) {
-                        if (userMode == OP_ADD) {
-                            if (userObj.hasVoice()) {
-                                newUser = new User("@+", nick);
-                            }
-                            else {
-                                newUser = new User("@", nick);
-                            }
+
+                        String oldPrefix = userObj.getPrefix();
+                        
+                        if(userMode == OWNER_ADD) {
+                            if(!oldPrefix.contains("~"))
+                                newUser = new User("~" + oldPrefix, nick);
+                            else
+                                newUser = new User(oldPrefix, nick);
+                        } else if(userMode == OWNER_REMOVE) {
+                            if(oldPrefix.contains("~"))
+                                newUser = new User(oldPrefix.replace("~",""), nick);
+                        } 
+                        
+                        else if(userMode == SUPEROP_ADD) {
+                            if(!oldPrefix.contains("&"))
+                                newUser = new User("&" + oldPrefix, nick);
+                            else
+                                newUser = new User(oldPrefix, nick);
+                        } else if(userMode == SUPEROP_REMOVE) {
+                            if(oldPrefix.contains("&"))
+                                newUser = new User(oldPrefix.replace("&",""), nick);
                         }
-                        else if (userMode == OP_REMOVE) {
-                            if(userObj.hasVoice()) {
-                                newUser = new User("+", nick);
-                            }
-                            else {
-                                newUser = new User("", nick);
-                            }
+
+                        else if(userMode == OP_ADD) {
+                            if(!oldPrefix.contains("@"))
+                                newUser = new User("@" + oldPrefix, nick);
+                            else
+                                newUser = new User(oldPrefix, nick);
+                        } else if(userMode == OP_REMOVE) {
+                            if(oldPrefix.contains("@"))
+                                newUser = new User(oldPrefix.replace("@",""), nick);
                         }
-                        else if (userMode == VOICE_ADD) {
-                            if(userObj.isOp()) {
-                                newUser = new User("@+", nick);
-                            }
-                            else {
-                                newUser = new User("+", nick);
-                            }
+
+                        else if(userMode == HALFOP_ADD) {
+                            if(!oldPrefix.contains("%"))
+                                newUser = new User("%" + oldPrefix, nick);
+                            else
+                                newUser = new User(oldPrefix, nick);
+                        } else if(userMode == HALFOP_REMOVE) {
+                            if(oldPrefix.contains("%"))
+                                newUser = new User(oldPrefix.replace("%",""), nick);
                         }
-                        else if (userMode == VOICE_REMOVE) {
-                            if(userObj.isOp()) {
-                                newUser = new User("@", nick);
-                            }
-                            else {
-                                newUser = new User("", nick);
-                            }
+
+                        else if(userMode == VOICE_ADD) {
+                            if(!oldPrefix.contains("+"))
+                                newUser = new User("+" + oldPrefix, nick);
+                            else
+                                newUser = new User(oldPrefix, nick);
+                        } else if(userMode == VOICE_REMOVE) {
+                            if(oldPrefix.contains("+"))
+                                newUser = new User(oldPrefix.replace("+",""), nick);
                         }
+                        
+//                        if (userMode == OP_ADD) {
+//                            if (userObj.hasVoice()) {
+//                                newUser = new User("@+", nick);
+//                            }
+//                            else {
+//                                newUser = new User("@", nick);
+//                            }
+//                        }
+//                        else if (userMode == OP_REMOVE) {
+//                            if(userObj.hasVoice()) {
+//                                newUser = new User("+", nick);
+//                            }
+//                            else {
+//                                newUser = new User("", nick);
+//                            }
+//                        }
+//                        else if (userMode == VOICE_ADD) {
+//                            if(userObj.isOp()) {
+//                                newUser = new User("@+", nick);
+//                            }
+//                            else {
+//                                newUser = new User("+", nick);
+//                            }
+//                        }
+//                        else if (userMode == VOICE_REMOVE) {
+//                            if(userObj.isOp()) {
+//                                newUser = new User("@", nick);
+//                            }
+//                            else {
+//                                newUser = new User("", nick);
+//                            }
+//                        }
                     }
                 }
             }

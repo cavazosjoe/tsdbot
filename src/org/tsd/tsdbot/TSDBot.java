@@ -85,6 +85,7 @@ public class TSDBot extends PircBot implements Runnable {
             listenerThread.onMessage(command, sender, login, hostname, message);
 
         switch(command) {
+            case COMMAND_LIST: commandList(channel, sender); break;
             case HBO_FORUM: omniPostCmd(command, channel, cmdParts); break;
             case HBO_NEWS: omniPostCmd(command, channel, cmdParts); break;
             case DBO_FORUM: omniPostCmd(command, channel, cmdParts); break;
@@ -94,6 +95,16 @@ public class TSDBot extends PircBot implements Runnable {
             case TWITTER: tw(command, channel, sender, login, cmdParts); break;
         }
 
+    }
+
+    private void commandList(String channel, String sender) {
+        sendMessage(channel, "I'm sending you a message with my list of commands, " + sender);
+        for(Command command : Command.values()) {
+            if(command.getDesc() != null) {
+                sendMessage(sender, command.getCmd() + " || " + command.getDesc());
+                sendMessage(sender, command.getUsage());
+            }
+        }
     }
 
     private void omniPostCmd(Command command, String channel, String[] cmdParts) {
@@ -182,7 +193,7 @@ public class TSDBot extends PircBot implements Runnable {
     private void tw(Command cmd, String channel, String sender, String login, String[] cmdParts) {
 
         User user = getUserFromNick(channel,sender);
-        boolean isOp = user.isOp();
+        boolean isOp = user.hasPriv(User.Priv.OP);
 
 
         TwitterManager mgr = (TwitterManager) notificationManagers.get(NotificationType.TWITTER);
@@ -373,60 +384,82 @@ public class TSDBot extends PircBot implements Runnable {
 
     public enum Command {
         
-        JOIN_CHANNEL(
-                ".join",
-                "USAGE: .join <channel>",
+        COMMAND_LIST(
+                ".commands",
+                "Have the bot send you a list of commands",
+                "USAGE: .commands",
                 null
         ),
 
         TOM_CRUISE(
                 ".tc",
+                "Generate a random Tom Cruise clip or quote",
                 "USAGE: .tc [ clip | quote ]",
-                null),
+                null
+        ),
 
         HBO_FORUM(
                 ".hbof",
+                "HBO Forum utility: browse recent HBO Forum posts",
                 "USAGE: .hbof [ list | pv [postId (optional)] ]",
-                null),
+                null
+        ),
 
         HBO_NEWS(
                 ".hbon",
+                "HBO News utility: browse recent HBO News posts",
                 "USAGE: .hbon [ list | pv [postId (optional)] ]",
-                null),
+                null
+        ),
 
         DBO_FORUM(
                 ".dbof",
+                "DBO Forum utility: browse recent DBO Forum posts",
                 "USAGE: .dbof [ list | pv [postId (optional)] ]",
-                null),
+                null
+        ),
 
         DBO_NEWS(
                 ".dbon",
+                "DBO News utility: browse recent DBO News posts",
                 "USAGE: .dbon [ list | pv [postId (optional)] ]",
-                null),
+                null
+        ),
 
         STRAWPOLL(
                 ".poll",
-                ".poll usage: .poll <question> ; <duration (integer)> ; choice 1 ; choice 2 [ choice 3 ...]",
+                "Strawpoll: propose a question and choices for the chat to vote on",
+                ".poll usage: .poll <question> ; <duration (integer)> ; choice 1 ; choice 2 [; choice 3 ...]",
                 new String[] {"abort"}),
 
         VOTE(
                 ".vote",
+                null, // don't show up in the dictionary
                 ".vote <number of your choice>",
                 null),
 
         TWITTER(
                 ".tw",
-                "USAGE: .tw [ following | timeline | tweet <message> | reply <reply-to-id> <message> | follow <handle> | unfollow <handle> | propose [ reply <reply-to-id> ] <message> ]",
+                "Twitter utility: send and receive tweets from our exclusive @TSD_IRC Twitter account! Propose tweets" +
+                        " for the chat to vote on.",
+                "USAGE: .tw [ following | timeline | tweet <message> | reply <reply-to-id> <message> | " +
+                        "follow <handle> | unfollow <handle> | propose [ reply <reply-to-id> ] <message> ]",
                 new String[] {"abort","aye"});
 
         private String cmd;
+        private String desc;
         private String usage;
         private String[] threadCommands; // used by running threads, not entry point
 
-        Command(String cmd, String usage, String[] threadCommands) {
+        Command(String cmd, String desc, String usage, String[] threadCommands) {
             this.cmd = cmd;
+            this.desc = desc;
             this.usage = usage;
             this.threadCommands = threadCommands;
+        }
+
+        public String getDesc() {
+            return desc;
         }
 
         public String getUsage() {

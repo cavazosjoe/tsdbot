@@ -1,5 +1,6 @@
 package org.tsd.tsdbot.runnable;
 
+import org.jibble.pircbot.User;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.notifications.TwitterManager;
 import twitter4j.Status;
@@ -76,6 +77,7 @@ public class TweetPoll extends IRCListenerThread {
             bot.sendMessage(channel,"Victory! Sending the tweet now...");
             try {
                 Status newStatus;
+                proposedTweet = "(" + channel + ") "+ proposedTweet; //TODO: use DB to implement channel-specific followings
                 if(replyTo == null) newStatus = twitterManager.postTweet(proposedTweet);
                 else newStatus = twitterManager.postReply(replyTo, proposedTweet);
                 bot.sendMessage(channel,"Tweet successful: " + "https://twitter.com/TSD_IRC/status/" + newStatus.getId());
@@ -126,7 +128,7 @@ public class TweetPoll extends IRCListenerThread {
                         }
                     } else bot.sendMessage(channel, result + ", " + sender);
                 } else if(subCmd.equals("abort")) {
-                    if(sender.equals(proposer) || bot.getUserFromNick(channel,sender).isOp()) {
+                    if(sender.equals(proposer) || bot.getUserFromNick(channel,sender).hasPriv(User.Priv.OP)) {
                         this.aborted = true;
                         mutex.notify();
                     } else {
