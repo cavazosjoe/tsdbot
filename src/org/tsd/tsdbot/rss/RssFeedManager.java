@@ -8,7 +8,7 @@ import com.sun.syndication.feed.synd.SyndFeed;
 import com.sun.syndication.io.FeedException;
 import com.sun.syndication.io.SyndFeedInput;
 import com.sun.syndication.io.XmlReader;
-import org.tsd.tsdbot.NotificationManager;
+import org.tsd.tsdbot.notifications.NotificationManager;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 
 import java.io.ByteArrayInputStream;
@@ -96,10 +96,5 @@ public class RssFeedManager extends NotificationManager<RssItem> {
     @Override
     public LinkedList<RssItem> history() {
         return null;
-    }
-
-    @Override
-    public NotificationOrigin getOrigin() {
-        return null; //TODO: hmm
     }
 }

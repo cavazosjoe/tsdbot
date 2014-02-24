@@ -1,5 +1,5 @@
 /* 
-Copyright Paul James Mutton, 2001-2004, http://www.jibble.org/
+Copyright Paul James Mutton, 2001-2009, http://www.jibble.org/
 
 This file is part of PircBot.
 
@@ -9,16 +9,13 @@ Since the GPL may be too restrictive for use in a proprietary application,
 a commercial license is also provided. Full license information can be
 found at http://www.jibble.org/licenses/
 
-$Author: pjm2 $
-$Id: OutputThread.java,v 1.25 2004/10/14 18:10:18 pjm2 Exp $
-
 */
 
 
-package org.jibble.pircbotm;
+package org.jibble.pircbot;
 
-import java.io.BufferedWriter;
-import java.util.logging.Logger;
+import java.io.*;
+import java.net.*;
 
 /**
  * A Thread which is responsible for sending messages to the IRC server.
@@ -29,11 +26,9 @@ import java.util.logging.Logger;
  *
  * @author  Paul James Mutton,
  *          <a href="http://www.jibble.org/">http://www.jibble.org/</a>
- * @version    1.4.4 (Build time: Tue Mar 29 20:58:46 2005)
+ * @version    1.5.0 (Build time: Mon Dec 14 20:07:17 2009)
  */
 public class OutputThread extends Thread {
-    /** class logger instance */
-    private final static Logger LOGGER = Logger.getLogger(OutputThread.class.getName());
     
     
     /**
@@ -70,7 +65,7 @@ public class OutputThread extends Thread {
             try {
                 bwriter.write(line + "\r\n");
                 bwriter.flush();
-                LOGGER.finest(">>>" + line);                
+                bot.log(">>>" + line);
             }
             catch (Exception e) {
                 // Silent response - just lose the line.

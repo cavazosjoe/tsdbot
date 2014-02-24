@@ -22,18 +22,22 @@ public class TomCruiseTest {
     String insertClip = "insert into TomCruiseClips ( id, clip ) values ( 9999, 'https://www.youtube.com/watch?v=7yP9MmzyTIg' )";
     String deleteClip = "delete from TomCruiseClips where id = 9999";
 
+    private TSDDatabase db;
+
     @Before
     public void setup() {
-        TSDDatabase.initialize();
+
+        db = new TSDDatabase();
+        db.initialize();
 
 
-        try (Connection conn = TSDDatabase.getConnection()) {
+        try {
 
-            try (PreparedStatement ps = conn.prepareCall(insertQuote)) {
+            try (PreparedStatement ps = db.getConnection().prepareCall(insertQuote)) {
                 ps.executeUpdate();
             }
 
-            try (PreparedStatement ps = conn.prepareCall(insertClip)) {
+            try (PreparedStatement ps = db.getConnection().prepareCall(insertClip)) {
                 ps.executeUpdate();
             }
 
@@ -45,13 +49,13 @@ public class TomCruiseTest {
 
     @After
     public void tearDown() {
-        try (Connection conn = TSDDatabase.getConnection()) {
+        try {
 
-            try (PreparedStatement ps = conn.prepareCall(deleteQuote)) {
+            try (PreparedStatement ps = db.getConnection().prepareCall(deleteQuote)) {
                 ps.executeUpdate();
             }
 
-            try (PreparedStatement ps = conn.prepareCall(deleteClip)) {
+            try (PreparedStatement ps = db.getConnection().prepareCall(deleteClip)) {
                 ps.executeUpdate();
             }
 
@@ -64,21 +68,21 @@ public class TomCruiseTest {
     @Test
     public void testRandomClip() throws ClassNotFoundException, SQLException {
 
-        assertNotNull(TomCruise.getRandomClip());
+        assertNotNull(TomCruise.getRandomClip(db.getConnection()));
 
     }
 
     @Test
     public void testRandomQuote() throws ClassNotFoundException, SQLException {
 
-        assertNotNull(TomCruise.getRandomQuote());
+        assertNotNull(TomCruise.getRandomQuote(db.getConnection()));
 
     }
 
     @Test
     public void testRandomWhatever() throws ClassNotFoundException, SQLException {
 
-        assertNotNull(TomCruise.getRandom());
+        assertNotNull(TomCruise.getRandom(db.getConnection()));
 
     }
 

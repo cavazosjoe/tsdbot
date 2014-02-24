@@ -4,21 +4,19 @@ import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.WebClient;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.jibble.pircbotm.PircBot;
-import org.jibble.pircbotm.User;
+import org.jibble.pircbot.PircBot;
+import org.jibble.pircbot.User;
+import org.tsd.tsdbot.database.TSDDatabase;
+import org.tsd.tsdbot.notifications.*;
 import org.tsd.tsdbot.runnable.IRCListenerThread;
-import org.tsd.tsdbot.runnable.Strawpoll;
+import org.tsd.tsdbot.runnable.StrawPoll;
 import org.tsd.tsdbot.runnable.ThreadManager;
 import org.tsd.tsdbot.runnable.TweetPoll;
-import org.tsd.tsdbot.util.IRCUtil;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
 
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 /**
  * Created by Joe on 2/18/14.
@@ -27,17 +25,22 @@ public class TSDBot extends PircBot implements Runnable {
 
     private Thread mainThread;
 
-    private HashMap<NotificationManager.NotificationOrigin, NotificationManager> notificationManagers = new HashMap<>();
+    private final TSDDatabase database;
 
-    private ThreadManager threadManager = new ThreadManager(5);
-//    private ExecutorService threadPool = Executors.newFixedThreadPool(10);
-//    private Strawpoll runningPoll;
-//    private TweetPoll runningTweetPoll;
+    private HashMap<NotificationType, NotificationManager> notificationManagers = new HashMap<>();
 
-    public TSDBot(String name) {
+    private ThreadManager threadManager = new ThreadManager(10);
+
+    public TSDBot(String name, String[] channels) {
+
+        database = new TSDDatabase();
+        database.initialize();
+
         setName(name);
         setAutoNickChange(true);
         setLogin("tsdbot");
+        
+        for(String channel : channels) joinChannel(channel);
 
         CloseableHttpClient httpClient = HttpClients.createMinimal();
 
@@ -46,14 +49,16 @@ public class TSDBot extends PircBot implements Runnable {
 
         Twitter twitterClient = TwitterFactory.getSingleton();
 
-        notificationManagers.put(NotificationManager.NotificationOrigin.HBO_FORUM, new HboForumManager(httpClient));
-        notificationManagers.put(NotificationManager.NotificationOrigin.DBO_FORUM, new DboForumManager(webClient));
-        notificationManagers.put(NotificationManager.NotificationOrigin.HBO_NEWS, new HboNewsManager());
-        notificationManagers.put(NotificationManager.NotificationOrigin.DBO_NEWS, new DboNewsManager());
-        notificationManagers.put(NotificationManager.NotificationOrigin.TWITTER, new TwitterManager(this,twitterClient));
+        notificationManagers.put(NotificationType.HBO_FORUM, new HboForumManager(httpClient));
+        notificationManagers.put(NotificationType.DBO_FORUM, new DboForumManager(webClient));
+        notificationManagers.put(NotificationType.HBO_NEWS, new HboNewsManager());
+        notificationManagers.put(NotificationType.DBO_NEWS, new DboNewsManager());
+        notificationManagers.put(NotificationType.TWITTER, new TwitterManager(this,twitterClient));
         
         mainThread = new Thread(this);
         mainThread.start();
+
+
     }
 
     @Override
@@ -80,30 +85,47 @@ public class TSDBot extends PircBot implements Runnable {
             listenerThread.onMessage(command, sender, login, hostname, message);
 
         switch(command) {
+            case COMMAND_LIST: commandList(channel, sender); break;
             case HBO_FORUM: omniPostCmd(command, channel, cmdParts); break;
             case HBO_NEWS: omniPostCmd(command, channel, cmdParts); break;
             case DBO_FORUM: omniPostCmd(command, channel, cmdParts); break;
             case DBO_NEWS: omniPostCmd(command, channel, cmdParts); break;
             case TOM_CRUISE: tc(command, channel, cmdParts); break;
-            case STRAWPOLL: poll(channel, message.split(";")); break;
+            case STRAWPOLL: poll(command, channel, sender, message.split(";")); break;
             case TWITTER: tw(command, channel, sender, login, cmdParts); break;
         }
 
     }
 
+    private void commandList(String channel, String sender) {
+        sendMessage(channel, "I'm sending you a message with my list of commands, " + sender);
+        boolean first = true;
+        for(Command command : Command.values()) {
+            if(command.getDesc() != null) {
+                if(!first) sendMessage(sender, "-----------------------------------------");
+                sendMessage(sender, command.getCmd() + " || " + command.getDesc());
+                sendMessage(sender, command.getUsage());
+                first = false;
+            }
+        }
+    }
+
     private void omniPostCmd(Command command, String channel, String[] cmdParts) {
 
-        NotificationManager<NotificationEntity> mgr = notificationManagers.get(command.getOrigin());
+        NotificationType type = NotificationType.fromCommand(command);
+        NotificationManager<NotificationEntity> mgr = notificationManagers.get(type);
 
         if(cmdParts.length == 1) {
             sendMessage(channel,command.getUsage());
         } else if(cmdParts[1].equals("list")) {
+            if(mgr.history() == null || mgr.history().isEmpty())
+                sendMessage(channel, "No " + type.getDisplayString() + " posts in recent history");
             for(NotificationEntity notification : mgr.history()) {
                 sendMessage(channel,notification.getInline());
             }
         } else if(cmdParts[1].equals("pv")) {
             if(mgr.history().isEmpty()) {
-                sendMessage(channel,"No " + command.getOrigin().getDisplayString() +" posts in recent history");
+                sendMessage(channel,"No " + type.getDisplayString() +" posts in recent history");
             } else if(cmdParts.length == 2) {
                 NotificationEntity mostRecent = mgr.history().getFirst();
                 if(mostRecent.isOpened()) sendMessage(channel,"Post " + mostRecent.getKey() + " has already been opened");
@@ -111,9 +133,9 @@ public class TSDBot extends PircBot implements Runnable {
             } else {
                 String postKey = cmdParts[2].trim();
                 LinkedList<NotificationEntity> ret = mgr.getNotificationByTail(postKey);
-                if(ret.size() == 0) sendMessage(channel,"Could not find " + command.getOrigin() + " post with ID " + postKey + " in recent history");
+                if(ret.size() == 0) sendMessage(channel,"Could not find " + type.getDisplayString() + " post with ID " + postKey + " in recent history");
                 else if(ret.size() > 1) {
-                    String returnString = "Found multiple matching " + command.getOrigin() + " posts in recent history:";
+                    String returnString = "Found multiple matching " + type.getDisplayString() + " posts in recent history:";
                     for(NotificationEntity not : ret) returnString += (" " + not.getKey());
                     returnString += ". Help me out here";
                     sendMessage(channel,returnString);
@@ -128,18 +150,22 @@ public class TSDBot extends PircBot implements Runnable {
 
     private void tc(Command command, String channel, String[] cmdParts) {
         if(cmdParts.length == 1) {
-            sendMessage(channel,TomCruise.getRandom());
+            sendMessage(channel,TomCruise.getRandom(database.getConnection()));
         } else if(cmdParts[1].equals("quote")) {
-            sendMessage(channel,TomCruise.getRandomQuote());
+            sendMessage(channel,TomCruise.getRandomQuote(database.getConnection()));
         } else if(cmdParts[1].equals("clip")) {
-            sendMessage(channel,TomCruise.getRandomClip());
+            sendMessage(channel,TomCruise.getRandomClip(database.getConnection()));
         } else {
             sendMessage(channel, command.getUsage());
         }
     }
 
-    private void poll(String channel, String[] cmdParts) {
-        Strawpoll currentPoll = (Strawpoll) threadManager.getIrcThread(ThreadType.STRAWPOLL, channel);
+    private void poll(Command command, String channel, String sender, String[] cmdParts) {
+
+        String[] splitOnWhitespace = cmdParts[0].split("\\s+");
+        if(splitOnWhitespace.length > 1 && command.threadCmd(splitOnWhitespace[1])) return;
+
+        StrawPoll currentPoll = (StrawPoll) threadManager.getIrcThread(ThreadType.STRAWPOLL, channel);
         if(currentPoll != null) {
             sendMessage(channel,"There is already a poll running. It will end in " + (currentPoll.getRemainingTime()/(60*1000)) + " minute(s)");
             return;
@@ -159,9 +185,10 @@ public class TSDBot extends PircBot implements Runnable {
         }
 
         try {
-            currentPoll = new Strawpoll(
+            currentPoll = new StrawPoll(
                     this,
                     channel,
+                    sender,
                     threadManager,
                     question,
                     minutes,
@@ -176,10 +203,10 @@ public class TSDBot extends PircBot implements Runnable {
     private void tw(Command cmd, String channel, String sender, String login, String[] cmdParts) {
 
         User user = getUserFromNick(channel,sender);
-        boolean isOp = user.isOp();
+        boolean isOp = user.hasPriv(User.Priv.OP);
 
 
-        TwitterManager mgr = (TwitterManager) notificationManagers.get(NotificationManager.NotificationOrigin.TWITTER);
+        TwitterManager mgr = (TwitterManager) notificationManagers.get(NotificationType.TWITTER);
 
         if(cmdParts.length == 1) {
             sendMessage(channel,cmd.getUsage());
@@ -229,13 +256,13 @@ public class TSDBot extends PircBot implements Runnable {
                         sendMessage(channel,"Only ops can use .tw follow");
                         return;
                     }
-                    mgr.follow(cmdParts[2]);
+                    mgr.follow(channel, cmdParts[2]);
                 } else if(subCmd.equals("unfollow")) {
                     if(!isOp) {
                         sendMessage(channel,"Only ops can use .tw unfollow");
                         return;
                     }
-                    mgr.unfollow(cmdParts[2]);
+                    mgr.unfollow(channel, cmdParts[2]);
                 } else if(subCmd.equals("propose")) {
 
                     TweetPoll currentPoll = (TweetPoll) threadManager.getIrcThread(ThreadType.TWEETPOLL, channel);
@@ -326,7 +353,9 @@ public class TSDBot extends PircBot implements Runnable {
             try {
                 for(NotificationManager<NotificationEntity> sweeper : notificationManagers.values()) {
                     for(NotificationEntity notification : sweeper.sweep()) {
-                        if(!firstPass) sendMessage("#tsd",notification.getInline()); //TODO: remove hard-coding
+                        if(!firstPass) for(String chan : getChannels()) {
+                            sendMessage(chan,notification.getInline());
+                        }
                     }
                 }
 
@@ -364,65 +393,83 @@ public class TSDBot extends PircBot implements Runnable {
     }
 
     public enum Command {
+        
+        COMMAND_LIST(
+                ".commands",
+                "Have the bot send you a list of commands",
+                "USAGE: .commands",
+                null
+        ),
 
         TOM_CRUISE(
                 ".tc",
+                "Generate a random Tom Cruise clip or quote",
                 "USAGE: .tc [ clip | quote ]",
-                null,
-                null),
+                null
+        ),
 
         HBO_FORUM(
                 ".hbof",
+                "HBO Forum utility: browse recent HBO Forum posts",
                 "USAGE: .hbof [ list | pv [postId (optional)] ]",
-                NotificationManager.NotificationOrigin.HBO_FORUM,
-                null),
+                null
+        ),
 
         HBO_NEWS(
                 ".hbon",
+                "HBO News utility: browse recent HBO News posts",
                 "USAGE: .hbon [ list | pv [postId (optional)] ]",
-                NotificationManager.NotificationOrigin.HBO_NEWS,
-                null),
+                null
+        ),
 
         DBO_FORUM(
                 ".dbof",
+                "DBO Forum utility: browse recent DBO Forum posts",
                 "USAGE: .dbof [ list | pv [postId (optional)] ]",
-                NotificationManager.NotificationOrigin.DBO_FORUM,
-                null),
+                null
+        ),
 
         DBO_NEWS(
                 ".dbon",
+                "DBO News utility: browse recent DBO News posts",
                 "USAGE: .dbon [ list | pv [postId (optional)] ]",
-                NotificationManager.NotificationOrigin.DBO_NEWS,
-                null),
+                null
+        ),
 
         STRAWPOLL(
                 ".poll",
-                ".poll usage: .poll <question> ; <duration (integer)> ; choice 1 ; choice 2 [ choice 3 ...]",
-                null,
+                "Strawpoll: propose a question and choices for the chat to vote on",
+                "USAGE: .poll <question> ; <duration (integer)> ; choice 1 ; choice 2 [; choice 3 ...]",
                 new String[] {"abort"}),
 
         VOTE(
                 ".vote",
+                null, // don't show up in the dictionary
                 ".vote <number of your choice>",
-                null,
                 null),
 
         TWITTER(
                 ".tw",
-                "USAGE: .tw [ following | timeline | tweet <message> | reply <reply-to-id> <message> | follow <handle> | unfollow <handle> | propose [ reply <reply-to-id> ] <message> ]",
-                NotificationManager.NotificationOrigin.TWITTER,
+                "Twitter utility: send and receive tweets from our exclusive @TSD_IRC Twitter account! Propose tweets" +
+                        " for the chat to vote on.",
+                "USAGE: .tw [ following | timeline | tweet <message> | reply <reply-to-id> <message> | " +
+                        "follow <handle> | unfollow <handle> | propose [ reply <reply-to-id> ] <message> ]",
                 new String[] {"abort","aye"});
 
         private String cmd;
+        private String desc;
         private String usage;
-        private NotificationManager.NotificationOrigin origin;
         private String[] threadCommands; // used by running threads, not entry point
 
-        Command(String cmd, String usage, NotificationManager.NotificationOrigin origin, String[] threadCommands) {
+        Command(String cmd, String desc, String usage, String[] threadCommands) {
             this.cmd = cmd;
-            this.origin = origin;
+            this.desc = desc;
             this.usage = usage;
             this.threadCommands = threadCommands;
+        }
+
+        public String getDesc() {
+            return desc;
         }
 
         public String getUsage() {
@@ -431,10 +478,6 @@ public class TSDBot extends PircBot implements Runnable {
 
         public String getCmd() {
             return cmd;
-        }
-
-        public NotificationManager.NotificationOrigin getOrigin() {
-            return origin;
         }
 
         public boolean threadCmd(String cmd) {
@@ -452,6 +495,37 @@ public class TSDBot extends PircBot implements Runnable {
             return null;
         }
 
+    }
+
+    public enum NotificationType {
+        HBO_FORUM("HBO Forum", Command.HBO_FORUM),
+        HBO_NEWS("HBO News", Command.HBO_NEWS),
+        DBO_FORUM("DBO Forum", Command.DBO_FORUM),
+        DBO_NEWS("DBO News", Command.DBO_NEWS),
+        TWITTER("Twitter", Command.TWITTER);
+
+        private String displayString;
+        private Command accessCommand;
+
+        NotificationType(String displayString, Command accessCommand) {
+            this.displayString = displayString;
+            this.accessCommand = accessCommand;
+        }
+
+        public String getDisplayString() {
+            return displayString;
+        }
+
+        public Command getAccessCommand() {
+            return accessCommand;
+        }
+
+        public static NotificationType fromCommand(Command cmd) {
+            for(NotificationType type : values()) {
+                if(type.accessCommand.equals(cmd)) return type;
+            }
+            return null;
+        }
     }
 
     public enum ThreadType {

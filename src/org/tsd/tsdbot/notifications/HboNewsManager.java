@@ -1,4 +1,4 @@
-package org.tsd.tsdbot;
+package org.tsd.tsdbot.notifications;
 
 import it.sauronsoftware.feed4j.FeedParser;
 import it.sauronsoftware.feed4j.bean.Feed;
@@ -14,9 +14,9 @@ import java.util.regex.Pattern;
 /**
  * Created by Joe on 2/18/14.
  */
-public class DboNewsManager extends NotificationManager<DboNewsManager.DboNewsPost> {
+public class HboNewsManager extends NotificationManager<HboNewsManager.HboNewsPost> {
 
-    private static final Pattern authorPattern = Pattern.compile("\\((.*?)\\d{2}:\\d{2}:\\d{2}\\s{1}GMT\\)",Pattern.DOTALL);
+    private static final Pattern authorPattern = Pattern.compile("\\((.*?)\\d{2}:\\d{2}:\\d{2}\\s{1}\\+\\d{4}\\)",Pattern.DOTALL);
     private static final Pattern postIdPattern = Pattern.compile("(\\d+)");
 
     static {
@@ -25,24 +25,24 @@ public class DboNewsManager extends NotificationManager<DboNewsManager.DboNewsPo
                 + "sub|sup|pre|del|code|blockquote|strike|kbd|br|hr|area|map|object|embed|param|link|form|small|big|script|object|embed|link|style|form|input)$");
     }
 
-    public DboNewsManager() {
+    public HboNewsManager() {
         super(5);
     }
 
     @Override
-    public LinkedList<DboNewsPost> sweep() {
-        LinkedList<DboNewsPost> notifications = new LinkedList<>();
+    public LinkedList<HboNewsPost> sweep() {
+        LinkedList<HboNewsPost> notifications = new LinkedList<>();
         try {
-            URL url = new URL("http://destiny.bungie.org/rss.xml");
+            URL url = new URL("http://halo.bungie.org/rss/rss2channel_2.xml");
             Feed feed = FeedParser.parse(url);
 
             int items = feed.getItemCount();
-            DboNewsPost newsPost = null;
+            HboNewsPost newsPost = null;
             for (int i = 0; i < Math.min(items,MAX_HISTORY); i++) {
                 FeedItem item = feed.getItem(i);
                 int postId = getPostNumFromLink(item.getLink().toString());
                 if((!recentNotifications.isEmpty()) && postId <= recentNotifications.getFirst().getPostId()) break;
-                newsPost = new DboNewsPost();
+                newsPost = new HboNewsPost();
                 newsPost.setPostId(postId);
                 newsPost.setDate(item.getPubDate());
                 newsPost.setTitle(item.getTitle());
@@ -67,7 +67,7 @@ public class DboNewsManager extends NotificationManager<DboNewsManager.DboNewsPo
         }
         throw new Exception("Could not parse " + url + " for post ID");
     }
-
+    
     private String getAuthorFromBody(String body) {
         String credit = body.substring(body.lastIndexOf("("));
         Matcher m = authorPattern.matcher(credit);
@@ -77,12 +77,7 @@ public class DboNewsManager extends NotificationManager<DboNewsManager.DboNewsPo
         return "Unknown";
     }
 
-    @Override
-    public NotificationOrigin getOrigin() {
-        return NotificationOrigin.HBO_NEWS;
-    }
-
-    public class DboNewsPost extends NotificationEntity {
+    public class HboNewsPost extends NotificationEntity {
 
         private int postId;
         private String author;
@@ -123,7 +118,7 @@ public class DboNewsManager extends NotificationManager<DboNewsManager.DboNewsPo
 
         @Override
         public String getInline() {
-            return "[DBO News] " + "(" + postId + ") " + author + " -- " + title + " -- " + IRCUtil.shortenUrl("http://destiny.bungie.org/n/" + postId);
+            return "[HBO News] " + "(" + postId + ") " + author + " -- " + title + " -- " + IRCUtil.shortenUrl("http://halo.bungie.org/news.html?item=" + postId);
         }
 
         @Override

@@ -1,4 +1,4 @@
-package org.tsd.tsdbot;
+package org.tsd.tsdbot.notifications;
 
 import java.util.Date;
 import java.util.LinkedList;

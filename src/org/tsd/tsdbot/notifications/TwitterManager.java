@@ -1,16 +1,13 @@
-package org.tsd.tsdbot;
+package org.tsd.tsdbot.notifications;
 
-import com.gargoylesoftware.htmlunit.WebClient;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.http.client.HttpClient;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.IRCUtil;
 import org.tsd.tsdbot.util.RelativeDate;
 import twitter4j.*;
-import twitter4j.api.FriendsFollowersResources;
 import twitter4j.auth.AccessToken;
 import twitter4j.conf.ConfigurationBuilder;
 
-import javax.naming.OperationNotSupportedException;
 import java.util.*;
 
 /**
@@ -28,6 +25,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     private static final String ACCESS_TOKEN = "2349834990-ckfRDk81l1tOdaSBc15A7MVThOCauNFL1D12hSD";
     private static final String ACCESS_TOKEN_SECRET = "EW2vPIdwHZhbGIKPgieyoACqucSfS1lnF2tHfEIiMLwmS";
 
+    private TSDBot bot;
     private Twitter twitter;
     private TwitterStream stream;
     private HashMap<Long,User> following;
@@ -35,6 +33,9 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     public TwitterManager(final TSDBot bot, Twitter twitter) {
         super(5);
         try {
+
+            this.bot = bot;
+
             this.twitter = twitter;
             this.twitter.setOAuthConsumer(CONSUMER_KEY, CONSUMER_KEY_SECRET);
             this.twitter.setOAuthAccessToken(new AccessToken(ACCESS_TOKEN, ACCESS_TOKEN_SECRET));
@@ -128,19 +129,31 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
         return twitter.updateStatus(reply);
     }
 
-    public void follow(String handle) throws TwitterException {
-        User followed = twitter.createFriendship(handle);
-        if(followed != null) {
-            following.put(followed.getId(), followed);
-            refreshFollowersFilter();
+    public void follow(String channel, String handle) {
+        handle = handle.replace("@","");
+        try {
+            User followed = twitter.createFriendship(handle);
+            if(followed != null) {
+                following.put(followed.getId(), followed);
+                refreshFollowersFilter();
+                bot.sendMessage(channel, "Now following @" + followed.getScreenName());
+            }
+        } catch (TwitterException e) {
+            bot.sendMessage(channel, "I could not follow @" + handle + ". Maybe they don't exist?");
         }
     }
 
-    public void unfollow(String handle) throws TwitterException {
-        User unfollowed = twitter.destroyFriendship(handle);
-        if(unfollowed != null) {
-            following.remove(unfollowed.getId());
-            refreshFollowersFilter();
+    public void unfollow(String channel, String handle) {
+        handle = handle.replace("@","");
+        try {
+            User unfollowed = twitter.destroyFriendship(handle);
+            if(unfollowed != null) {
+                following.remove(unfollowed.getId());
+                refreshFollowersFilter();
+                bot.sendMessage(channel, "No longer following @" + unfollowed.getScreenName());
+            }
+        } catch (TwitterException e) {
+            bot.sendMessage(channel, "I could not unfollow @" + handle + ". Maybe they don't exist?");
         }
     }
 
@@ -151,12 +164,6 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
             ret.add(f.getName() + " (@" + f.getScreenName() + ")");
         }
         return ret;
-
-//        IDs ids = twitter.getFriendsIDs(USER_ID, -1);
-//        for(long l : ids.getIDs()) {
-//            following.add(twitter.showUser(l).getScreenName());
-//        }
-//        return following;
     }
 
     private void refreshFollowersFilter() throws TwitterException {
@@ -166,11 +173,6 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     @Override
     public LinkedList<Tweet> sweep() {
         return new LinkedList<>();
-    }
-
-    @Override
-    public NotificationOrigin getOrigin() {
-        return NotificationOrigin.TWITTER;
     }
 
     public class Tweet extends NotificationEntity {

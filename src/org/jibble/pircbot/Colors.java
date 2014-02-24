@@ -1,5 +1,5 @@
 /* 
-Copyright Paul James Mutton, 2001-2004, http://www.jibble.org/
+Copyright Paul James Mutton, 2001-2009, http://www.jibble.org/
 
 This file is part of PircBot.
 
@@ -9,13 +9,10 @@ Since the GPL may be too restrictive for use in a proprietary application,
 a commercial license is also provided. Full license information can be
 found at http://www.jibble.org/licenses/
 
-$Author: pjm2 $
-$Id: Colors.java,v 1.28 2004/10/14 18:10:18 pjm2 Exp $
-
 */
 
 
-package org.jibble.pircbotm;
+package org.jibble.pircbot;
 
 /**
  * The Colors class provides several static fields and methods that you may
@@ -30,7 +27,7 @@ package org.jibble.pircbotm;
  * from lines of IRC text.
  *  <p>
  * Here are some examples of how to use the contants from within a
- * class that extends PircBot and imports org.jibble.pircbotm.*;
+ * class that extends PircBot and imports org.jibble.pircbot.*;
  * 
  * <pre> sendMessage("#cs", Colors.BOLD + "A bold hello!");
  *     <b>A bold hello!</b>
@@ -51,7 +48,7 @@ package org.jibble.pircbotm;
  * @since   0.9.12
  * @author  Paul James Mutton,
  *          <a href="http://www.jibble.org/">http://www.jibble.org/</a>
- * @version    1.4.4 (Build time: Tue Mar 29 20:58:46 2005)
+ * @version    1.5.0 (Build time: Mon Dec 14 20:07:17 2009)
  */
 public class Colors {
 

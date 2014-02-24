@@ -1,6 +1,5 @@
-package org.tsd.tsdbot;
+package org.tsd.tsdbot.notifications;
 
-import javax.naming.OperationNotSupportedException;
 import java.util.LinkedList;
 
 /**
@@ -8,7 +7,7 @@ import java.util.LinkedList;
  */
 public abstract class NotificationManager<T extends NotificationEntity> {
 
-    protected int MAX_HISTORY = 0;
+    protected int MAX_HISTORY;
     protected LinkedList<T> recentNotifications = new LinkedList<>();
 
     public NotificationManager(int maxHistory) {
@@ -16,7 +15,6 @@ public abstract class NotificationManager<T extends NotificationEntity> {
     }
 
     public abstract LinkedList<T> sweep();
-    public abstract NotificationOrigin getOrigin();
 
     public LinkedList<T> history() {
         return recentNotifications;
@@ -42,21 +40,4 @@ public abstract class NotificationManager<T extends NotificationEntity> {
         while(recentNotifications.size() > MAX_HISTORY) recentNotifications.removeLast();
     }
 
-    public enum NotificationOrigin {
-        HBO_FORUM("HBO Forum"),
-        HBO_NEWS("HBO News"),
-        DBO_FORUM("DBO Forum"),
-        DBO_NEWS("DBO News"),
-        TWITTER("Twitter");
-
-        private String displayString;
-
-        NotificationOrigin(String displayString) {
-            this.displayString = displayString;
-        }
-
-        public String getDisplayString() {
-            return displayString;
-        }
-    }
 }
