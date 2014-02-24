@@ -395,9 +395,9 @@ public class TSDBot extends PircBot implements Runnable {
     public enum Command {
         
         COMMAND_LIST(
-                ".commands",
+                ".cmd",
                 "Have the bot send you a list of commands",
-                "USAGE: .commands",
+                "USAGE: .cmd",
                 null
         ),
 
