@@ -91,7 +91,7 @@ public class TSDBot extends PircBot implements Runnable {
             case DBO_FORUM: omniPostCmd(command, channel, cmdParts); break;
             case DBO_NEWS: omniPostCmd(command, channel, cmdParts); break;
             case TOM_CRUISE: tc(command, channel, cmdParts); break;
-            case STRAWPOLL: poll(channel, message.split(";")); break;
+            case STRAWPOLL: poll(command, channel, sender, message.split(";")); break;
             case TWITTER: tw(command, channel, sender, login, cmdParts); break;
         }
 
@@ -99,10 +99,13 @@ public class TSDBot extends PircBot implements Runnable {
 
     private void commandList(String channel, String sender) {
         sendMessage(channel, "I'm sending you a message with my list of commands, " + sender);
+        boolean first = true;
         for(Command command : Command.values()) {
             if(command.getDesc() != null) {
+                if(!first) sendMessage(sender, "-----------------------------------------");
                 sendMessage(sender, command.getCmd() + " || " + command.getDesc());
                 sendMessage(sender, command.getUsage());
+                first = false;
             }
         }
     }
@@ -115,6 +118,8 @@ public class TSDBot extends PircBot implements Runnable {
         if(cmdParts.length == 1) {
             sendMessage(channel,command.getUsage());
         } else if(cmdParts[1].equals("list")) {
+            if(mgr.history() == null || mgr.history().isEmpty())
+                sendMessage(channel, "No " + type.getDisplayString() + " posts in recent history");
             for(NotificationEntity notification : mgr.history()) {
                 sendMessage(channel,notification.getInline());
             }
@@ -155,7 +160,11 @@ public class TSDBot extends PircBot implements Runnable {
         }
     }
 
-    private void poll(String channel, String[] cmdParts) {
+    private void poll(Command command, String channel, String sender, String[] cmdParts) {
+
+        String[] splitOnWhitespace = cmdParts[0].split("\\s+");
+        if(splitOnWhitespace.length > 1 && command.threadCmd(splitOnWhitespace[1])) return;
+
         StrawPoll currentPoll = (StrawPoll) threadManager.getIrcThread(ThreadType.STRAWPOLL, channel);
         if(currentPoll != null) {
             sendMessage(channel,"There is already a poll running. It will end in " + (currentPoll.getRemainingTime()/(60*1000)) + " minute(s)");
@@ -179,6 +188,7 @@ public class TSDBot extends PircBot implements Runnable {
             currentPoll = new StrawPoll(
                     this,
                     channel,
+                    sender,
                     threadManager,
                     question,
                     minutes,
@@ -246,13 +256,13 @@ public class TSDBot extends PircBot implements Runnable {
                         sendMessage(channel,"Only ops can use .tw follow");
                         return;
                     }
-                    mgr.follow(cmdParts[2]);
+                    mgr.follow(channel, cmdParts[2]);
                 } else if(subCmd.equals("unfollow")) {
                     if(!isOp) {
                         sendMessage(channel,"Only ops can use .tw unfollow");
                         return;
                     }
-                    mgr.unfollow(cmdParts[2]);
+                    mgr.unfollow(channel, cmdParts[2]);
                 } else if(subCmd.equals("propose")) {
 
                     TweetPoll currentPoll = (TweetPoll) threadManager.getIrcThread(ThreadType.TWEETPOLL, channel);
@@ -429,7 +439,7 @@ public class TSDBot extends PircBot implements Runnable {
         STRAWPOLL(
                 ".poll",
                 "Strawpoll: propose a question and choices for the chat to vote on",
-                ".poll usage: .poll <question> ; <duration (integer)> ; choice 1 ; choice 2 [; choice 3 ...]",
+                "USAGE: .poll <question> ; <duration (integer)> ; choice 1 ; choice 2 [; choice 3 ...]",
                 new String[] {"abort"}),
 
         VOTE(
