@@ -96,6 +96,7 @@ public class TSDBot extends PircBot implements Runnable {
             case STRAWPOLL: poll(command, channel, sender, message.split(";")); break;
             case TWITTER: tw(command, channel, sender, login, cmdParts); break;
             case BLUNDER_COUNT: blunder(command, channel, sender, cmdParts); break;
+            case SHUT_IT_DOWN: SHUT_IT_DOWN(channel, sender); break;
         }
 
     }
@@ -110,6 +111,20 @@ public class TSDBot extends PircBot implements Runnable {
                 sendMessage(sender, command.getUsage());
                 first = false;
             }
+        }
+    }
+
+    /**
+     * SHUT IT DOWN
+     * @SHUT
+     * @IT
+     * @DOWN
+     */
+    private void SHUT_IT_DOWN(String channel, String sender) {
+        if(!getUserFromNick(channel,sender).hasPriv(User.Priv.SUPEROP)) {
+            kick(channel, sender, "Stop that.");
+        } else {
+            partChannel(channel,"ABORT ABORT ABORT");
         }
     }
 
@@ -442,6 +457,13 @@ public class TSDBot extends PircBot implements Runnable {
                 ".cmd",
                 "Have the bot send you a list of commands",
                 "USAGE: .cmd",
+                null
+        ),
+
+        SHUT_IT_DOWN(
+                ".SHUT_IT_DOWN",
+                "SHUT IT DOWN (owner only)",
+                "USAGE: SHUT IT DOWN",
                 null
         ),
 
