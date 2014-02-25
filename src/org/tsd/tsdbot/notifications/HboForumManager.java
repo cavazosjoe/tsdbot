@@ -4,6 +4,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
 
@@ -83,6 +84,7 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
 
         } catch (Exception e) {
             e.printStackTrace();
+            TSDBot.blunderCount++;
         }
 
         recentNotifications.addAll(0,notifications);

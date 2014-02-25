@@ -31,6 +31,8 @@ public class TSDBot extends PircBot implements Runnable {
 
     private ThreadManager threadManager = new ThreadManager(10);
 
+    public static long blunderCount = 0;
+
     public TSDBot(String name, String[] channels) {
 
         database = new TSDDatabase();
@@ -93,6 +95,7 @@ public class TSDBot extends PircBot implements Runnable {
             case TOM_CRUISE: tc(command, channel, cmdParts); break;
             case STRAWPOLL: poll(command, channel, sender, message.split(";")); break;
             case TWITTER: tw(command, channel, sender, login, cmdParts); break;
+            case BLUNDER_COUNT: blunder(command, channel, sender, cmdParts); break;
         }
 
     }
@@ -106,6 +109,42 @@ public class TSDBot extends PircBot implements Runnable {
                 sendMessage(sender, command.getCmd() + " || " + command.getDesc());
                 sendMessage(sender, command.getUsage());
                 first = false;
+            }
+        }
+    }
+
+    private void blunder(Command command, String channel, String sender, String[] cmdParts) {
+
+        if(cmdParts.length == 1) {
+            sendMessage(channel,command.getUsage());
+        } else {
+            String subCmd = cmdParts[1];
+            if(subCmd.equals("count")) { // display the current blunder count
+                sendMessage(channel, "Current blunder count: " + blunderCount);
+            } else if(subCmd.equals("+") // vv not correct but help em out anyway vv
+                    || (cmdParts.length > 2 && cmdParts[1].equals("count") && cmdParts[2].equals("+"))) {
+                Random rand = new Random();
+                if( (!getUserFromNick(channel,sender).hasPriv(User.Priv.SUPEROP)) && rand.nextDouble() < 0.05 ) {
+                    // user is not a super op
+                    kick(channel,sender,"R-E-K-T, REKT REKT REKT!");
+                    return;
+                }
+                String[] responses = new String[]{
+                        "",                                     "I saw that too. ",
+                        "kek. ",                                "My sides are moving on their own. ",
+                        "My sides. ",                           "M-muh sides. ",
+                        "Wow. ",                                "No argument here. ",
+                        "*tip* ",                               "Shit I missed it. Ah well. ",
+                        "BLOWN. THE. FUCK. OUT. ",              "B - T - F - O. ",
+                        "Shrekt. ",                             "Rekt. ",
+                        "[blunders intensify] ",                "What a blunder. ",
+                        "Zim-zam status: flim-flammed. "
+                };
+                String response = String.format(responses[rand.nextInt(responses.length)]
+                                    + "Blunder count incremented to %d",++blunderCount);
+                sendMessage(channel,response);
+            } else {
+                sendMessage(channel,command.getUsage());
             }
         }
     }
@@ -197,6 +236,7 @@ public class TSDBot extends PircBot implements Runnable {
             threadManager.addThread(currentPoll);
         } catch (Exception e) {
             sendMessage(channel,e.getMessage());
+            blunderCount++;
         }
     }
 
@@ -307,6 +347,7 @@ public class TSDBot extends PircBot implements Runnable {
                                 threadManager.addThread(currentPoll);
                             } catch (Exception e) {
                                 sendMessage(channel,e.getMessage());
+                                blunderCount++;
                             }
                         }
 
@@ -326,6 +367,7 @@ public class TSDBot extends PircBot implements Runnable {
                             threadManager.addThread(currentPoll);
                         } catch (Exception e) {
                             sendMessage(channel,e.getMessage());
+                            blunderCount++;
                         }
                     }
 
@@ -334,6 +376,7 @@ public class TSDBot extends PircBot implements Runnable {
                 }
             } catch (TwitterException t) {
                 sendMessage(channel,"Error: " + t.getMessage());
+                blunderCount++;
             }
         }
     }
@@ -345,7 +388,7 @@ public class TSDBot extends PircBot implements Runnable {
 
         while(true) {
             try {
-                wait(120 * 1000); // check every 2 minutes
+                wait(5 * 60 * 1000); // check every 5 minutes
             } catch (InterruptedException e) {
                 // something notified this thread, panic.blimp
             }
@@ -361,6 +404,7 @@ public class TSDBot extends PircBot implements Runnable {
 
             } catch (Exception e) {
                 e.printStackTrace();
+                blunderCount++;
             }
 
             firstPass = false;
@@ -398,6 +442,13 @@ public class TSDBot extends PircBot implements Runnable {
                 ".cmd",
                 "Have the bot send you a list of commands",
                 "USAGE: .cmd",
+                null
+        ),
+
+        BLUNDER_COUNT(
+                ".blunder",
+                "View, manage, and update the blunder count",
+                "USAGE: .blunder [ count | + ]",
                 null
         ),
 

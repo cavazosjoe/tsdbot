@@ -84,6 +84,7 @@ public class TweetPoll extends IRCListenerThread {
             } catch (TwitterException e) {
                 e.printStackTrace();
                 bot.sendMessage(channel,"There was an error sending the tweet: " + e.getMessage());
+                TSDBot.blunderCount++;
             }
         } else {
             bot.sendMessage(channel,"It's ogre.");

@@ -2,6 +2,7 @@ package org.tsd.tsdbot.notifications;
 
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.xml.XmlPage;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
 import org.w3c.dom.Document;
@@ -70,6 +71,7 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
             }
         } catch (Exception e) {
             e.printStackTrace();
+            TSDBot.blunderCount++;
         }
 
         recentNotifications.addAll(0,notifications);
