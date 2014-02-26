@@ -32,12 +32,17 @@ public class TSDBot extends PircBot implements Runnable {
 
     private ThreadManager threadManager = new ThreadManager(10);
 
+    private Replacer replacer = new Replacer();
+
+    private String name;
+
     public boolean debug = false;
 
     public static long blunderCount = 0;
 
     public TSDBot(String name, String[] channels, boolean debug) {
-
+        
+        this.name = name;
         this.debug = debug;
 
         database = new TSDDatabase();
@@ -87,26 +92,30 @@ public class TSDBot extends PircBot implements Runnable {
     @Override
     protected synchronized void onMessage(String channel, String sender, String login, String hostname, String message) {
 
-        if(!message.startsWith(".")) return; //not a command, ignore
-        String[] cmdParts = message.split("\\s+");
+        if(message.startsWith(".")) {
+            String[] cmdParts = message.split("\\s+");
 
-        Command command = Command.fromString(cmdParts[0]);
-        if(command == null) return;
+            Command command = Command.fromString(cmdParts[0]);
+            if(command == null) return;
 
-        for(IRCListenerThread listenerThread : threadManager.getThreadsByChannel(channel))
-            listenerThread.onMessage(command, sender, login, hostname, message);
+            for(IRCListenerThread listenerThread : threadManager.getThreadsByChannel(channel))
+                listenerThread.onMessage(command, sender, login, hostname, message);
 
-        switch(command) {
-            case COMMAND_LIST: commandList(channel, sender); break;
-            case HBO_FORUM: omniPostCmd(command, channel, cmdParts); break;
-            case HBO_NEWS: omniPostCmd(command, channel, cmdParts); break;
-            case DBO_FORUM: omniPostCmd(command, channel, cmdParts); break;
-            case DBO_NEWS: omniPostCmd(command, channel, cmdParts); break;
-            case TOM_CRUISE: tc(command, channel, cmdParts); break;
-            case STRAWPOLL: poll(command, channel, sender, message.split(";")); break;
-            case TWITTER: tw(command, channel, sender, login, cmdParts); break;
-            case BLUNDER_COUNT: blunder(command, channel, sender, cmdParts); break;
-            case SHUT_IT_DOWN: SHUT_IT_DOWN(channel, sender); break;
+            switch(command) {
+                case COMMAND_LIST: commandList(channel, sender); break;
+                case HBO_FORUM: omniPostCmd(command, channel, cmdParts); break;
+                case HBO_NEWS: omniPostCmd(command, channel, cmdParts); break;
+                case DBO_FORUM: omniPostCmd(command, channel, cmdParts); break;
+                case DBO_NEWS: omniPostCmd(command, channel, cmdParts); break;
+                case TOM_CRUISE: tc(command, channel, cmdParts); break;
+                case STRAWPOLL: poll(command, channel, sender, message.split(";")); break;
+                case TWITTER: tw(command, channel, sender, login, cmdParts); break;
+                case BLUNDER_COUNT: blunder(command, channel, sender, cmdParts); break;
+                case SHUT_IT_DOWN: SHUT_IT_DOWN(channel, sender); break;
+            }
+        } else {
+            tryStringReplace(channel, message);
+            replacer.updateHistory(channel, message, sender);
         }
 
     }
@@ -405,6 +414,14 @@ public class TSDBot extends PircBot implements Runnable {
             }
         }
     }
+
+    private void tryStringReplace(String channel, String message) {
+        String response = replacer.tryGetResponse(channel, message, name);
+        if (response != null) {
+            sendMessage(channel, response);
+        }
+    }
+
 
     @Override
     public synchronized void run() {
