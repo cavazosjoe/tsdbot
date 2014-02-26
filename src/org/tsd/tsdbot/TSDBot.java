@@ -31,9 +31,13 @@ public class TSDBot extends PircBot implements Runnable {
 
     private ThreadManager threadManager = new ThreadManager(10);
 
+    public boolean debug = false;
+
     public static long blunderCount = 0;
 
-    public TSDBot(String name, String[] channels) {
+    public TSDBot(String name, String[] channels, boolean debug) {
+
+        this.debug = debug;
 
         database = new TSDDatabase();
         database.initialize();

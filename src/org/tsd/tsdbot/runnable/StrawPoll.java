@@ -39,6 +39,9 @@ public class StrawPoll extends IRCListenerThread {
             throw new Exception("Minutes must be a whole number between 1 and 5 (inclusive)");
         this.duration = duration;
 
+        if(options.length > 5)
+            throw new Exception("Please limit your choices to 5");
+
         int i=1;
         for(String o : options) {
             if(o == null || o.isEmpty())
@@ -121,7 +124,7 @@ public class StrawPoll extends IRCListenerThread {
 
             String voteResult = castVote(login, selection);
             if(voteResult != null) bot.sendMessage(channel,voteResult + ", " + sender);
-            else  bot.sendMessage(channel,"Your vote has been counted, " + sender);
+//            else  bot.sendMessage(channel,"Your vote has been counted, " + sender);
 
         } else if(command.equals(TSDBot.Command.STRAWPOLL)) {
 
