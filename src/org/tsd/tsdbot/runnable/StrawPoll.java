@@ -3,6 +3,7 @@ package org.tsd.tsdbot.runnable;
 import org.jibble.pircbot.User;
 import org.tsd.tsdbot.TSDBot;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.TreeMap;
@@ -61,12 +62,18 @@ public class StrawPoll extends IRCListenerThread {
     }
 
     private void handlePollStart() {
-        String[] displayTable = new String[optionsTable.size()+2];
+        String[] displayTable = new String[3];
         displayTable[0] = "NEW STRAWPOLL: " + question;
+
+        StringBuilder choicesBuilder = new StringBuilder();
+        boolean first = true;
         for(Integer i : optionsTable.keySet()) {
-            displayTable[i] = i + ": " + optionsTable.get(i);
+            if(!first) choicesBuilder.append(" | ");
+            choicesBuilder.append("<").append(i).append(": ").append(optionsTable.get(i)).append(">");
+            first = false;
         }
-        displayTable[displayTable.length-1] = "To vote, type '.vote <number of your choice>'. The voting will end in " + duration + " minute(s)";
+        displayTable[1] = choicesBuilder.toString();
+        displayTable[2] = "To vote, type '.vote <number of your choice>'. The voting will end in " + duration + " minute(s)";
         bot.sendMessages(channel,displayTable);
         startTime = System.currentTimeMillis();
     }
@@ -78,14 +85,18 @@ public class StrawPoll extends IRCListenerThread {
             return;
         }
 
-        HashMap<String, Integer> results = new HashMap<>(); // choice -> numVotes TODO: ORDER THIS
-        for(String choice : optionsTable.values()) { //initialize results
+        final HashMap<String, Integer> results = new HashMap<>(); // choice -> numVotes TODO: ORDER THIS
+        for(String choice : optionsTable.values()) //initialize results
             results.put(choice,0);
-        }
-
-        for(Vote vote : votes) {
+        for(Vote vote : votes)
             results.put(vote.choice, results.get(vote.choice)+1);
-        }
+
+        TreeMap<String, Integer> orderedResults = new TreeMap<>(new Comparator<String>() {
+            @Override
+            public int compare(String choice1, String choice2) {
+                return results.get(choice1).compareTo(results.get(choice2));
+            }
+        });
 
         String[] resultsTable = new String[results.size()+1];
         resultsTable[0] = question + " | RESULTS:";
