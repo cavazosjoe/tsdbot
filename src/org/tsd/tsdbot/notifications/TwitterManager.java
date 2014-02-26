@@ -1,5 +1,6 @@
 package org.tsd.tsdbot.notifications;
 
+import org.apache.commons.collections.buffer.CircularFifoBuffer;
 import org.apache.commons.lang3.ArrayUtils;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -9,6 +10,9 @@ import twitter4j.auth.AccessToken;
 import twitter4j.conf.ConfigurationBuilder;
 
 import java.util.*;
+import java.util.concurrent.DelayQueue;
+import java.util.concurrent.Delayed;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by Joe on 2/20/14.
@@ -40,6 +44,11 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
             this.twitter.setOAuthConsumer(CONSUMER_KEY, CONSUMER_KEY_SECRET);
             this.twitter.setOAuthAccessToken(new AccessToken(ACCESS_TOKEN, ACCESS_TOKEN_SECRET));
 
+            this.following = new HashMap<>();
+
+            final DelayQueue<DelayedImpl> throttle = new DelayQueue<>();
+            throttle.put(new DelayedImpl(60 * 1000)); // delay for a minute
+
             ConfigurationBuilder cb = new ConfigurationBuilder()
                     .setOAuthConsumerKey(CONSUMER_KEY)
                     .setOAuthConsumerSecret(CONSUMER_KEY_SECRET)
@@ -50,8 +59,15 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
             stream.addListener(new StatusListener() {
                 @Override
                 public void onStatus(Status status) {
+                    // don't display our tweets
                     if(status.getUser().getId() == USER_ID) return;
+
+                    // don't display tweets from people we don't follow
                     if(!following.containsValue(status.getUser())) return;
+
+                    // don't display replies to tweets from people we don't follow
+                    if(!following.containsKey(status.getInReplyToUserId())) return;
+
                     Tweet newTweet = new Tweet(status);
                     recentNotifications.addFirst(newTweet);
                     trimHistory();
@@ -74,25 +90,26 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
                 public void onException(Exception e) {
                     e.printStackTrace();
                     bot.sendMessage(SCHOOLY,"Twitter stream error: " + e.getMessage());
+                    TSDBot.blunderCount++;
+                    try {
+                        throttle.take();
+                        throttle.put(new DelayedImpl(60 * 1000));
+                    } catch (InterruptedException e1) {
+                        e1.printStackTrace();
+                    }
                 }
             });
 
             Long[] followingIds = ArrayUtils.toObject(twitter.getFriendsIDs(USER_ID, -1).getIDs());
-            following = new HashMap<>();
             for(Long id : followingIds) following.put(id, twitter.showUser(id));
             FilterQuery fq = new FilterQuery(ArrayUtils.toPrimitive(following.keySet().toArray(new Long[]{})));
             stream.filter(fq);
 
         } catch (TwitterException e) {
             e.printStackTrace();
+            TSDBot.blunderCount++;
         }
     }
-
-    // .tw tweet damn this is some good shit
-    // .tw reply <num> u wot m8
-    // .tw follow person
-    // .tw unfollow person
-    // .tw list
 
     public void checkRateLimit() throws TwitterException {
         Map<String, RateLimitStatus> rateLimitStatusMap = twitter.getRateLimitStatus();
@@ -140,6 +157,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
             }
         } catch (TwitterException e) {
             bot.sendMessage(channel, "I could not follow @" + handle + ". Maybe they don't exist?");
+            TSDBot.blunderCount++;
         }
     }
 
@@ -154,6 +172,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
             }
         } catch (TwitterException e) {
             bot.sendMessage(channel, "I could not unfollow @" + handle + ". Maybe they don't exist?");
+            TSDBot.blunderCount++;
         }
     }
 
@@ -212,6 +231,25 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
         @Override
         public String getKey() {
             return "" + status.getId();
+        }
+    }
+
+    class DelayedImpl implements Delayed {
+
+        private long finishTime;
+
+        public DelayedImpl(long delay) {
+            this.finishTime = System.currentTimeMillis() + delay;
+        }
+
+        @Override
+        public long getDelay(TimeUnit unit) {
+            return unit.convert(finishTime - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+        }
+
+        @Override
+        public int compareTo(Delayed o) {
+            return Long.compare(getDelay(TimeUnit.MILLISECONDS), o.getDelay(TimeUnit.MILLISECONDS));
         }
     }
 }

@@ -4,6 +4,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
 
@@ -23,8 +24,8 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
     private static final Pattern newThreadPattern = Pattern.compile("<tr><td><a name='m_(\\d+)'");
     private static final Pattern postInfoPattern = Pattern.compile(
             "<div class='msg_headln'>(.*?)</div>.*?<span class='msg_poster'><a.*?>(.*?)</a>.*?" +
-                    "<span class=\"msg_date\">(.*?)</span>.*?<div class=\"msg_text\">(.*?)<hr width=\"510\" " +
-                    "align=\"left\" size=\"1\">", Pattern.DOTALL
+                    "<span class=\"msg_date\">(.*?)</span>.*?<div class=\"msg_text\">(.*?)" +
+                    "(?:<hr width=\"510\" align=\"left\" size=\"1\">|<div id=\"msg_form\">)", Pattern.DOTALL
     );
 
     private static SimpleDateFormat hboSdf = null;
@@ -36,7 +37,7 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
 
     public HboForumManager(HttpClient client) {
         super(5);
-        hboSdf = new SimpleDateFormat("MM/dd/yy HH:mm");
+        hboSdf = new SimpleDateFormat("MM/dd/yy HH:mm a");
         hboSdf.setTimeZone(TimeZone.getTimeZone("America/New_York"));
         this.client = client;
     }
@@ -83,6 +84,7 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
 
         } catch (Exception e) {
             e.printStackTrace();
+            TSDBot.blunderCount++;
         }
 
         recentNotifications.addAll(0,notifications);

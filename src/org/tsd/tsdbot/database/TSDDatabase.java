@@ -29,7 +29,9 @@ public class TSDDatabase {
             PreparedStatement ps = conn.prepareStatement(testQ);
             ps.executeQuery();
         } catch (SQLException sqle) {
+
             System.err.println("db test query failed: " + sqle.getMessage());
+            System.err.println("TRIED USING " + connectionString);
             return null;
         }
 

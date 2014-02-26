@@ -8,6 +8,7 @@ import com.sun.syndication.feed.synd.SyndFeed;
 import com.sun.syndication.io.FeedException;
 import com.sun.syndication.io.SyndFeedInput;
 import com.sun.syndication.io.XmlReader;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.notifications.NotificationManager;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 
@@ -55,11 +56,13 @@ public class RssFeedManager extends NotificationManager<RssItem> {
 
                 } catch (Exception e) {
                     e.printStackTrace();
+                    TSDBot.blunderCount++;
                 }
             }
 
         } catch (IOException | FeedException e) {
             e.printStackTrace();
+            TSDBot.blunderCount++;
         }
 
         return items;

@@ -3,6 +3,7 @@ package org.tsd.tsdbot.notifications;
 import it.sauronsoftware.feed4j.FeedParser;
 import it.sauronsoftware.feed4j.bean.Feed;
 import it.sauronsoftware.feed4j.bean.FeedItem;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
 
@@ -53,6 +54,7 @@ public class HboNewsManager extends NotificationManager<HboNewsManager.HboNewsPo
             }
         } catch (Exception e) {
             e.printStackTrace();
+            TSDBot.blunderCount++;
         }
 
         recentNotifications.addAll(0,notifications);
