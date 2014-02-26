@@ -2,6 +2,7 @@ package org.tsd.tsdbot;
 
 import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.WebClient;
+import org.apache.commons.collections.buffer.CircularFifoBuffer;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.jibble.pircbot.PircBot;
@@ -32,7 +33,9 @@ public class TSDBot extends PircBot implements Runnable {
 
     private ThreadManager threadManager = new ThreadManager(10);
 
-    private Replacer replacer = new Replacer();
+    private Replacer replacer;
+
+    private HistoryBuff historyBuff = new HistoryBuff();
 
     private String name;
 
@@ -52,7 +55,11 @@ public class TSDBot extends PircBot implements Runnable {
         setAutoNickChange(true);
         setLogin("tsdbot");
         
-        for(String channel : channels) joinChannel(channel);
+        for(String channel : channels)
+            joinChannel(channel);
+
+        historyBuff.initialize(getChannels());
+        replacer = new Replacer(historyBuff);
 
         CloseableHttpClient httpClient = HttpClients.createMinimal();
 
@@ -114,9 +121,12 @@ public class TSDBot extends PircBot implements Runnable {
                 case SHUT_IT_DOWN: SHUT_IT_DOWN(channel, sender); break;
             }
         } else {
-            tryStringReplace(channel, message);
-            replacer.updateHistory(channel, message, sender);
+            String replaceResult = replacer.tryStringReplace(channel, message);
+            if(replaceResult != null)
+                sendMessage(channel,replaceResult);
         }
+
+        historyBuff.updateHistory(channel, message, sender);
 
     }
 
@@ -414,14 +424,6 @@ public class TSDBot extends PircBot implements Runnable {
             }
         }
     }
-
-    private void tryStringReplace(String channel, String message) {
-        String response = replacer.tryGetResponse(channel, message, name);
-        if (response != null) {
-            sendMessage(channel, response);
-        }
-    }
-
 
     @Override
     public synchronized void run() {
