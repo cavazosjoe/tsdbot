@@ -3,10 +3,7 @@ package org.tsd.tsdbot.runnable;
 import org.jibble.pircbot.User;
 import org.tsd.tsdbot.TSDBot;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * Created by Joe on 2/19/14.
@@ -85,26 +82,36 @@ public class StrawPoll extends IRCListenerThread {
             return;
         }
 
-        final HashMap<String, Integer> results = new HashMap<>(); // choice -> numVotes TODO: ORDER THIS
+        final HashMap<String, Integer> results = new HashMap<>(); // choice -> numVotes
         for(String choice : optionsTable.values()) //initialize results
             results.put(choice,0);
         for(Vote vote : votes)
             results.put(vote.choice, results.get(vote.choice)+1);
 
-        TreeMap<String, Integer> orderedResults = new TreeMap<>(new Comparator<String>() {
+        LinkedList<String> orderedKeys = new LinkedList<>(results.keySet());
+        Collections.sort(orderedKeys, new Comparator<String>() {
             @Override
-            public int compare(String choice1, String choice2) {
-                return results.get(choice1).compareTo(results.get(choice2));
+            public int compare(String o1, String o2) {
+                return results.get(o2).compareTo(results.get(o1));
             }
         });
 
-        String[] resultsTable = new String[results.size()+1];
+        boolean tie = results.get(orderedKeys.get(0)).equals(results.get(orderedKeys.get(1)));
+
+        String[] resultsTable = new String[2];
         resultsTable[0] = question + " | RESULTS:";
-        int i=1;
-        for(String choice : results.keySet()) {
-            resultsTable[i] = choice + ": " + results.get(choice);
-            i++;
+        StringBuilder resultsBuilder = new StringBuilder();
+        boolean first = true;
+        for(String choice : orderedKeys) {
+            if(!first) resultsBuilder.append(" | ");
+            else {
+                if(tie) resultsBuilder.append("TIE: ");
+                else resultsBuilder.append("WINNER: ");
+                first = false;
+            }
+            resultsBuilder.append(choice).append(", ").append(results.get(choice)).append(" votes");
         }
+        resultsTable[1] = resultsBuilder.toString();
         bot.sendMessages(channel,resultsTable);
     }
 
