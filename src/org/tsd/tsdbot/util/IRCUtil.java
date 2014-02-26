@@ -36,4 +36,8 @@ public class IRCUtil {
         return as("o_181ooefbmh","R_7adf723e32a4493b92bf9014439137a6")
                 .call(shorten(url)).getShortUrl();
     }
+
+    public static boolean fuzzyMatches(String targetUser, String sender) {
+        return sender.toLowerCase().startsWith(targetUser.toLowerCase());
+    }
 }

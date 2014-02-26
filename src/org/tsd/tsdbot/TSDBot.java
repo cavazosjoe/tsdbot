@@ -2,6 +2,7 @@ package org.tsd.tsdbot;
 
 import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.WebClient;
+import org.apache.commons.collections.buffer.CircularFifoBuffer;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.jibble.pircbot.PircBot;
@@ -16,6 +17,7 @@ import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -31,9 +33,20 @@ public class TSDBot extends PircBot implements Runnable {
 
     private ThreadManager threadManager = new ThreadManager(10);
 
+    private Replacer replacer;
+
+    private HistoryBuff historyBuff = new HistoryBuff();
+
+    private String name;
+
+    public boolean debug = false;
+
     public static long blunderCount = 0;
 
-    public TSDBot(String name, String[] channels) {
+    public TSDBot(String name, String[] channels, boolean debug) {
+        
+        this.name = name;
+        this.debug = debug;
 
         database = new TSDDatabase();
         database.initialize();
@@ -42,7 +55,11 @@ public class TSDBot extends PircBot implements Runnable {
         setAutoNickChange(true);
         setLogin("tsdbot");
         
-        for(String channel : channels) joinChannel(channel);
+        for(String channel : channels)
+            joinChannel(channel);
+
+        historyBuff.initialize(getChannels());
+        replacer = new Replacer(historyBuff);
 
         CloseableHttpClient httpClient = HttpClients.createMinimal();
 
@@ -51,12 +68,17 @@ public class TSDBot extends PircBot implements Runnable {
 
         Twitter twitterClient = TwitterFactory.getSingleton();
 
-        notificationManagers.put(NotificationType.HBO_FORUM, new HboForumManager(httpClient));
-        notificationManagers.put(NotificationType.DBO_FORUM, new DboForumManager(webClient));
-        notificationManagers.put(NotificationType.HBO_NEWS, new HboNewsManager());
-        notificationManagers.put(NotificationType.DBO_NEWS, new DboNewsManager());
-        notificationManagers.put(NotificationType.TWITTER, new TwitterManager(this,twitterClient));
-        
+        try {
+            notificationManagers.put(NotificationType.HBO_FORUM, new HboForumManager(httpClient));
+            notificationManagers.put(NotificationType.DBO_FORUM, new DboForumManager(webClient));
+            notificationManagers.put(NotificationType.HBO_NEWS, new HboNewsManager());
+            notificationManagers.put(NotificationType.DBO_NEWS, new DboNewsManager());
+            notificationManagers.put(NotificationType.TWITTER, new TwitterManager(this,twitterClient));
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Error initializing notifiers.");
+        }
+
         mainThread = new Thread(this);
         mainThread.start();
 
@@ -77,27 +99,34 @@ public class TSDBot extends PircBot implements Runnable {
     @Override
     protected synchronized void onMessage(String channel, String sender, String login, String hostname, String message) {
 
-        if(!message.startsWith(".")) return; //not a command, ignore
-        String[] cmdParts = message.split("\\s+");
+        if(message.startsWith(".")) {
+            String[] cmdParts = message.split("\\s+");
 
-        Command command = Command.fromString(cmdParts[0]);
-        if(command == null) return;
+            Command command = Command.fromString(cmdParts[0]);
+            if(command == null) return;
 
-        for(IRCListenerThread listenerThread : threadManager.getThreadsByChannel(channel))
-            listenerThread.onMessage(command, sender, login, hostname, message);
+            for(IRCListenerThread listenerThread : threadManager.getThreadsByChannel(channel))
+                listenerThread.onMessage(command, sender, login, hostname, message);
 
-        switch(command) {
-            case COMMAND_LIST: commandList(channel, sender); break;
-            case HBO_FORUM: omniPostCmd(command, channel, cmdParts); break;
-            case HBO_NEWS: omniPostCmd(command, channel, cmdParts); break;
-            case DBO_FORUM: omniPostCmd(command, channel, cmdParts); break;
-            case DBO_NEWS: omniPostCmd(command, channel, cmdParts); break;
-            case TOM_CRUISE: tc(command, channel, cmdParts); break;
-            case STRAWPOLL: poll(command, channel, sender, message.split(";")); break;
-            case TWITTER: tw(command, channel, sender, login, cmdParts); break;
-            case BLUNDER_COUNT: blunder(command, channel, sender, cmdParts); break;
-            case SHUT_IT_DOWN: SHUT_IT_DOWN(channel, sender); break;
+            switch(command) {
+                case COMMAND_LIST: commandList(channel, sender); break;
+                case HBO_FORUM: omniPostCmd(command, channel, cmdParts); break;
+                case HBO_NEWS: omniPostCmd(command, channel, cmdParts); break;
+                case DBO_FORUM: omniPostCmd(command, channel, cmdParts); break;
+                case DBO_NEWS: omniPostCmd(command, channel, cmdParts); break;
+                case TOM_CRUISE: tc(command, channel, cmdParts); break;
+                case STRAWPOLL: poll(command, channel, sender, message.split(";")); break;
+                case TWITTER: tw(command, channel, sender, login, cmdParts); break;
+                case BLUNDER_COUNT: blunder(command, channel, sender, cmdParts); break;
+                case SHUT_IT_DOWN: SHUT_IT_DOWN(channel, sender); break;
+            }
+        } else {
+            String replaceResult = replacer.tryStringReplace(channel, message);
+            if(replaceResult != null)
+                sendMessage(channel,replaceResult);
         }
+
+        historyBuff.updateHistory(channel, message, sender);
 
     }
 

@@ -3,9 +3,7 @@ package org.tsd.tsdbot.runnable;
 import org.jibble.pircbot.User;
 import org.tsd.tsdbot.TSDBot;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * Created by Joe on 2/19/14.
@@ -39,6 +37,9 @@ public class StrawPoll extends IRCListenerThread {
             throw new Exception("Minutes must be a whole number between 1 and 5 (inclusive)");
         this.duration = duration;
 
+        if(options.length > 5)
+            throw new Exception("Please limit your choices to 5");
+
         int i=1;
         for(String o : options) {
             if(o == null || o.isEmpty())
@@ -58,12 +59,18 @@ public class StrawPoll extends IRCListenerThread {
     }
 
     private void handlePollStart() {
-        String[] displayTable = new String[optionsTable.size()+2];
+        String[] displayTable = new String[3];
         displayTable[0] = "NEW STRAWPOLL: " + question;
+
+        StringBuilder choicesBuilder = new StringBuilder();
+        boolean first = true;
         for(Integer i : optionsTable.keySet()) {
-            displayTable[i] = i + ": " + optionsTable.get(i);
+            if(!first) choicesBuilder.append(" | ");
+            choicesBuilder.append("<").append(i).append(": ").append(optionsTable.get(i)).append(">");
+            first = false;
         }
-        displayTable[displayTable.length-1] = "To vote, type '.vote <number of your choice>'. The voting will end in " + duration + " minute(s)";
+        displayTable[1] = choicesBuilder.toString();
+        displayTable[2] = "To vote, type '.vote <number of your choice>'. The voting will end in " + duration + " minute(s)";
         bot.sendMessages(channel,displayTable);
         startTime = System.currentTimeMillis();
     }
@@ -75,22 +82,36 @@ public class StrawPoll extends IRCListenerThread {
             return;
         }
 
-        HashMap<String, Integer> results = new HashMap<>(); // choice -> numVotes TODO: ORDER THIS
-        for(String choice : optionsTable.values()) { //initialize results
+        final HashMap<String, Integer> results = new HashMap<>(); // choice -> numVotes
+        for(String choice : optionsTable.values()) //initialize results
             results.put(choice,0);
-        }
-
-        for(Vote vote : votes) {
+        for(Vote vote : votes)
             results.put(vote.choice, results.get(vote.choice)+1);
-        }
 
-        String[] resultsTable = new String[results.size()+1];
+        LinkedList<String> orderedKeys = new LinkedList<>(results.keySet());
+        Collections.sort(orderedKeys, new Comparator<String>() {
+            @Override
+            public int compare(String o1, String o2) {
+                return results.get(o2).compareTo(results.get(o1));
+            }
+        });
+
+        boolean tie = results.get(orderedKeys.get(0)).equals(results.get(orderedKeys.get(1)));
+
+        String[] resultsTable = new String[2];
         resultsTable[0] = question + " | RESULTS:";
-        int i=1;
-        for(String choice : results.keySet()) {
-            resultsTable[i] = choice + ": " + results.get(choice);
-            i++;
+        StringBuilder resultsBuilder = new StringBuilder();
+        boolean first = true;
+        for(String choice : orderedKeys) {
+            if(!first) resultsBuilder.append(" | ");
+            else {
+                if(tie) resultsBuilder.append("TIE: ");
+                else resultsBuilder.append("WINNER: ");
+                first = false;
+            }
+            resultsBuilder.append(choice).append(", ").append(results.get(choice)).append(" votes");
         }
+        resultsTable[1] = resultsBuilder.toString();
         bot.sendMessages(channel,resultsTable);
     }
 
@@ -121,7 +142,7 @@ public class StrawPoll extends IRCListenerThread {
 
             String voteResult = castVote(login, selection);
             if(voteResult != null) bot.sendMessage(channel,voteResult + ", " + sender);
-            else  bot.sendMessage(channel,"Your vote has been counted, " + sender);
+//            else  bot.sendMessage(channel,"Your vote has been counted, " + sender);
 
         } else if(command.equals(TSDBot.Command.STRAWPOLL)) {
 
