@@ -9,6 +9,8 @@ import twitter4j.*;
 import twitter4j.auth.AccessToken;
 import twitter4j.conf.ConfigurationBuilder;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
@@ -23,87 +25,96 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     private static final String USER_HANDLE = "TSD_IRC";
     private static final long USER_ID = 2349834990l;
 
-    private static final String CONSUMER_KEY = "f8H6BJg8J6ddnE5IwFROZA";
-    private static final String CONSUMER_KEY_SECRET = "CwKXxwsyAlMJYyT1XZCpRZ0OjbwuxTBmQfJwvhcU8";
-
-    private static final String ACCESS_TOKEN = "2349834990-ckfRDk81l1tOdaSBc15A7MVThOCauNFL1D12hSD";
-    private static final String ACCESS_TOKEN_SECRET = "EW2vPIdwHZhbGIKPgieyoACqucSfS1lnF2tHfEIiMLwmS";
-
     private TSDBot bot;
     private Twitter twitter;
     private TwitterStream stream;
     private HashMap<Long,User> following;
 
-    public TwitterManager(final TSDBot bot, Twitter twitter) {
+    public TwitterManager(final TSDBot bot, Twitter twitter) throws IOException {
         super(5);
         try {
 
             this.bot = bot;
+
+            Properties prop = new Properties();
+            InputStream fis = TwitterManager.class.getResourceAsStream("/tsdbot.properties");
+            prop.load(fis);
+
+            String CONSUMER_KEY = prop.getProperty("twitter.consumer_key");
+            String CONSUMER_KEY_SECRET = prop.getProperty("twitter.consumer_key_secret");
+            String ACCESS_TOKEN = prop.getProperty("twitter.access_token");
+            String ACCESS_TOKEN_SECRET = prop.getProperty("twitter.access_token_secret");
 
             this.twitter = twitter;
             this.twitter.setOAuthConsumer(CONSUMER_KEY, CONSUMER_KEY_SECRET);
             this.twitter.setOAuthAccessToken(new AccessToken(ACCESS_TOKEN, ACCESS_TOKEN_SECRET));
 
             this.following = new HashMap<>();
-
-            final DelayQueue<DelayedImpl> throttle = new DelayQueue<>();
-            throttle.put(new DelayedImpl(60 * 1000)); // delay for a minute
-
-            ConfigurationBuilder cb = new ConfigurationBuilder()
-                    .setOAuthConsumerKey(CONSUMER_KEY)
-                    .setOAuthConsumerSecret(CONSUMER_KEY_SECRET)
-                    .setOAuthAccessToken(ACCESS_TOKEN)
-                    .setOAuthAccessTokenSecret(ACCESS_TOKEN_SECRET);
-
-            stream = new TwitterStreamFactory(cb.build()).getInstance();
-            stream.addListener(new StatusListener() {
-                @Override
-                public void onStatus(Status status) {
-                    // don't display our tweets
-                    if(status.getUser().getId() == USER_ID) return;
-
-                    // don't display tweets from people we don't follow
-                    if(!following.containsValue(status.getUser())) return;
-
-                    // don't display replies to tweets from people we don't follow
-                    if(!following.containsKey(status.getInReplyToUserId())) return;
-
-                    Tweet newTweet = new Tweet(status);
-                    recentNotifications.addFirst(newTweet);
-                    trimHistory();
-                    bot.sendMessage("#tsd",newTweet.getInline()); //TODO: remove hard-coding
-                }
-
-                @Override
-                public void onDeletionNotice(StatusDeletionNotice statusDeletionNotice) {}
-
-                @Override
-                public void onTrackLimitationNotice(int i) {}
-
-                @Override
-                public void onScrubGeo(long l, long l2) {}
-
-                @Override
-                public void onStallWarning(StallWarning stallWarning) {}
-
-                @Override
-                public void onException(Exception e) {
-                    e.printStackTrace();
-                    bot.sendMessage(SCHOOLY,"Twitter stream error: " + e.getMessage());
-                    TSDBot.blunderCount++;
-                    try {
-                        throttle.take();
-                        throttle.put(new DelayedImpl(60 * 1000));
-                    } catch (InterruptedException e1) {
-                        e1.printStackTrace();
-                    }
-                }
-            });
-
             Long[] followingIds = ArrayUtils.toObject(twitter.getFriendsIDs(USER_ID, -1).getIDs());
             for(Long id : followingIds) following.put(id, twitter.showUser(id));
-            FilterQuery fq = new FilterQuery(ArrayUtils.toPrimitive(following.keySet().toArray(new Long[]{})));
-            stream.filter(fq);
+
+            if(!bot.debug) { // disable streaming if in debug mode
+
+                final DelayQueue<DelayedImpl> throttle = new DelayQueue<>();
+                throttle.put(new DelayedImpl(60 * 1000)); // delay for a minute
+
+                ConfigurationBuilder cb = new ConfigurationBuilder()
+                        .setOAuthConsumerKey(CONSUMER_KEY)
+                        .setOAuthConsumerSecret(CONSUMER_KEY_SECRET)
+                        .setOAuthAccessToken(ACCESS_TOKEN)
+                        .setOAuthAccessTokenSecret(ACCESS_TOKEN_SECRET);
+
+                stream = new TwitterStreamFactory(cb.build()).getInstance();
+                stream.addListener(new StatusListener() {
+                    @Override
+                    public void onStatus(Status status) {
+                        // don't display our tweets
+                        if(status.getUser().getId() == USER_ID) return;
+
+                        // don't display tweets from people we don't follow
+                        if(!following.containsValue(status.getUser())) return;
+
+                        // don't display replies to tweets from people we don't follow
+                        if(!following.containsKey(status.getInReplyToUserId())) return;
+
+                        Tweet newTweet = new Tweet(status);
+                        recentNotifications.addFirst(newTweet);
+                        trimHistory();
+
+                        for(String channel : bot.getChannels())
+                            bot.sendMessage(channel,newTweet.getInline());
+                    }
+
+                    @Override
+                    public void onDeletionNotice(StatusDeletionNotice statusDeletionNotice) {}
+
+                    @Override
+                    public void onTrackLimitationNotice(int i) {}
+
+                    @Override
+                    public void onScrubGeo(long l, long l2) {}
+
+                    @Override
+                    public void onStallWarning(StallWarning stallWarning) {}
+
+                    @Override
+                    public void onException(Exception e) {
+                        e.printStackTrace();
+                        bot.sendMessage(SCHOOLY,"Twitter stream error: " + e.getMessage());
+                        TSDBot.blunderCount++;
+                        try {
+                            throttle.take();
+                            throttle.put(new DelayedImpl(60 * 1000));
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                });
+
+                FilterQuery fq = new FilterQuery(ArrayUtils.toPrimitive(following.keySet().toArray(new Long[]{})));
+                stream.filter(fq);
+
+            }
 
         } catch (TwitterException e) {
             e.printStackTrace();
@@ -186,7 +197,8 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     }
 
     private void refreshFollowersFilter() throws TwitterException {
-        stream.filter(new FilterQuery(ArrayUtils.toPrimitive(following.keySet().toArray(new Long[]{}))));
+        if(!bot.debug)
+            stream.filter(new FilterQuery(ArrayUtils.toPrimitive(following.keySet().toArray(new Long[]{}))));
     }
 
     @Override

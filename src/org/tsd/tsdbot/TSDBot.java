@@ -16,6 +16,7 @@ import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -35,10 +36,14 @@ public class TSDBot extends PircBot implements Runnable {
 
     private String name;
 
+    public boolean debug = false;
+
     public static long blunderCount = 0;
 
-    public TSDBot(String name, String[] channels) {
+    public TSDBot(String name, String[] channels, boolean debug) {
+        
         this.name = name;
+        this.debug = debug;
 
         database = new TSDDatabase();
         database.initialize();
@@ -56,12 +61,17 @@ public class TSDBot extends PircBot implements Runnable {
 
         Twitter twitterClient = TwitterFactory.getSingleton();
 
-        notificationManagers.put(NotificationType.HBO_FORUM, new HboForumManager(httpClient));
-        notificationManagers.put(NotificationType.DBO_FORUM, new DboForumManager(webClient));
-        notificationManagers.put(NotificationType.HBO_NEWS, new HboNewsManager());
-        notificationManagers.put(NotificationType.DBO_NEWS, new DboNewsManager());
-        notificationManagers.put(NotificationType.TWITTER, new TwitterManager(this,twitterClient));
-        
+        try {
+            notificationManagers.put(NotificationType.HBO_FORUM, new HboForumManager(httpClient));
+            notificationManagers.put(NotificationType.DBO_FORUM, new DboForumManager(webClient));
+            notificationManagers.put(NotificationType.HBO_NEWS, new HboNewsManager());
+            notificationManagers.put(NotificationType.DBO_NEWS, new DboNewsManager());
+            notificationManagers.put(NotificationType.TWITTER, new TwitterManager(this,twitterClient));
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Error initializing notifiers.");
+        }
+
         mainThread = new Thread(this);
         mainThread.start();
 
