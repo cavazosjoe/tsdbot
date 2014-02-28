@@ -2,7 +2,18 @@ package org.tsd.tsdbot;
 
 import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.WebClient;
+import com.maxsvett.fourchan.FourChan;
+import com.maxsvett.fourchan.board.Board;
+import com.maxsvett.fourchan.page.Page;
+import com.maxsvett.fourchan.post.Post;
+import com.maxsvett.fourchan.thread.*;
+import com.maxsvett.fourchan.thread.Thread;
 import org.apache.commons.collections.buffer.CircularFifoBuffer;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.jibble.pircbot.PircBot;
@@ -19,28 +30,25 @@ import twitter4j.TwitterFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by Joe on 2/18/14.
  */
 public class TSDBot extends PircBot implements Runnable {
 
-    private Thread mainThread;
-
+    private java.lang.Thread mainThread;
     private final TSDDatabase database;
-
     private HashMap<NotificationType, NotificationManager> notificationManagers = new HashMap<>();
-
     private ThreadManager threadManager = new ThreadManager(10);
-
     private Replacer replacer;
-
     private HistoryBuff historyBuff = new HistoryBuff();
-
     private String name;
 
-    public boolean debug = false;
+    private CloseableHttpClient httpClient;
 
+    public boolean debug = false;
     public static long blunderCount = 0;
 
     public TSDBot(String name, String[] channels, boolean debug) {
@@ -61,7 +69,7 @@ public class TSDBot extends PircBot implements Runnable {
         historyBuff.initialize(getChannels());
         replacer = new Replacer(historyBuff);
 
-        CloseableHttpClient httpClient = HttpClients.createMinimal();
+        httpClient = HttpClients.createMinimal();
 
         WebClient webClient = new WebClient(BrowserVersion.CHROME);
         webClient.getCookieManager().setCookiesEnabled(true);
@@ -79,7 +87,7 @@ public class TSDBot extends PircBot implements Runnable {
             System.err.println("Error initializing notifiers.");
         }
 
-        mainThread = new Thread(this);
+        mainThread = new java.lang.Thread(this);
         mainThread.start();
 
 
@@ -119,6 +127,7 @@ public class TSDBot extends PircBot implements Runnable {
                 case TWITTER: tw(command, channel, sender, login, cmdParts); break;
                 case BLUNDER_COUNT: blunder(command, channel, sender, cmdParts); break;
                 case SHUT_IT_DOWN: SHUT_IT_DOWN(channel, sender); break;
+                case FOURCHAN: fourChan(command, channel, cmdParts); break;
             }
         } else {
             String replaceResult = replacer.tryStringReplace(channel, message);
@@ -128,6 +137,57 @@ public class TSDBot extends PircBot implements Runnable {
 
         historyBuff.updateHistory(channel, message, sender);
 
+    }
+
+    private void fourChan(Command command, String channel, String[] cmdParts) {
+
+        if(cmdParts.length != 2) {
+            sendMessage(channel, command.getUsage());
+            return;
+        }
+
+        String boardRegex = "^/??(\\w{1,3})/??$";
+        if(!cmdParts[1].matches(boardRegex)) {
+            sendMessage(channel, "Could not understand which board you want. Ex: .4chan /v/");
+            return;
+        }
+
+        Pattern boardPattern = Pattern.compile(boardRegex);
+        Matcher boardMatcher = boardPattern.matcher(cmdParts[1]);
+        while(boardMatcher.find()) {
+            try {
+
+                String boardPath = "/" + boardMatcher.group(1) + "/";
+                Board board = Board.getBoard(boardPath);
+                if(board.isNsfw()) {
+                    sendMessage(channel, "I don't support NSFW boards... yet.");
+                    return;
+                }
+
+                HttpGet indexGet = new HttpGet("https://a.4cdn.org" + boardPath + "0.json");
+                indexGet.setHeader("User-Agent", "Mozilla/4.0");
+                ResponseHandler<String> responseHandler = new BasicResponseHandler();
+                String jsonResponse = httpClient.execute(indexGet, responseHandler);
+
+                Page page = FourChan.parsePage(board, jsonResponse);
+                Random rand = new Random();
+                Thread randomThread = page.getThreads()[rand.nextInt(page.getThreads().length)];
+                LinkedList<String> imageUrls = new LinkedList<>();
+                imageUrls.add(randomThread.getOP().getImageURL().toString());
+                for(Post post : randomThread.getPosts()) {
+                    if(post.hasImage()) imageUrls.add(post.getImageURL().toString());
+                }
+
+                String ret = imageUrls.get(rand.nextInt(imageUrls.size())) + " (possibly NSFW)";
+
+                sendMessage(channel, ret);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                sendMessage(channel, "Error retrieving board");
+                return;
+            }
+        }
     }
 
     private void commandList(String channel, String sender) {
@@ -542,13 +602,15 @@ public class TSDBot extends PircBot implements Runnable {
                 ".poll",
                 "Strawpoll: propose a question and choices for the chat to vote on",
                 "USAGE: .poll <question> ; <duration (integer)> ; choice 1 ; choice 2 [; choice 3 ...]",
-                new String[] {"abort"}),
+                new String[] {"abort"}
+        ),
 
         VOTE(
                 ".vote",
                 null, // don't show up in the dictionary
                 ".vote <number of your choice>",
-                null),
+                null
+        ),
 
         TWITTER(
                 ".tw",
@@ -556,7 +618,15 @@ public class TSDBot extends PircBot implements Runnable {
                         " for the chat to vote on.",
                 "USAGE: .tw [ following | timeline | tweet <message> | reply <reply-to-id> <message> | " +
                         "follow <handle> | unfollow <handle> | propose [ reply <reply-to-id> ] <message> ]",
-                new String[] {"abort","aye"});
+                new String[] {"abort","aye"}
+        ),
+
+        FOURCHAN(
+                ".4chan",
+                "4chan \"utility\". Currently just retrieves random images from a board you specify",
+                "USAGE: .4chan <board>",
+                null
+        );
 
         private String cmd;
         private String desc;
