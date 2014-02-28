@@ -178,7 +178,7 @@ public class TSDBot extends PircBot implements Runnable {
                     if(post.hasImage()) imageUrls.add(post.getImageURL().toString());
                 }
 
-                String ret = imageUrls.get(rand.nextInt(imageUrls.size()));
+                String ret = imageUrls.get(rand.nextInt(imageUrls.size())) + " (possibly NSFW)";
 
                 sendMessage(channel, ret);
 
