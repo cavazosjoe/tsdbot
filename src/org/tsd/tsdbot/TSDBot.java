@@ -16,6 +16,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.jibble.pircbot.PircBot;
 import org.jibble.pircbot.User;
 import org.tsd.tsdbot.database.TSDDatabase;
@@ -69,7 +71,9 @@ public class TSDBot extends PircBot implements Runnable {
         historyBuff.initialize(getChannels());
         replacer = new Replacer(historyBuff);
 
-        httpClient = HttpClients.createMinimal();
+        PoolingHttpClientConnectionManager poolingManager = new PoolingHttpClientConnectionManager();
+        poolingManager.setMaxTotal(10);
+        httpClient = HttpClients.createMinimal(poolingManager);
 
         WebClient webClient = new WebClient(BrowserVersion.CHROME);
         webClient.getCookieManager().setCookiesEnabled(true);
@@ -155,6 +159,9 @@ public class TSDBot extends PircBot implements Runnable {
         Pattern boardPattern = Pattern.compile(boardRegex);
         Matcher boardMatcher = boardPattern.matcher(cmdParts[1]);
         while(boardMatcher.find()) {
+
+            HttpGet indexGet = null;
+
             try {
 
                 String boardPath = "/" + boardMatcher.group(1) + "/";
@@ -164,7 +171,7 @@ public class TSDBot extends PircBot implements Runnable {
                     return;
                 }
 
-                HttpGet indexGet = new HttpGet("https://a.4cdn.org" + boardPath + "0.json");
+                indexGet = new HttpGet("https://a.4cdn.org" + boardPath + "0.json");
                 indexGet.setHeader("User-Agent", "Mozilla/4.0");
                 ResponseHandler<String> responseHandler = new BasicResponseHandler();
                 String jsonResponse = httpClient.execute(indexGet, responseHandler);
@@ -186,6 +193,8 @@ public class TSDBot extends PircBot implements Runnable {
                 e.printStackTrace();
                 sendMessage(channel, "Error retrieving board");
                 return;
+            } finally {
+                if(indexGet != null) indexGet.releaseConnection();
             }
         }
     }

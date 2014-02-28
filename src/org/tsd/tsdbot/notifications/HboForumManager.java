@@ -45,13 +45,12 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
     @Override
     public LinkedList<HboForumPost> sweep() {
         LinkedList<HboForumPost> notifications = new LinkedList<>();
-        try {
-            HboForumPost foundPost = null;
-            HttpGet postGet = null;
-            String postResponse = null;
-            Matcher postMatcher = null;
 
-            HttpGet indexGet = new HttpGet("http://carnage.bungie.org/haloforum/halo.forum.pl");
+        HttpGet indexGet = null;
+
+        try {
+
+            indexGet = new HttpGet("http://carnage.bungie.org/haloforum/halo.forum.pl");
             indexGet.setHeader("User-Agent", "Mozilla/4.0");
             ResponseHandler<String> responseHandler = new BasicResponseHandler();
             String indexResponse = client.execute(indexGet, responseHandler);
@@ -59,32 +58,46 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
 
             int postId = -1;
             while(indexMatcher.find() && notifications.size() < MAX_HISTORY) {
-                postId = Integer.parseInt(indexMatcher.group(1));
-                if( (!recentNotifications.isEmpty()) &&
-                        (postId <= recentNotifications.getFirst().getPostId() ) ) continue;
-                postGet = new HttpGet("http://carnage.bungie.org/haloforum/halo.forum.pl?read=" + postId);
-                postResponse = client.execute(postGet, responseHandler);
-                if(postResponse.contains("<div class=\"msg_prev\">")) continue; // stale reply
-                postMatcher = postInfoPattern.matcher(postResponse);
-                while(postMatcher.find()) {
-                    foundPost = new HboForumPost();
-                    foundPost.setPostId(postId);
-                    foundPost.setDate(hboSdf.parse(postMatcher.group(3)));
-                    foundPost.setAuthor(postMatcher.group(2));
-                    foundPost.setSubject(postMatcher.group(1));
 
-                    String rawBody = postMatcher.group(4);
-                    String sanitizedBody = HtmlSanitizer.sanitize(rawBody);
-                    sanitizedBody = sanitizedBody.trim();
-                    foundPost.setBody(sanitizedBody);
+                HboForumPost foundPost = null;
+                HttpGet postGet = null;
+                String postResponse = null;
+                Matcher postMatcher = null;
 
-                    notifications.addLast(foundPost);
+                try {
+
+                    postId = Integer.parseInt(indexMatcher.group(1));
+                    if( (!recentNotifications.isEmpty()) &&
+                            (postId <= recentNotifications.getFirst().getPostId() ) ) continue;
+                    postGet = new HttpGet("http://carnage.bungie.org/haloforum/halo.forum.pl?read=" + postId);
+                    postResponse = client.execute(postGet, responseHandler);
+                    if(postResponse.contains("<div class=\"msg_prev\">")) continue; // stale reply
+                    postMatcher = postInfoPattern.matcher(postResponse);
+                    while(postMatcher.find()) {
+                        foundPost = new HboForumPost();
+                        foundPost.setPostId(postId);
+                        foundPost.setDate(hboSdf.parse(postMatcher.group(3)));
+                        foundPost.setAuthor(postMatcher.group(2));
+                        foundPost.setSubject(postMatcher.group(1));
+
+                        String rawBody = postMatcher.group(4);
+                        String sanitizedBody = HtmlSanitizer.sanitize(rawBody);
+                        sanitizedBody = sanitizedBody.trim();
+                        foundPost.setBody(sanitizedBody);
+
+                        notifications.addLast(foundPost);
+                    }
+
+                } finally {
+                    if(postGet != null) postGet.releaseConnection();
                 }
             }
 
         } catch (Exception e) {
             e.printStackTrace();
             TSDBot.blunderCount++;
+        } finally {
+            if(indexGet != null) indexGet.releaseConnection();
         }
 
         recentNotifications.addAll(0,notifications);
