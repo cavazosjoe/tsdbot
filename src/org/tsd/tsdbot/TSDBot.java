@@ -144,6 +144,7 @@ public class TSDBot extends PircBot implements Runnable {
                 case BLUNDER_COUNT: blunder(command, channel, sender, cmdParts); break;
                 case SHUT_IT_DOWN: SHUT_IT_DOWN(channel, sender); break;
                 case FOURCHAN: fourChan(command, channel, cmdParts); break;
+                case CHOOSE: choose(channel, message); break;
             }
         } else {
             String replaceResult = Replacer.tryStringReplace(channel, message, historyBuff);
@@ -153,6 +154,10 @@ public class TSDBot extends PircBot implements Runnable {
 
         historyBuff.updateHistory(channel, message, sender);
 
+    }
+
+    private void choose(String channel, String message) {
+        sendMessage(channel, Chooser.choose(message));
     }
 
     private void fourChan(Command command, String channel, String[] cmdParts) {
@@ -572,6 +577,13 @@ public class TSDBot extends PircBot implements Runnable {
                 new String[]{".cmd"},
                 "Have the bot send you a list of commands",
                 "USAGE: .cmd",
+                null
+        ),
+
+        CHOOSE(
+                new String[]{".choose"},
+                "Have the bot choose a random selection for you",
+                "USAGE: .choose option1 | option2 [ | option3...]",
                 null
         ),
 
