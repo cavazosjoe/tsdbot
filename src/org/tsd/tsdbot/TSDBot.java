@@ -9,8 +9,10 @@ import com.maxsvett.fourchan.post.Post;
 import com.maxsvett.fourchan.thread.*;
 import com.maxsvett.fourchan.thread.Thread;
 import org.apache.commons.collections.buffer.CircularFifoBuffer;
+import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.HttpRequestRetryHandler;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
@@ -18,6 +20,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.protocol.HttpContext;
 import org.jibble.pircbot.PircBot;
 import org.jibble.pircbot.User;
 import org.tsd.tsdbot.database.TSDDatabase;
@@ -26,6 +29,8 @@ import org.tsd.tsdbot.runnable.IRCListenerThread;
 import org.tsd.tsdbot.runnable.StrawPoll;
 import org.tsd.tsdbot.runnable.ThreadManager;
 import org.tsd.tsdbot.runnable.TweetPoll;
+import org.tsd.tsdbot.util.HtmlSanitizer;
+import org.tsd.tsdbot.util.IRCUtil;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
@@ -44,7 +49,6 @@ public class TSDBot extends PircBot implements Runnable {
     private final TSDDatabase database;
     private HashMap<NotificationType, NotificationManager> notificationManagers = new HashMap<>();
     private ThreadManager threadManager = new ThreadManager(10);
-    private Replacer replacer;
     private HistoryBuff historyBuff = new HistoryBuff();
     private String name;
 
@@ -69,11 +73,19 @@ public class TSDBot extends PircBot implements Runnable {
             joinChannel(channel);
 
         historyBuff.initialize(getChannels());
-        replacer = new Replacer(historyBuff);
 
         PoolingHttpClientConnectionManager poolingManager = new PoolingHttpClientConnectionManager();
         poolingManager.setMaxTotal(10);
-        httpClient = HttpClients.createMinimal(poolingManager);
+
+        HttpRequestRetryHandler retryHandler = new HttpRequestRetryHandler() {
+            @Override
+            public boolean retryRequest(IOException e, int i, HttpContext httpContext) {
+                if(i >= 5) return false; // don't try more than 5 times
+                return e instanceof NoHttpResponseException;
+            }
+        };
+
+        httpClient = HttpClients.custom().setConnectionManager(poolingManager).setRetryHandler(retryHandler).build();
 
         WebClient webClient = new WebClient(BrowserVersion.CHROME);
         webClient.getCookieManager().setCookiesEnabled(true);
@@ -134,7 +146,7 @@ public class TSDBot extends PircBot implements Runnable {
                 case FOURCHAN: fourChan(command, channel, cmdParts); break;
             }
         } else {
-            String replaceResult = replacer.tryStringReplace(channel, message);
+            String replaceResult = Replacer.tryStringReplace(channel, message, historyBuff);
             if(replaceResult != null)
                 sendMessage(channel,replaceResult);
         }
@@ -178,14 +190,19 @@ public class TSDBot extends PircBot implements Runnable {
 
                 Page page = FourChan.parsePage(board, jsonResponse);
                 Random rand = new Random();
-                Thread randomThread = page.getThreads()[rand.nextInt(page.getThreads().length)];
-                LinkedList<String> imageUrls = new LinkedList<>();
-                imageUrls.add(randomThread.getOP().getImageURL().toString());
+                Thread randomThread = page.getThreads()[1 + rand.nextInt(page.getThreads().length-1)];
+                LinkedList<Post> imagePosts = new LinkedList<>();
+                imagePosts.add(randomThread.getOP());
                 for(Post post : randomThread.getPosts()) {
-                    if(post.hasImage()) imageUrls.add(post.getImageURL().toString());
+                    if(post.hasImage()) imagePosts.add(post);
                 }
 
-                String ret = imageUrls.get(rand.nextInt(imageUrls.size())) + " (possibly NSFW)";
+                Post chosen = imagePosts.get(rand.nextInt(imagePosts.size()));
+                String comment = IRCUtil.trimToSingleMsg(HtmlSanitizer.sanitize(chosen.getComment().replace("<br>"," ")));
+                if(comment != null && (!comment.isEmpty()) && comment.length() < 100)   // also send the comment if
+                    sendMessage(channel, comment);                                      // it's small enough
+                String ext = chosen.getImageURL().toString().substring(chosen.getImageURL().toString().length() - 4);
+                String ret = "(" + chosen.getImageName() + ext + ") " + chosen.getImageURL();
 
                 sendMessage(channel, ret);
 
@@ -205,7 +222,7 @@ public class TSDBot extends PircBot implements Runnable {
         for(Command command : Command.values()) {
             if(command.getDesc() != null) {
                 if(!first) sendMessage(sender, "-----------------------------------------");
-                sendMessage(sender, command.getCmd() + " || " + command.getDesc());
+                sendMessage(sender, command.getDesc());
                 sendMessage(sender, command.getUsage());
                 first = false;
             }
@@ -552,77 +569,77 @@ public class TSDBot extends PircBot implements Runnable {
     public enum Command {
         
         COMMAND_LIST(
-                ".cmd",
+                new String[]{".cmd"},
                 "Have the bot send you a list of commands",
                 "USAGE: .cmd",
                 null
         ),
 
         SHUT_IT_DOWN(
-                ".SHUT_IT_DOWN",
+                new String[]{".SHUT_IT_DOWN"},
                 "SHUT IT DOWN (owner only)",
                 "USAGE: SHUT IT DOWN",
                 null
         ),
 
         BLUNDER_COUNT(
-                ".blunder",
+                new String[]{".blunder"},
                 "View, manage, and update the blunder count",
                 "USAGE: .blunder [ count | + ]",
                 null
         ),
 
         TOM_CRUISE(
-                ".tc",
+                new String[]{".tc"},
                 "Generate a random Tom Cruise clip or quote",
                 "USAGE: .tc [ clip | quote ]",
                 null
         ),
 
         HBO_FORUM(
-                ".hbof",
+                new String[]{".hbof"},
                 "HBO Forum utility: browse recent HBO Forum posts",
                 "USAGE: .hbof [ list | pv [postId (optional)] ]",
                 null
         ),
 
         HBO_NEWS(
-                ".hbon",
+                new String[]{".hbon"},
                 "HBO News utility: browse recent HBO News posts",
                 "USAGE: .hbon [ list | pv [postId (optional)] ]",
                 null
         ),
 
         DBO_FORUM(
-                ".dbof",
+                new String[]{".dbof"},
                 "DBO Forum utility: browse recent DBO Forum posts",
                 "USAGE: .dbof [ list | pv [postId (optional)] ]",
                 null
         ),
 
         DBO_NEWS(
-                ".dbon",
+                new String[]{".dbon"},
                 "DBO News utility: browse recent DBO News posts",
                 "USAGE: .dbon [ list | pv [postId (optional)] ]",
                 null
         ),
 
         STRAWPOLL(
-                ".poll",
+                new String[]{".poll",".strawpoll"},
                 "Strawpoll: propose a question and choices for the chat to vote on",
                 "USAGE: .poll <question> ; <duration (integer)> ; choice 1 ; choice 2 [; choice 3 ...]",
                 new String[] {"abort"}
         ),
 
         VOTE(
-                ".vote",
+                new String[]{".vote"},
                 null, // don't show up in the dictionary
                 ".vote <number of your choice>",
                 null
         ),
 
         TWITTER(
-                ".tw",
+                new String[]{".tw",".twitter"},
                 "Twitter utility: send and receive tweets from our exclusive @TSD_IRC Twitter account! Propose tweets" +
                         " for the chat to vote on.",
                 "USAGE: .tw [ following | timeline | tweet <message> | reply <reply-to-id> <message> | " +
@@ -631,19 +648,19 @@ public class TSDBot extends PircBot implements Runnable {
         ),
 
         FOURCHAN(
-                ".4chan",
+                new String[]{".4chan",".4ch"},
                 "4chan \"utility\". Currently just retrieves random images from a board you specify",
                 "USAGE: .4chan <board>",
                 null
         );
 
-        private String cmd;
+        private String[] aliases;
         private String desc;
         private String usage;
         private String[] threadCommands; // used by running threads, not entry point
 
-        Command(String cmd, String desc, String usage, String[] threadCommands) {
-            this.cmd = cmd;
+        Command(String[] aliases, String desc, String usage, String[] threadCommands) {
+            this.aliases = aliases;
             this.desc = desc;
             this.usage = usage;
             this.threadCommands = threadCommands;
@@ -657,8 +674,8 @@ public class TSDBot extends PircBot implements Runnable {
             return usage;
         }
 
-        public String getCmd() {
-            return cmd;
+        public String[] getAliases() {
+            return aliases;
         }
 
         public boolean threadCmd(String cmd) {
@@ -670,8 +687,9 @@ public class TSDBot extends PircBot implements Runnable {
         }
 
         public static Command fromString(String s) {
-            for(Command a : values()) {
-                if(a.cmd.equals(s)) return a;
+            for(Command c : values()) {
+                for(String alias : c.getAliases())
+                    if(alias.equals(s)) return c;
             }
             return null;
         }

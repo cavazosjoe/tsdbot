@@ -1,5 +1,7 @@
 package org.tsd.tsdbot.util;
 
+import org.apache.commons.lang3.StringEscapeUtils;
+
 import java.util.LinkedList;
 
 import static com.rosaloves.bitlyj.Bitly.*;
@@ -26,6 +28,7 @@ public class IRCUtil {
     }
 
     public static String trimToSingleMsg(String input) {
+        input = StringEscapeUtils.unescapeXml(input);
         input = input.replaceAll("\n"," ").replaceAll("\r","");
         int len = input.length();
         if(len <= MAX_MSG_LEN) return input;

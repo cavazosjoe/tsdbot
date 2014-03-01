@@ -11,17 +11,11 @@ public class Replacer {
     // Detects commands which look like s/find/replace/ username
     private static Pattern commandFormat = Pattern.compile("^s/([^/]+)/([^/]*)(.*)$");
 
-    private HistoryBuff historyBuffer;
-
-    public Replacer(HistoryBuff historyBuffer) {
-        this.historyBuffer = historyBuffer;
+    public static String tryStringReplace(String channel, String message, HistoryBuff historyBuffer) {
+        return tryStringReplace(channel, message, null, historyBuffer);
     }
 
-    public String tryStringReplace(String channel, String message) {
-        return tryStringReplace(channel, message, null);
-    }
-
-    public String tryStringReplace(String channel, String message, String myName) {
+    public static String tryStringReplace(String channel, String message, String myName, HistoryBuff historyBuffer) {
 
         Matcher matcher = commandFormat.matcher(message);
         if (matcher.find()) {
