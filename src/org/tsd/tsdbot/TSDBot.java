@@ -145,6 +145,7 @@ public class TSDBot extends PircBot implements Runnable {
                 case SHUT_IT_DOWN: SHUT_IT_DOWN(channel, sender); break;
                 case FOURCHAN: fourChan(command, channel, cmdParts); break;
                 case CHOOSE: choose(channel, message); break;
+                case FILENAME: filename(channel); break;
             }
         } else {
             String replaceResult = Replacer.tryStringReplace(channel, message, historyBuff);
@@ -154,6 +155,33 @@ public class TSDBot extends PircBot implements Runnable {
 
         historyBuff.updateHistory(channel, message, sender);
 
+    }
+
+    private void filename(String channel) {
+        HttpGet fnamesGet = null;
+        try {
+
+            fnamesGet = new HttpGet("http://teamschoolyd.org/filenames/");
+            fnamesGet.setHeader("User-Agent", "Mozilla/4.0");
+            ResponseHandler<String> responseHandler = new BasicResponseHandler();
+            String response = httpClient.execute(fnamesGet, responseHandler);
+
+            Random rand = new Random();
+
+            Matcher m = Pattern.compile("a href=\"([\\w_]+?\\.\\w{3})\"",Pattern.DOTALL).matcher(response);
+            String pfx = "http://www.teamschoolyd.org/filenames/";
+            LinkedList<String> all = new LinkedList<>();
+            while(m.find()) {
+                all.add(m.group(1));
+            }
+            sendMessage(channel, pfx + all.get(rand.nextInt(all.size())));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            blunderCount++;
+        } finally {
+            if(fnamesGet != null) fnamesGet.releaseConnection();
+        }
     }
 
     private void choose(String channel, String message) {
@@ -577,6 +605,13 @@ public class TSDBot extends PircBot implements Runnable {
                 new String[]{".cmd"},
                 "Have the bot send you a list of commands",
                 "USAGE: .cmd",
+                null
+        ),
+
+        FILENAME(
+                new String[]{".filename",".fname"},
+                "Pull a random entry from the TSD Filenames Database",
+                "USAGE: .filename",
                 null
         ),
 
