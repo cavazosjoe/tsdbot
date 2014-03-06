@@ -54,7 +54,6 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
                 Node n = nlist.item(i);
                 if(n.getNodeType() == Node.ELEMENT_NODE) {
                     Element e = (Element)n;
-                    System.out.println();
                     int postId = getPostNumFromLink(getField(e, "guid"));
 
                     if((!recentNotifications.isEmpty()) && postId <= recentNotifications.getFirst().getPostId()) break;

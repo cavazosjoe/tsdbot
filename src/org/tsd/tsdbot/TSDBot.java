@@ -23,6 +23,8 @@ import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.protocol.HttpContext;
 import org.jibble.pircbot.PircBot;
 import org.jibble.pircbot.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.database.TSDDatabase;
 import org.tsd.tsdbot.notifications.*;
 import org.tsd.tsdbot.runnable.IRCListenerThread;
@@ -31,6 +33,7 @@ import org.tsd.tsdbot.runnable.ThreadManager;
 import org.tsd.tsdbot.runnable.TweetPoll;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
+import twitter4j.Status;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.TwitterFactory;
@@ -44,6 +47,8 @@ import java.util.regex.Pattern;
  * Created by Joe on 2/18/14.
  */
 public class TSDBot extends PircBot implements Runnable {
+
+    private static Logger logger = LoggerFactory.getLogger("TSDBot");
 
     private java.lang.Thread mainThread;
     private final TSDDatabase database;
@@ -64,19 +69,21 @@ public class TSDBot extends PircBot implements Runnable {
 
         database = new TSDDatabase();
         database.initialize();
+        logger.info("Database initialized successfully");
 
         setName(name);
         setAutoNickChange(true);
         setLogin("tsdbot");
         
-        for(String channel : channels)
+        for(String channel : channels) {
             joinChannel(channel);
+            logger.info("Joined channel {}", channel);
+        }
 
         historyBuff.initialize(getChannels());
 
         PoolingHttpClientConnectionManager poolingManager = new PoolingHttpClientConnectionManager();
         poolingManager.setMaxTotal(10);
-
         HttpRequestRetryHandler retryHandler = new HttpRequestRetryHandler() {
             @Override
             public boolean retryRequest(IOException e, int i, HttpContext httpContext) {
@@ -84,11 +91,12 @@ public class TSDBot extends PircBot implements Runnable {
                 return e instanceof NoHttpResponseException;
             }
         };
-
         httpClient = HttpClients.custom().setConnectionManager(poolingManager).setRetryHandler(retryHandler).build();
+        logger.info("HttpClient initialized successfully");
 
         WebClient webClient = new WebClient(BrowserVersion.CHROME);
         webClient.getCookieManager().setCookiesEnabled(true);
+        logger.info("WebClient initialized successfully");
 
         Twitter twitterClient = TwitterFactory.getSingleton();
 
@@ -100,12 +108,11 @@ public class TSDBot extends PircBot implements Runnable {
             notificationManagers.put(NotificationType.TWITTER, new TwitterManager(this,twitterClient));
         } catch (IOException e) {
             e.printStackTrace();
-            System.err.println("Error initializing notifiers.");
+            logger.error("ERROR INITIALIZING NOTIFICATION MANAGERS", e);
         }
 
         mainThread = new java.lang.Thread(this);
         mainThread.start();
-
 
     }
 
@@ -122,6 +129,8 @@ public class TSDBot extends PircBot implements Runnable {
 
     @Override
     protected synchronized void onMessage(String channel, String sender, String login, String hostname, String message) {
+
+        logger.info("{}: <{}> {}", channel, sender, message);
 
         if(message.startsWith(".")) {
             String[] cmdParts = message.split("\\s+");
@@ -408,7 +417,6 @@ public class TSDBot extends PircBot implements Runnable {
         User user = getUserFromNick(channel,sender);
         boolean isOp = user.hasPriv(User.Priv.OP);
 
-
         TwitterManager mgr = (TwitterManager) notificationManagers.get(NotificationType.TWITTER);
 
         if(cmdParts.length == 1) {
@@ -434,7 +442,9 @@ public class TSDBot extends PircBot implements Runnable {
                     }
                     String tweet = "";
                     for(int i=2 ; i < cmdParts.length ; i++) tweet += (cmdParts[i] + " ");
-                    mgr.postTweet(tweet);
+                    Status postedTweet = mgr.postTweet(tweet);
+                    sendMessage(channel,"Tweet successful: " + "https://twitter.com/TSD_IRC/status/" + postedTweet.getId());
+                    logger.info("[TWITTER] Posted tweet: {}", "https://twitter.com/TSD_IRC/status/" + postedTweet.getId());
                 } else if(subCmd.equals("reply")) {
                     if(!isOp) {
                         sendMessage(channel,"Only ops can use .tw reply");
@@ -452,7 +462,9 @@ public class TSDBot extends PircBot implements Runnable {
                     else {
                         String tweet = "";
                         for(int i=3 ; i < cmdParts.length ; i++) tweet += (cmdParts[i] + " ");
-                        mgr.postReply(matchedTweets.get(0),tweet);
+                        Status postedReply = mgr.postReply(matchedTweets.get(0),tweet);
+                        sendMessage(channel,"Reply successful: " + "https://twitter.com/TSD_IRC/status/" + postedReply.getId());
+                        logger.info("[TWITTER] Posted reply: {}", "https://twitter.com/TSD_IRC/status/" + postedReply.getId());
                     }
                 } else if(subCmd.equals("follow")) {
                     if(!isOp) {
@@ -460,12 +472,14 @@ public class TSDBot extends PircBot implements Runnable {
                         return;
                     }
                     mgr.follow(channel, cmdParts[2]);
+                    logger.info("[TWITTER] Followed {}", cmdParts[2]);
                 } else if(subCmd.equals("unfollow")) {
                     if(!isOp) {
                         sendMessage(channel,"Only ops can use .tw unfollow");
                         return;
                     }
                     mgr.unfollow(channel, cmdParts[2]);
+                    logger.info("[TWITTER] Unfollowed {}", cmdParts[2]);
                 } else if(subCmd.equals("propose")) {
 
                     TweetPoll currentPoll = (TweetPoll) threadManager.getIrcThread(ThreadType.TWEETPOLL, channel);

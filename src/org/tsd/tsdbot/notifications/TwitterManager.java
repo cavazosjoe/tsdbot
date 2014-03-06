@@ -2,6 +2,8 @@ package org.tsd.tsdbot.notifications;
 
 import org.apache.commons.collections.buffer.CircularFifoBuffer;
 import org.apache.commons.lang3.ArrayUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.IRCUtil;
 import org.tsd.tsdbot.util.RelativeDate;
@@ -20,6 +22,8 @@ import java.util.concurrent.TimeUnit;
  * Created by Joe on 2/20/14.
  */
 public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
+
+    private static Logger logger = LoggerFactory.getLogger("TwitterManager");
 
     private static final String SCHOOLY = "Schooly_D";
     private static final String USER_HANDLE = "TSD_IRC";
@@ -48,6 +52,8 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
             this.twitter = twitter;
             this.twitter.setOAuthConsumer(CONSUMER_KEY, CONSUMER_KEY_SECRET);
             this.twitter.setOAuthAccessToken(new AccessToken(ACCESS_TOKEN, ACCESS_TOKEN_SECRET));
+
+            logger.info("Twitter API initialized successfully");
 
             this.following = new HashMap<>();
             Long[] followingIds = ArrayUtils.toObject(twitter.getFriendsIDs(USER_ID, -1).getIDs());
@@ -114,10 +120,13 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
                 FilterQuery fq = new FilterQuery(ArrayUtils.toPrimitive(following.keySet().toArray(new Long[]{})));
                 stream.filter(fq);
 
+                logger.info("Twitter Streaming API initialized successfully");
+
             }
 
         } catch (TwitterException e) {
             e.printStackTrace();
+            logger.error("Twitter Exception", e);
             TSDBot.blunderCount++;
         }
     }
