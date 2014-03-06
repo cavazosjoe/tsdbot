@@ -4,6 +4,8 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -18,6 +20,8 @@ import java.util.regex.Pattern;
  * Created by Joe on 2/18/14.
  */
 public class HboForumManager extends NotificationManager<HboForumManager.HboForumPost> {
+
+    private static Logger logger = LoggerFactory.getLogger("HboForumManager");
 
     private HttpClient client;
 
@@ -94,7 +98,7 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("HboNewsManager sweep() error", e);
             TSDBot.blunderCount++;
         } finally {
             if(indexGet != null) indexGet.releaseConnection();

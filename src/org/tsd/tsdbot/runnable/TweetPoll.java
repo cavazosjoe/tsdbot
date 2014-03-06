@@ -88,8 +88,8 @@ public class TweetPoll extends IRCListenerThread {
                 else newStatus = twitterManager.postReply(replyTo, proposedTweet);
                 bot.sendMessage(channel,"Tweet successful: " + "https://twitter.com/TSD_IRC/status/" + newStatus.getId());
             } catch (TwitterException e) {
-                e.printStackTrace();
                 bot.sendMessage(channel,"There was an error sending the tweet: " + e.getMessage());
+                logger.error("ERROR SENDING TWEET POLL TWEET", e);
                 TSDBot.blunderCount++;
             }
         } else {
@@ -166,8 +166,7 @@ public class TweetPoll extends IRCListenerThread {
             try {
                 mutex.wait(duration * 60 * 1000);
             } catch (InterruptedException e) {
-                e.printStackTrace();
-                logger.info("TweetPoll interrupted!");
+                logger.info("TweetPoll interrupted!", e);
             }
         }
         handlePollEnd();

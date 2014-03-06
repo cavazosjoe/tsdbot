@@ -105,8 +105,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
 
                     @Override
                     public void onException(Exception e) {
-                        e.printStackTrace();
-                        bot.sendMessage(SCHOOLY,"Twitter stream error: " + e.getMessage());
+                        logger.error("Twitter Stream ERROR", e);
                         TSDBot.blunderCount++;
                         try {
                             throttle.take();
@@ -125,7 +124,6 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
             }
 
         } catch (TwitterException e) {
-            e.printStackTrace();
             logger.error("Twitter Exception", e);
             TSDBot.blunderCount++;
         }

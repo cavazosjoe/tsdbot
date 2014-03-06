@@ -188,7 +188,7 @@ public class StrawPoll extends IRCListenerThread {
             try {
                 mutex.wait(duration * 60 * 1000);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                logger.info("StrawPoll.call() interrupted", e);
             }
         }
         handlePollResult();

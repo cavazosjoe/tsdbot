@@ -107,7 +107,6 @@ public class TSDBot extends PircBot implements Runnable {
             notificationManagers.put(NotificationType.DBO_NEWS, new DboNewsManager());
             notificationManagers.put(NotificationType.TWITTER, new TwitterManager(this,twitterClient));
         } catch (IOException e) {
-            e.printStackTrace();
             logger.error("ERROR INITIALIZING NOTIFICATION MANAGERS", e);
         }
 
@@ -186,7 +185,7 @@ public class TSDBot extends PircBot implements Runnable {
             sendMessage(channel, pfx + all.get(rand.nextInt(all.size())));
 
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("filename() error",e);
             blunderCount++;
         } finally {
             if(fnamesGet != null) fnamesGet.releaseConnection();
@@ -249,7 +248,7 @@ public class TSDBot extends PircBot implements Runnable {
                 sendMessage(channel, ret);
 
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.error("fourchan() error", e);
                 sendMessage(channel, "Error retrieving board");
                 return;
             } finally {
@@ -580,7 +579,7 @@ public class TSDBot extends PircBot implements Runnable {
                 }
 
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.error("TSDBot.run() error", e);
                 blunderCount++;
             }
 
