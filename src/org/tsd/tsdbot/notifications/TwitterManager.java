@@ -74,6 +74,12 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
                 stream.addListener(new StatusListener() {
                     @Override
                     public void onStatus(Status status) {
+
+                        logger.info("[Twitter] received tweet -- {}: {} (in reply to userId {})",
+                                status.getUser().getScreenName(),
+                                status.getText(),
+                                status.getInReplyToUserId());
+
                         // don't display our tweets
                         if(status.getUser().getId() == USER_ID) return;
 
@@ -81,7 +87,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
                         if(!following.containsValue(status.getUser())) return;
 
                         // don't display replies to tweets from people we don't follow
-                        if(!following.containsKey(status.getInReplyToUserId())) return;
+                        if(status.getInReplyToUserId() > 0 && (!following.containsKey(status.getInReplyToUserId()))) return;
 
                         Tweet newTweet = new Tweet(status);
                         recentNotifications.addFirst(newTweet);
@@ -89,6 +95,8 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
 
                         for(String channel : bot.getChannels())
                             bot.sendMessage(channel,newTweet.getInline());
+
+                        logger.info("Successfully logged tweet");
                     }
 
                     @Override
