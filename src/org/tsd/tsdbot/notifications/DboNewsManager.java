@@ -3,6 +3,8 @@ package org.tsd.tsdbot.notifications;
 import it.sauronsoftware.feed4j.FeedParser;
 import it.sauronsoftware.feed4j.bean.Feed;
 import it.sauronsoftware.feed4j.bean.FeedItem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -16,6 +18,8 @@ import java.util.regex.Pattern;
  * Created by Joe on 2/18/14.
  */
 public class DboNewsManager extends NotificationManager<DboNewsManager.DboNewsPost> {
+
+    private static Logger logger = LoggerFactory.getLogger("DboNewsManager");
 
     private static final Pattern authorPattern = Pattern.compile("\\((.*?)\\d{2}:\\d{2}:\\d{2}\\s{1}GMT\\)",Pattern.DOTALL);
     private static final Pattern postIdPattern = Pattern.compile("(\\d+)");
@@ -53,7 +57,7 @@ public class DboNewsManager extends NotificationManager<DboNewsManager.DboNewsPo
                 notifications.addLast(newsPost);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("DboNewsManager sweep() error", e);
             TSDBot.blunderCount++;
         }
 

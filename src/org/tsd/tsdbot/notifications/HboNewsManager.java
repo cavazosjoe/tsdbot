@@ -3,6 +3,8 @@ package org.tsd.tsdbot.notifications;
 import it.sauronsoftware.feed4j.FeedParser;
 import it.sauronsoftware.feed4j.bean.Feed;
 import it.sauronsoftware.feed4j.bean.FeedItem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -16,6 +18,8 @@ import java.util.regex.Pattern;
  * Created by Joe on 2/18/14.
  */
 public class HboNewsManager extends NotificationManager<HboNewsManager.HboNewsPost> {
+
+    private static Logger logger = LoggerFactory.getLogger("HboNewsManager");
 
     private static final Pattern authorPattern = Pattern.compile("\\((.*?)\\d{2}:\\d{2}:\\d{2}\\s{1}\\+\\d{4}\\)",Pattern.DOTALL);
     private static final Pattern postIdPattern = Pattern.compile("(\\d+)");
@@ -53,7 +57,7 @@ public class HboNewsManager extends NotificationManager<HboNewsManager.HboNewsPo
                 notifications.addLast(newsPost);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("HboNewsManager sweep() error", e);
             TSDBot.blunderCount++;
         }
 

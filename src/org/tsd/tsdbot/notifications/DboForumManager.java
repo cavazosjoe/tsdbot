@@ -2,6 +2,8 @@ package org.tsd.tsdbot.notifications;
 
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.xml.XmlPage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -20,6 +22,8 @@ import java.util.regex.Pattern;
  * Created by Joe on 2/18/14.
  */
 public class DboForumManager extends NotificationManager<DboForumManager.DboForumPost> {
+
+    private static Logger logger = LoggerFactory.getLogger("DboForumManager");
 
     private static final String threadsRss = "http://destiny.bungie.org/forum/index.php?mode=rss&items=thread_starts";
     private static final Pattern postIdPattern = Pattern.compile("(\\d+)");
@@ -54,7 +58,6 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
                 Node n = nlist.item(i);
                 if(n.getNodeType() == Node.ELEMENT_NODE) {
                     Element e = (Element)n;
-                    System.out.println();
                     int postId = getPostNumFromLink(getField(e, "guid"));
 
                     if((!recentNotifications.isEmpty()) && postId <= recentNotifications.getFirst().getPostId()) break;
@@ -70,7 +73,7 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("DboForumManager sweep() error", e);
             TSDBot.blunderCount++;
         }
 

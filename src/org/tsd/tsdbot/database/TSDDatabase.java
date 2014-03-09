@@ -1,11 +1,14 @@
 package org.tsd.tsdbot.database;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TomCruise;
 
 import java.sql.*;
 
 public class TSDDatabase {
 
+    private static Logger logger = LoggerFactory.getLogger("TSDDatabase");
     private static String testQ = "select 1";
     private static String connectionString = "jdbc:h2:tcp://localhost/" + System.getProperty("user.dir") + "/db";
     private Connection conn;
@@ -14,7 +17,7 @@ public class TSDDatabase {
         try {
             Class.forName("org.h2.Driver");
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            logger.error("TSDDatabase init error", e);
         }
     }
 

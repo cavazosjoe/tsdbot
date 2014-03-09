@@ -1,6 +1,8 @@
 package org.tsd.tsdbot.runnable;
 
 import org.jibble.pircbot.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.notifications.TwitterManager;
 import twitter4j.Status;
@@ -12,6 +14,8 @@ import java.util.HashSet;
  * Created by Joe on 2/22/14.
  */
 public class TweetPoll extends IRCListenerThread {
+
+    private static Logger logger = LoggerFactory.getLogger("TweetPoll");
 
     private TwitterManager twitterManager;
     private String proposedTweet;
@@ -60,12 +64,14 @@ public class TweetPoll extends IRCListenerThread {
                 + " votes are required. The voting will end in " + duration + " minutes.";
         bot.sendMessages(channel,lines);
         startTime = System.currentTimeMillis();
+        logger.info("BEGINNING TWEET POLL: {}, duration={}, proposedBy={}", proposedTweet, duration, proposer);
     }
 
     private void handlePollEnd() {
 
         if(this.aborted) {
             bot.sendMessage(channel,"The tweet proposal has been canceled.");
+            logger.info("TWEET POLL CANCELLED: {}", proposedTweet);
             return;
         }
 
@@ -82,13 +88,15 @@ public class TweetPoll extends IRCListenerThread {
                 else newStatus = twitterManager.postReply(replyTo, proposedTweet);
                 bot.sendMessage(channel,"Tweet successful: " + "https://twitter.com/TSD_IRC/status/" + newStatus.getId());
             } catch (TwitterException e) {
-                e.printStackTrace();
                 bot.sendMessage(channel,"There was an error sending the tweet: " + e.getMessage());
+                logger.error("ERROR SENDING TWEET POLL TWEET", e);
                 TSDBot.blunderCount++;
             }
         } else {
             bot.sendMessage(channel,"It's ogre.");
         }
+
+        logger.info("TWEET POLL FINISHED: {}, duration={}, proposedBy={}", proposedTweet, duration, proposer);
     }
 
     @Override
@@ -158,7 +166,7 @@ public class TweetPoll extends IRCListenerThread {
             try {
                 mutex.wait(duration * 60 * 1000);
             } catch (InterruptedException e) {
-                System.out.println("The TweetPoll has been ended prematurely: " + e.getMessage());
+                logger.info("TweetPoll interrupted!", e);
             }
         }
         handlePollEnd();

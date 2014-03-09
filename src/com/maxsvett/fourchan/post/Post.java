@@ -210,4 +210,14 @@ public class Post {
 	public boolean hasCountryImage() {
 		return !"".equals(countryName);
 	}
+
+    public boolean equals(Object o) {
+        if(this == o) return true;
+        if(o == null) return false;
+        if(o instanceof Post) {
+            Post p = (Post)o;
+            return p.getNo() == no && p.getBoard().equals(board);
+        }
+        return false;
+    }
 }

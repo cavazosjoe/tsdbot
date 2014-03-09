@@ -21,7 +21,7 @@ public class HistoryBuff {
             channelHistory.put(channel, new CircularFifoBuffer(CHANNEL_HISTORY_SIZE));
     }
 
-    public void updateHistory(String channel, String message, String sender) {
+    public synchronized void updateHistory(String channel, String message, String sender) {
 
         CircularFifoBuffer messages;
 

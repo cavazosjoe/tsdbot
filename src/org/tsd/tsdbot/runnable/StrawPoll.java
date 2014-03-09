@@ -1,6 +1,8 @@
 package org.tsd.tsdbot.runnable;
 
 import org.jibble.pircbot.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 
 import java.util.*;
@@ -9,6 +11,8 @@ import java.util.*;
  * Created by Joe on 2/19/14.
  */
 public class StrawPoll extends IRCListenerThread {
+
+    private static Logger logger = LoggerFactory.getLogger("StrawPoll");
 
     private String proposer;
     private String question;
@@ -73,12 +77,15 @@ public class StrawPoll extends IRCListenerThread {
         displayTable[2] = "To vote, type '.vote <number of your choice>'. The voting will end in " + duration + " minute(s)";
         bot.sendMessages(channel,displayTable);
         startTime = System.currentTimeMillis();
+
+        logger.info("BEGINNING STRAW POLL: {}, duration={}", question, duration);
     }
 
     private void handlePollResult() {
 
         if(aborted) {
             bot.sendMessage(channel, "The strawpoll has been canceled.");
+            logger.info("STRAW POLL CANCELLED: {}", question);
             return;
         }
 
@@ -113,6 +120,7 @@ public class StrawPoll extends IRCListenerThread {
         }
         resultsTable[1] = resultsBuilder.toString();
         bot.sendMessages(channel,resultsTable);
+        logger.info("STRAW POLL ENDED: {}", question);
     }
 
     @Override
@@ -175,16 +183,14 @@ public class StrawPoll extends IRCListenerThread {
 
     @Override
     public Object call() throws Exception {
-        System.out.println("starting poll");
         handlePollStart();
         synchronized (mutex) {
             try {
                 mutex.wait(duration * 60 * 1000);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                logger.info("StrawPoll.call() interrupted", e);
             }
         }
-        System.out.println("poll over!");
         handlePollResult();
         manager.removeThread(this);
         return null;
