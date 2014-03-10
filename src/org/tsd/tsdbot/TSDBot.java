@@ -55,6 +55,7 @@ public class TSDBot extends PircBot implements Runnable {
     private HashMap<NotificationType, NotificationManager> notificationManagers = new HashMap<>();
     private ThreadManager threadManager = new ThreadManager(10);
     private HistoryBuff historyBuff = new HistoryBuff();
+    private TSDTV tsdtv;
     private String name;
 
     private CloseableHttpClient httpClient;
@@ -110,6 +111,12 @@ public class TSDBot extends PircBot implements Runnable {
             logger.error("ERROR INITIALIZING NOTIFICATION MANAGERS", e);
         }
 
+        try {
+            tsdtv = new TSDTV(this);
+        } catch (IOException e) {
+            logger.error("Error initializing TSDTV", e);
+        }
+
         mainThread = new java.lang.Thread(this);
         mainThread.start();
 
@@ -154,6 +161,7 @@ public class TSDBot extends PircBot implements Runnable {
                 case FOURCHAN: fourChan(command, channel, cmdParts); break;
                 case CHOOSE: choose(channel, message); break;
                 case FILENAME: filename(channel); break;
+                case TSDTV: tsdtv(channel, sender, cmdParts); break;
             }
         } else {
             String replaceResult = Replacer.tryStringReplace(channel, message, historyBuff);
@@ -162,6 +170,50 @@ public class TSDBot extends PircBot implements Runnable {
         }
 
         historyBuff.updateHistory(channel, message, sender);
+
+    }
+
+    private void tsdtv(String channel, String sender, String[] cmdParts) {
+
+        if(cmdParts.length < 2) {
+            sendMessage(channel, Command.TSDTV.getUsage());
+            return;
+        }
+
+        String subCmd = cmdParts[1];
+
+        if(subCmd.equals("catalog")) {
+
+            String subdir = null;
+            if(cmdParts.length > 2) {
+                subdir = cmdParts[2].replaceAll("/","");
+            }
+
+            try {
+                sendMessage(channel, "I'm sending you a list of my available movies, " + sender);
+                tsdtv.catalog(sender, subdir);
+            } catch (Exception e) {
+                sendMessage(channel, "Error retrieving catalog: " + e.getMessage());
+            }
+
+        } else if(subCmd.equals("play")) {
+
+            String subdir = null;
+            String query;
+            if(cmdParts.length > 3) {
+                subdir = cmdParts[2].replaceAll("/","");
+                query = cmdParts[3].replaceAll("/", "");
+            } else {
+                query = cmdParts[2].replaceAll("/","");
+            }
+
+            try {
+                tsdtv.play(channel, subdir, query);
+            } catch (Exception e) {
+                sendMessage(channel, "Error: " + e.getMessage());
+            }
+
+        }
 
     }
 
@@ -607,9 +659,16 @@ public class TSDBot extends PircBot implements Runnable {
             }
         }
         return user;
-    } 
-    public void sendMessages(String channel, String[] messages) {
-        for(String m : messages) sendMessage(channel, m);
+    }
+
+    public void sendMessages(String target, String[] messages) {
+        for(String m : messages) sendMessage(target, m);
+    }
+
+    public void broadcast(String message) {
+        for(String channel : getChannels()) {
+            sendMessage(channel, message);
+        }
     }
 
     public enum Command {
@@ -618,6 +677,13 @@ public class TSDBot extends PircBot implements Runnable {
                 new String[]{".cmd"},
                 "Have the bot send you a list of commands",
                 "USAGE: .cmd",
+                null
+        ),
+
+        TSDTV(
+                new String[]{".tsdtv"},
+                "The TSDTV Streaming Entertainment Value Service",
+                "USAGE: .tsdtv [ catalog [<directory>] | play [<movie-name> | <directory> <movie-name>] ]",
                 null
         ),
 

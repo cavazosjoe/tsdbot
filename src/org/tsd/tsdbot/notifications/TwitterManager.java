@@ -75,11 +75,6 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
                     @Override
                     public void onStatus(Status status) {
 
-                        logger.info("[Twitter] received tweet -- {}: {} (in reply to userId {})",
-                                status.getUser().getScreenName(),
-                                status.getText(),
-                                status.getInReplyToUserId());
-
                         // don't display our tweets
                         if(status.getUser().getId() == USER_ID) return;
 

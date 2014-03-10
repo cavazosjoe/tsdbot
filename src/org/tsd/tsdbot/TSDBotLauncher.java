@@ -54,8 +54,8 @@ public class TSDBotLauncher {
 
         log.info("TSDBot loaded successfully. Beginning conquest...");
 
-        TSDTVStream stream = new TSDTVStream();
-        ExecutorService threadPool = Executors.newFixedThreadPool(1);
-        threadPool.submit(stream);
+//        TSDTVStream stream = new TSDTVStream();
+//        ExecutorService threadPool = Executors.newFixedThreadPool(1);
+//        threadPool.submit(stream);
     }
 }
