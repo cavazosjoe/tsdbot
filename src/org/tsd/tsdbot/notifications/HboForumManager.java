@@ -1,9 +1,14 @@
 package org.tsd.tsdbot.notifications;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
+import org.apache.http.protocol.HttpContext;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
@@ -24,6 +29,7 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
     private static Logger logger = LoggerFactory.getLogger("HboForumManager");
 
     private HttpClient client;
+    private HttpContext context;
 
     private static final Pattern newThreadPattern = Pattern.compile("<tr><td><a name='m_(\\d+)'");
     private static final Pattern postInfoPattern = Pattern.compile(
@@ -39,11 +45,12 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
                 + "sub|sup|pre|del|code|blockquote|strike|kbd|br|hr|area|map|object|embed|param|link|form|small|big|script|object|embed|link|style|form|input)$");
     }
 
-    public HboForumManager(HttpClient client) {
+    public HboForumManager(HttpClient client, HttpContext context) {
         super(5);
         hboSdf = new SimpleDateFormat("MM/dd/yy HH:mm a");
         hboSdf.setTimeZone(TimeZone.getTimeZone("America/New_York"));
         this.client = client;
+        this.context = context;
     }
 
     @Override
@@ -51,21 +58,25 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
         LinkedList<HboForumPost> notifications = new LinkedList<>();
 
         HttpGet indexGet = null;
+        HttpResponse indexResponse = null;
+        HttpEntity indexEntity = null;
 
         try {
 
             indexGet = new HttpGet("http://carnage.bungie.org/haloforum/halo.forum.pl");
             indexGet.setHeader("User-Agent", "Mozilla/4.0");
-            ResponseHandler<String> responseHandler = new BasicResponseHandler();
-            String indexResponse = client.execute(indexGet, responseHandler);
-            Matcher indexMatcher = newThreadPattern.matcher(indexResponse);
+            indexResponse = client.execute(indexGet, context);
+            indexEntity = indexResponse.getEntity();
+            String indexText = EntityUtils.toString(indexEntity);
+            Matcher indexMatcher = newThreadPattern.matcher(indexText);
 
             int postId = -1;
             while(indexMatcher.find() && notifications.size() < MAX_HISTORY) {
 
                 HboForumPost foundPost = null;
                 HttpGet postGet = null;
-                String postResponse = null;
+                HttpResponse postResponse = null;
+                HttpEntity postEntity = null;
                 Matcher postMatcher = null;
 
                 try {
@@ -74,9 +85,11 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
                     if( (!recentNotifications.isEmpty()) &&
                             (postId <= recentNotifications.getFirst().getPostId() ) ) continue;
                     postGet = new HttpGet("http://carnage.bungie.org/haloforum/halo.forum.pl?read=" + postId);
-                    postResponse = client.execute(postGet, responseHandler);
-                    if(postResponse.contains("<div class=\"msg_prev\">")) continue; // stale reply
-                    postMatcher = postInfoPattern.matcher(postResponse);
+                    postResponse = client.execute(postGet, context);
+                    postEntity = postResponse.getEntity();
+                    String postText = EntityUtils.toString(postEntity);
+                    if(postText.contains("<div class=\"msg_prev\">")) continue; // stale reply
+                    postMatcher = postInfoPattern.matcher(postText);
                     while(postMatcher.find()) {
                         foundPost = new HboForumPost();
                         foundPost.setPostId(postId);
@@ -94,6 +107,7 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
 
                 } finally {
                     if(postGet != null) postGet.releaseConnection();
+                    if(postEntity != null) EntityUtils.consumeQuietly(postEntity);
                 }
             }
 
@@ -102,6 +116,7 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
             TSDBot.blunderCount++;
         } finally {
             if(indexGet != null) indexGet.releaseConnection();
+            if(indexEntity != null) EntityUtils.consumeQuietly(indexEntity);
         }
 
         recentNotifications.addAll(0,notifications);

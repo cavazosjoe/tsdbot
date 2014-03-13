@@ -15,6 +15,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpRequestRetryHandler;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -58,7 +59,9 @@ public class TSDBot extends PircBot implements Runnable {
     private TSDTV tsdtv;
     private String name;
 
+    private PoolingHttpClientConnectionManager poolingManager;
     private CloseableHttpClient httpClient;
+    private HttpContext httpContext;
 
     public boolean debug = false;
     public static long blunderCount = 0;
@@ -83,8 +86,8 @@ public class TSDBot extends PircBot implements Runnable {
 
         historyBuff.initialize(getChannels());
 
-        PoolingHttpClientConnectionManager poolingManager = new PoolingHttpClientConnectionManager();
-        poolingManager.setMaxTotal(10);
+        poolingManager = new PoolingHttpClientConnectionManager();
+        poolingManager.setMaxTotal(100);
         HttpRequestRetryHandler retryHandler = new HttpRequestRetryHandler() {
             @Override
             public boolean retryRequest(IOException e, int i, HttpContext httpContext) {
@@ -93,6 +96,7 @@ public class TSDBot extends PircBot implements Runnable {
             }
         };
         httpClient = HttpClients.custom().setConnectionManager(poolingManager).setRetryHandler(retryHandler).build();
+        httpContext = HttpClientContext.create();
         logger.info("HttpClient initialized successfully");
 
         WebClient webClient = new WebClient(BrowserVersion.CHROME);
@@ -102,7 +106,7 @@ public class TSDBot extends PircBot implements Runnable {
         Twitter twitterClient = TwitterFactory.getSingleton();
 
         try {
-            notificationManagers.put(NotificationType.HBO_FORUM, new HboForumManager(httpClient));
+            notificationManagers.put(NotificationType.HBO_FORUM, new HboForumManager(httpClient, httpContext));
             notificationManagers.put(NotificationType.DBO_FORUM, new DboForumManager(webClient));
             notificationManagers.put(NotificationType.HBO_NEWS, new HboNewsManager());
             notificationManagers.put(NotificationType.DBO_NEWS, new DboNewsManager());
@@ -616,7 +620,7 @@ public class TSDBot extends PircBot implements Runnable {
 
         while(true) {
             try {
-                wait(5 * 60 * 1000); // check every 5 minutes
+                wait(1 * 60 * 1000); // check every 5 minutes
             } catch (InterruptedException e) {
                 // something notified this thread, panic.blimp
             }
@@ -629,6 +633,8 @@ public class TSDBot extends PircBot implements Runnable {
                         }
                     }
                 }
+
+                poolingManager.closeExpiredConnections();
 
             } catch (Exception e) {
                 logger.error("TSDBot.run() error", e);

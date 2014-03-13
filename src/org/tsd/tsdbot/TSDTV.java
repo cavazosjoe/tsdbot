@@ -43,13 +43,13 @@ public class TSDTV {
         else {
             printingDir = new File(catalogDir + "/" + subdir);
             if(!printingDir.exists())
-                throw new Exception("Could not locate directory " + subdir);
+                throw new Exception("Could not locate directory " + subdir + " (case sensitive)");
         }
 
         boolean first = true;
         StringBuilder catalogBuilder = new StringBuilder();
         for(File f : printingDir.listFiles()) {
-            if(!first)catalogBuilder.append(" -- ");
+            if(!first)catalogBuilder.append(" || ");
             catalogBuilder.append(f.getName());
             if(f.isDirectory()) catalogBuilder.append(" (DIR)");
             first = false;
@@ -69,7 +69,7 @@ public class TSDTV {
         else {
             searchingDir = new File(catalogDir + "/" + dir);
             if(!searchingDir.exists())
-                throw new Exception("Could not find directory " + dir);
+                throw new Exception("Could not find directory " + dir + " (case sensitive)");
         }
 
         LinkedList<File> matchedFiles = new LinkedList<>();
@@ -88,15 +88,10 @@ public class TSDTV {
             throw new Exception(ex.toString());
         }
 
-        Media m = new Media(matchedFiles.get(0).getAbsolutePath());
-        ObservableMap<String,Object> om = m.getMetadata();
-        String artist = (String) om.get("Artist");
-        String title = (String) om.get("Title");
-
         runningStream = new Thread(new TSDTVStream(this, scriptDir, matchedFiles.get(0).getAbsolutePath()));
         runningStream.start();
 
-        bot.broadcast("[TSDTV] NOW PLAYING: " + artist + " - " + title + " -- http://www.twitch.tv/tsd_irc");
+        bot.broadcast("[TSDTV] NOW PLAYING: " + matchedFiles.get(0).getName() + " -- http://www.twitch.tv/tsd_irc");
     }
 
     public void finishStream() {
