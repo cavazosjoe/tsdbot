@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
  */
 public class DboForumManager extends NotificationManager<DboForumManager.DboForumPost> {
 
-    private static Logger logger = LoggerFactory.getLogger("DboForumManager");
+    private static Logger logger = LoggerFactory.getLogger(DboForumManager.class);
 
     private static final String threadsRss = "http://destiny.bungie.org/forum/index.php?mode=rss&items=thread_starts";
     private static final Pattern postIdPattern = Pattern.compile("(\\d+)");
@@ -46,7 +46,6 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
 
     @Override
     public LinkedList<DboForumPost> sweep() {
-        //new threads found by sweep -- can be larger than MAX_HISTORY but is unlikely
         LinkedList<DboForumPost> notifications = new LinkedList<>();
         try {
             final XmlPage rssPage =  webClient.getPage("http://destiny.bungie.org/forum/index.php?mode=rss&items=thread_starts");

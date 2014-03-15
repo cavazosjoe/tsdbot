@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
  */
 public class HboForumManager extends NotificationManager<HboForumManager.HboForumPost> {
 
-    private static Logger logger = LoggerFactory.getLogger("HboForumManager");
+    private static Logger logger = LoggerFactory.getLogger(HboForumManager.class);
 
     private HttpClient client;
     private HttpContext context;
@@ -106,7 +106,6 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
                     }
 
                 } finally {
-                    if(postGet != null) postGet.releaseConnection();
                     if(postEntity != null) EntityUtils.consumeQuietly(postEntity);
                 }
             }
@@ -115,7 +114,6 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
             logger.error("HboNewsManager sweep() error", e);
             TSDBot.blunderCount++;
         } finally {
-            if(indexGet != null) indexGet.releaseConnection();
             if(indexEntity != null) EntityUtils.consumeQuietly(indexEntity);
         }
 

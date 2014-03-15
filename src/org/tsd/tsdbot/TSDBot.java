@@ -41,6 +41,7 @@ import twitter4j.TwitterFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -620,7 +621,7 @@ public class TSDBot extends PircBot implements Runnable {
 
         while(true) {
             try {
-                wait(1 * 60 * 1000); // check every 5 minutes
+                wait(5 * 60 * 1000); // check every 5 minutes
             } catch (InterruptedException e) {
                 // something notified this thread, panic.blimp
             }
@@ -634,7 +635,7 @@ public class TSDBot extends PircBot implements Runnable {
                     }
                 }
 
-                poolingManager.closeExpiredConnections();
+                poolingManager.closeIdleConnections(60, TimeUnit.SECONDS);
 
             } catch (Exception e) {
                 logger.error("TSDBot.run() error", e);
@@ -648,7 +649,7 @@ public class TSDBot extends PircBot implements Runnable {
     public LinkedList<User> getNonBotUsers(String channel) {
         LinkedList<User> ret = new LinkedList<>();
         for(User u : getUsers(channel)) {
-            if(!u.getNick().toLowerCase().contains("tsdbot"))
+            if( (!u.getNick().toLowerCase().contains("tsdbot")) && (!u.getNick().equalsIgnoreCase("tipsfedora")) )
                 ret.add(u);
         }
         return ret;
