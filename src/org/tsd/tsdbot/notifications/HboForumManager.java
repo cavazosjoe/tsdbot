@@ -1,11 +1,13 @@
 package org.tsd.tsdbot.notifications;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
@@ -15,8 +17,10 @@ import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
 
+import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.LinkedList;
+import java.util.Random;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -66,7 +70,15 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
 
         try {
 
-            indexGet = new HttpGet("http://carnage.bungie.org/haloforum/halo.forum.pl");
+            Random rand = new Random();
+            URI uri = new URIBuilder()
+                    .setScheme("http")
+                    .setHost("carnage.bungie.org")
+                    .setPath("/haloforum/halo.forum.pl")
+                    .setParameter("d", "" + rand.nextInt(1000)) // add dummy param to defeat caching
+                    .build();
+
+            indexGet = new HttpGet(uri);
             indexGet.setHeader("User-Agent", "Mozilla/4.0");
             indexResponse = client.execute(indexGet, context);
             logger.info("Received index response...");
