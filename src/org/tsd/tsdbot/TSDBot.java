@@ -636,6 +636,7 @@ public class TSDBot extends PircBot implements Runnable {
                 }
 
                 poolingManager.closeIdleConnections(60, TimeUnit.SECONDS);
+                logger.info("Closed idle connections");
 
             } catch (Exception e) {
                 logger.error("TSDBot.run() error", e);
