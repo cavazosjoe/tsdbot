@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
  */
 public class DboNewsManager extends NotificationManager<DboNewsManager.DboNewsPost> {
 
-    private static Logger logger = LoggerFactory.getLogger("DboNewsManager");
+    private static Logger logger = LoggerFactory.getLogger(DboNewsManager.class);
 
     private static final Pattern authorPattern = Pattern.compile("\\((.*?)\\d{2}:\\d{2}:\\d{2}\\s{1}GMT\\)",Pattern.DOTALL);
     private static final Pattern postIdPattern = Pattern.compile("(\\d+)");

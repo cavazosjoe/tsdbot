@@ -6,20 +6,16 @@ import com.maxsvett.fourchan.FourChan;
 import com.maxsvett.fourchan.board.Board;
 import com.maxsvett.fourchan.page.Page;
 import com.maxsvett.fourchan.post.Post;
-import com.maxsvett.fourchan.thread.*;
 import com.maxsvett.fourchan.thread.Thread;
-import org.apache.commons.collections.buffer.CircularFifoBuffer;
 import org.apache.http.NoHttpResponseException;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpRequestRetryHandler;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.protocol.HttpContext;
 import org.jibble.pircbot.PircBot;
 import org.jibble.pircbot.User;
@@ -31,6 +27,7 @@ import org.tsd.tsdbot.runnable.IRCListenerThread;
 import org.tsd.tsdbot.runnable.StrawPoll;
 import org.tsd.tsdbot.runnable.ThreadManager;
 import org.tsd.tsdbot.runnable.TweetPoll;
+import org.tsd.tsdbot.tsdtv.TSDTV;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
 import twitter4j.Status;
@@ -40,6 +37,7 @@ import twitter4j.TwitterFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -50,25 +48,38 @@ public class TSDBot extends PircBot implements Runnable {
 
     private static Logger logger = LoggerFactory.getLogger("TSDBot");
 
+    private static TSDBot instance = null;
+
     private java.lang.Thread mainThread;
     private final TSDDatabase database;
     private HashMap<NotificationType, NotificationManager> notificationManagers = new HashMap<>();
     private ThreadManager threadManager = new ThreadManager(10);
     private HistoryBuff historyBuff = new HistoryBuff();
+    private TSDTV tsdtv;
     private String name;
 
+    private PoolingHttpClientConnectionManager poolingManager;
     private CloseableHttpClient httpClient;
+    private HttpContext httpContext;
 
     public boolean debug = false;
     public static long blunderCount = 0;
 
-    public TSDBot(String name, String[] channels, boolean debug) {
+    public static TSDBot build(String name, String[] channels, boolean debug) {
+        instance = new TSDBot(name, channels, debug);
+        return instance;
+    }
+
+    public static TSDBot getInstance() {
+        return instance;
+    }
+
+    private TSDBot(String name, String[] channels, boolean debug) {
         
         this.name = name;
         this.debug = debug;
 
-        database = new TSDDatabase();
-        database.initialize();
+        database = TSDDatabase.getInstance();
         logger.info("Database initialized successfully");
 
         setName(name);
@@ -82,8 +93,8 @@ public class TSDBot extends PircBot implements Runnable {
 
         historyBuff.initialize(getChannels());
 
-        PoolingHttpClientConnectionManager poolingManager = new PoolingHttpClientConnectionManager();
-        poolingManager.setMaxTotal(10);
+        poolingManager = new PoolingHttpClientConnectionManager();
+        poolingManager.setMaxTotal(100);
         HttpRequestRetryHandler retryHandler = new HttpRequestRetryHandler() {
             @Override
             public boolean retryRequest(IOException e, int i, HttpContext httpContext) {
@@ -92,6 +103,7 @@ public class TSDBot extends PircBot implements Runnable {
             }
         };
         httpClient = HttpClients.custom().setConnectionManager(poolingManager).setRetryHandler(retryHandler).build();
+        httpContext = HttpClientContext.create();
         logger.info("HttpClient initialized successfully");
 
         WebClient webClient = new WebClient(BrowserVersion.CHROME);
@@ -101,7 +113,7 @@ public class TSDBot extends PircBot implements Runnable {
         Twitter twitterClient = TwitterFactory.getSingleton();
 
         try {
-            notificationManagers.put(NotificationType.HBO_FORUM, new HboForumManager(httpClient));
+            notificationManagers.put(NotificationType.HBO_FORUM, new HboForumManager(httpClient, httpContext));
             notificationManagers.put(NotificationType.DBO_FORUM, new DboForumManager(webClient));
             notificationManagers.put(NotificationType.HBO_NEWS, new HboNewsManager());
             notificationManagers.put(NotificationType.DBO_NEWS, new DboNewsManager());
@@ -109,6 +121,10 @@ public class TSDBot extends PircBot implements Runnable {
         } catch (IOException e) {
             logger.error("ERROR INITIALIZING NOTIFICATION MANAGERS", e);
         }
+
+        tsdtv = TSDTV.getInstance();
+        tsdtv.buildSchedule();
+        logger.info("TSDTV initialized successfully");
 
         mainThread = new java.lang.Thread(this);
         mainThread.start();
@@ -154,6 +170,7 @@ public class TSDBot extends PircBot implements Runnable {
                 case FOURCHAN: fourChan(command, channel, cmdParts); break;
                 case CHOOSE: choose(channel, message); break;
                 case FILENAME: filename(channel); break;
+                case TSDTV: tsdtv(channel, sender, cmdParts); break;
             }
         } else {
             String replaceResult = Replacer.tryStringReplace(channel, message, historyBuff);
@@ -162,6 +179,50 @@ public class TSDBot extends PircBot implements Runnable {
         }
 
         historyBuff.updateHistory(channel, message, sender);
+
+    }
+
+    private void tsdtv(String channel, String sender, String[] cmdParts) {
+
+        if(cmdParts.length < 2) {
+            sendMessage(channel, Command.TSDTV.getUsage());
+            return;
+        }
+
+        String subCmd = cmdParts[1];
+
+        if(subCmd.equals("catalog")) {
+
+            String subdir = null;
+            if(cmdParts.length > 2) {
+                subdir = cmdParts[2].replaceAll("/","");
+            }
+
+            try {
+                sendMessage(channel, "I'm sending you a list of my available movies, " + sender);
+                tsdtv.catalog(sender, subdir);
+            } catch (Exception e) {
+                sendMessage(channel, "Error retrieving catalog: " + e.getMessage());
+            }
+
+        } else if(subCmd.equals("play")) {
+
+            String subdir = null;
+            String query;
+            if(cmdParts.length > 3) {
+                subdir = cmdParts[2].replaceAll("/","");
+                query = cmdParts[3].replaceAll("/", "");
+            } else {
+                query = cmdParts[2].replaceAll("/","");
+            }
+
+            try {
+                tsdtv.prepareOnDemand(subdir, query);
+            } catch (Exception e) {
+                sendMessage(channel, "Error: " + e.getMessage());
+            }
+
+        }
 
     }
 
@@ -280,7 +341,7 @@ public class TSDBot extends PircBot implements Runnable {
         if(!getUserFromNick(channel,sender).hasPriv(User.Priv.SUPEROP)) {
             kick(channel, sender, "Stop that.");
         } else {
-            partChannel(channel,"ABORT ABORT ABORT");
+            partChannel(channel, "ABORT ABORT ABORT");
         }
     }
 
@@ -419,7 +480,7 @@ public class TSDBot extends PircBot implements Runnable {
         TwitterManager mgr = (TwitterManager) notificationManagers.get(NotificationType.TWITTER);
 
         if(cmdParts.length == 1) {
-            sendMessage(channel,cmd.getUsage());
+            sendMessage(channel, cmd.getUsage());
         } else {
             try {
                 String subCmd = cmdParts[1];
@@ -578,6 +639,9 @@ public class TSDBot extends PircBot implements Runnable {
                     }
                 }
 
+                poolingManager.closeIdleConnections(60, TimeUnit.SECONDS);
+                logger.info("Closed idle connections");
+
             } catch (Exception e) {
                 logger.error("TSDBot.run() error", e);
                 blunderCount++;
@@ -590,7 +654,7 @@ public class TSDBot extends PircBot implements Runnable {
     public LinkedList<User> getNonBotUsers(String channel) {
         LinkedList<User> ret = new LinkedList<>();
         for(User u : getUsers(channel)) {
-            if(!u.getNick().toLowerCase().contains("tsdbot"))
+            if( (!u.getNick().toLowerCase().contains("tsdbot")) && (!u.getNick().equalsIgnoreCase("tipsfedora")) )
                 ret.add(u);
         }
         return ret;
@@ -607,9 +671,16 @@ public class TSDBot extends PircBot implements Runnable {
             }
         }
         return user;
-    } 
-    public void sendMessages(String channel, String[] messages) {
-        for(String m : messages) sendMessage(channel, m);
+    }
+
+    public void sendMessages(String target, String[] messages) {
+        for(String m : messages) sendMessage(target, m);
+    }
+
+    public void broadcast(String message) {
+        for(String channel : getChannels()) {
+            sendMessage(channel, message);
+        }
     }
 
     public enum Command {
@@ -618,6 +689,13 @@ public class TSDBot extends PircBot implements Runnable {
                 new String[]{".cmd"},
                 "Have the bot send you a list of commands",
                 "USAGE: .cmd",
+                null
+        ),
+
+        TSDTV(
+                new String[]{".tsdtv"},
+                "The TSDTV Streaming Entertainment Value Service",
+                "USAGE: .tsdtv [ catalog [<directory>] | play [<movie-name> | <directory> <movie-name>] ]",
                 null
         ),
 

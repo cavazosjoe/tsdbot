@@ -36,7 +36,7 @@ public class TweetPoll extends IRCListenerThread {
         this.proposer = proposer;
 
         if(numUsers <= 5) this.requiredVotes = numUsers;
-        else this.requiredVotes = (int)(3*Math.log(numUsers));
+        else this.requiredVotes = (int)(2*Math.log(numUsers));
 
         this.replyTo = replyTo;
 

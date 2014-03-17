@@ -5,8 +5,15 @@ import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.javascript.host.xml.XMLDocument;
 import com.gargoylesoftware.htmlunit.xml.XmlPage;
+import com.maxsvett.fourchan.thread.*;
 import it.sauronsoftware.feed4j.FeedParser;
 import it.sauronsoftware.feed4j.bean.Feed;
+import javafx.application.Application;
+import javafx.collections.MapChangeListener;
+import javafx.collections.ObservableMap;
+import javafx.embed.swing.JFXPanel;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
@@ -28,9 +35,11 @@ import twitter4j.auth.RequestToken;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.lang.Thread;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Connection;
+import java.util.Observable;
 import java.util.regex.Pattern;
 
 /**
@@ -101,5 +110,31 @@ public class TestDriver {
 //        Connection conn = TSDDatabase.getConnection();
 //        boolean exists = TSDDatabase.tableExists("TESTTABLE");
 //        System.out.println(exists);
+        JFXPanel fxPanel = new JFXPanel();
+
+//        Media media = new Media("file:///C:/Users/Joe/Downloads/Space%20Ghost%20Coast%20To%20Coast/Season%208/bafmeal.m4v");
+        MediaPlayer mediaPlayer;
+        final Media media = new Media("file:///C:/Users/Joe/Downloads/Space%20Ghost%20Coast%20To%20Coast/Season%208/bafmeal.m4v");
+        media.getMetadata().addListener(new MapChangeListener<String, Object>() {
+            @Override
+            public void onChanged(Change<? extends String, ? extends Object> ch) {
+                if (ch.wasAdded()) {
+                    System.out.println(ch.getKey());
+                    System.out.println(ch.getValueAdded());
+                }
+            }
+        });
+
+        mediaPlayer = new MediaPlayer(media);
+        mediaPlayer.setOnError(new Runnable() {
+            @Override
+            public void run() {
+                final String errorMessage = media.getError().getMessage();
+                // Handle errors during playback
+                System.out.println("MediaPlayer Error: " + errorMessage);
+            }
+        });
+
+        mediaPlayer.play();
     }
 }

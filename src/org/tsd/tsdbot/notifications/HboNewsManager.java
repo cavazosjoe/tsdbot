@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
  */
 public class HboNewsManager extends NotificationManager<HboNewsManager.HboNewsPost> {
 
-    private static Logger logger = LoggerFactory.getLogger("HboNewsManager");
+    private static Logger logger = LoggerFactory.getLogger(HboNewsManager.class);
 
     private static final Pattern authorPattern = Pattern.compile("\\((.*?)\\d{2}:\\d{2}:\\d{2}\\s{1}\\+\\d{4}\\)",Pattern.DOTALL);
     private static final Pattern postIdPattern = Pattern.compile("(\\d+)");

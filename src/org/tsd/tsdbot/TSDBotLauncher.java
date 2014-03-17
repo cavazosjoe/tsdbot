@@ -2,12 +2,15 @@ package org.tsd.tsdbot;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.runnable.TSDTVStream;
 import sun.reflect.Reflection;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Created by Joe on 2/18/14.
@@ -41,7 +44,7 @@ public class TSDBotLauncher {
         prop.load(fis);
         String nickservPass = prop.getProperty("nickserv.pass");
 
-        TSDBot bot = new TSDBot(name,new String[]{channel},debug);
+        TSDBot bot = TSDBot.build(name,new String[]{channel},debug);
         bot.setVerbose(false);
         bot.setMessageDelay(10); //10 ms
         bot.connect(server);
