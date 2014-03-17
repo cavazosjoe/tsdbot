@@ -44,7 +44,7 @@ public class TSDBotLauncher {
         prop.load(fis);
         String nickservPass = prop.getProperty("nickserv.pass");
 
-        TSDBot bot = new TSDBot(name,new String[]{channel},debug);
+        TSDBot bot = TSDBot.build(name,new String[]{channel},debug);
         bot.setVerbose(false);
         bot.setMessageDelay(10); //10 ms
         bot.connect(server);
@@ -53,9 +53,5 @@ public class TSDBotLauncher {
         bot.joinChannel(channel);
 
         log.info("TSDBot loaded successfully. Beginning conquest...");
-
-//        TSDTVStream stream = new TSDTVStream();
-//        ExecutorService threadPool = Executors.newFixedThreadPool(1);
-//        threadPool.submit(stream);
     }
 }

@@ -65,8 +65,9 @@ public class TSDBot extends PircBot implements Runnable {
     public boolean debug = false;
     public static long blunderCount = 0;
 
-    public static void build(String name, String[] channels, boolean debug) {
+    public static TSDBot build(String name, String[] channels, boolean debug) {
         instance = new TSDBot(name, channels, debug);
+        return instance;
     }
 
     public static TSDBot getInstance() {

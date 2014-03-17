@@ -81,17 +81,21 @@ public class TSDTV {
 
     }
 
-    private void play(TSDTVProgram program) throws SQLException {
+    private void play(TSDTVProgram program) {
         runningStream = new Thread(new TSDTVStream(scriptDir, program.filePath));
         runningStream.start();
 
         if(program.show != null && program.episodeNum > 0) {
-            Connection dbConn = TSDDatabase.getInstance().getConnection();
-            String update = "update TSDTV_SHOW set episodeNumber = ? where name = ?";
-            try(PreparedStatement ps = dbConn.prepareStatement(update)) {
-                ps.setInt(1,program.episodeNum+1);
-                ps.setString(2,program.show);
-                ps.executeUpdate();
+            try {
+                Connection dbConn = TSDDatabase.getInstance().getConnection();
+                String update = "update TSDTV_SHOW set episodeNumber = ? where name = ?";
+                try(PreparedStatement ps = dbConn.prepareStatement(update)) {
+                    ps.setInt(1,program.episodeNum+1);
+                    ps.setString(2,program.show);
+                    ps.executeUpdate();
+                }
+            } catch (Exception e) {
+                logger.error("Error updating show episode number", e);
             }
         }
 
@@ -232,7 +236,7 @@ public class TSDTV {
         }
     }
 
-    public void finishStream() throws SQLException {
+    public void finishStream() {
         runningStream = null;
         if(!queue.isEmpty()) {
             play(queue.pop());
