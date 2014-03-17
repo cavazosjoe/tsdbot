@@ -120,7 +120,7 @@ public class TSDDatabase {
                                 showsTable,
                                 f.getName());
                         try(PreparedStatement ps1 = getConnection().prepareCall(insertShow)) {
-                            ps.executeUpdate();
+                            ps1.executeUpdate();
                         }
                     }
                 }

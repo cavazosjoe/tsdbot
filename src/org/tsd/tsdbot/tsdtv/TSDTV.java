@@ -33,7 +33,6 @@ public class TSDTV {
 
     private static final TSDTV instance = new TSDTV();
 
-    private TSDBot bot = TSDBot.getInstance();
     private String scriptDir;
     private String catalogDir;
     private String scheduleLoc;
@@ -77,7 +76,7 @@ public class TSDTV {
             first = false;
         }
 
-        bot.sendMessages(requester, IRCUtil.splitLongString(catalogBuilder.toString()));
+        TSDBot.getInstance().sendMessages(requester, IRCUtil.splitLongString(catalogBuilder.toString()));
 
     }
 
@@ -88,7 +87,7 @@ public class TSDTV {
         if(program.show != null && program.episodeNum > 0) {
             try {
                 Connection dbConn = TSDDatabase.getInstance().getConnection();
-                String update = "update TSDTV_SHOW set episodeNumber = ? where name = ?";
+                String update = "update TSDTV_SHOW set currentEpisode = ? where name = ?";
                 try(PreparedStatement ps = dbConn.prepareStatement(update)) {
                     ps.setInt(1,program.episodeNum+1);
                     ps.setString(2,program.show);
@@ -101,7 +100,8 @@ public class TSDTV {
 
         HashMap<String,String> metadata = getVideoMetadata(program.filePath);
 
-        bot.broadcast("[TSDTV] NOW PLAYING: " + metadata.get("Title") + " -- http://www.twitch.tv/tsd_irc");
+        TSDBot.getInstance().broadcast("[TSDTV] NOW PLAYING: " + metadata.get("artist") + ": " +
+                metadata.get("title") + " -- http://www.twitch.tv/tsd_irc");
     }
 
     public void prepareOnDemand(String dir, String query) throws Exception {
@@ -156,7 +156,7 @@ public class TSDTV {
             String q = String.format("select currentEpisode from TSDTV_SHOW where name = '%s'", show);
             try(PreparedStatement ps = dbConn.prepareStatement(q) ; ResultSet result = ps.executeQuery()) {
                 while(result.next()) {
-                    int episodeNum = result.getInt("episodeNumber");
+                    int episodeNum = result.getInt("currentEpisode");
                     logger.info("Looking for episode {} of {}", episodeNum, show);
                     File showDir = new File(catalogDir + "/" + show);
                     if(showDir.exists()) {
@@ -175,17 +175,18 @@ public class TSDTV {
         }
 
         StringBuilder broadcastBuilder = new StringBuilder();
-        broadcastBuilder.append("[TSDTV] \"").append(blockName).append("\" block now starting. Lined up:");
+        broadcastBuilder.append("[TSDTV] \"").append(blockName).append("\" block now starting. Lined up: ");
         int i=0;
-        while(i < Math.min(4, queue.size()+1)) {
+        while(i < Math.min(4, queue.size())) {
             if(i != 0) broadcastBuilder.append(", ");
             broadcastBuilder.append(programs.get(i));
             i++;
         }
 
-        bot.broadcast(broadcastBuilder.toString());
+        TSDBot.getInstance().broadcast(broadcastBuilder.toString());
 
-        play(queue.pop());
+        if(!queue.isEmpty()) play(queue.pop());
+        else logger.error("Could not find any shows for block...");
     }
 
     public void buildSchedule() {
@@ -231,6 +232,9 @@ public class TSDTV {
                     }
                 }
             }
+
+            scheduler.start();
+
         } catch (Exception e) {
             logger.error("Error building TSDTV schedule", e);
         }

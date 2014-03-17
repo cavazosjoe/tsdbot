@@ -60,8 +60,6 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
     @Override
     public LinkedList<HboForumPost> sweep() {
 
-        logger.info("Beginning HBO Forum sweep...");
-
         LinkedList<HboForumPost> notifications = new LinkedList<>();
 
         HttpGet indexGet = null;
@@ -81,17 +79,12 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
             indexGet = new HttpGet(uri);
             indexGet.setHeader("User-Agent", "Mozilla/4.0");
             indexResponse = client.execute(indexGet, context);
-            logger.info("Received index response...");
             indexEntity = indexResponse.getEntity();
-            logger.info("Received index entity...");
             String indexText = EntityUtils.toString(indexEntity);
             Matcher indexMatcher = newThreadPattern.matcher(indexText);
 
             int postId = -1;
             while(indexMatcher.find() && notifications.size() < MAX_HISTORY) {
-
-                logger.info("Found new thread!");
-                logger.info("notifications.size() = {}", notifications.size());
 
                 HboForumPost foundPost = null;
                 HttpGet postGet = null;
@@ -102,23 +95,17 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
                 try {
 
                     postId = Integer.parseInt(indexMatcher.group(1));
-                    logger.info("postId = {}", postId);
                     if( (!recentNotifications.isEmpty()) &&
                             (postId <= recentNotifications.getFirst().getPostId() ) ) {
-                        logger.info("Post ID less than {}, skipping...", recentNotifications.getFirst().getPostId());
                         continue;
                     }
                     postGet = new HttpGet("http://carnage.bungie.org/haloforum/halo.forum.pl?read=" + postId);
                     postResponse = client.execute(postGet, context);
-                    logger.info("Received post response...");
                     postEntity = postResponse.getEntity();
-                    logger.info("Received post entity...");
                     String postText = EntityUtils.toString(postEntity);
                     if(postText.contains("<div class=\"msg_prev\">")) continue; // stale reply
                     postMatcher = postInfoPattern.matcher(postText);
                     while(postMatcher.find()) {
-
-                        logger.info("Matched post regex! Creating notification...");
 
                         foundPost = new HboForumPost();
                         foundPost.setPostId(postId);
@@ -133,7 +120,6 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
 
                         notifications.addLast(foundPost);
 
-                        logger.info("Added notification to list");
                     }
 
                 } finally {
