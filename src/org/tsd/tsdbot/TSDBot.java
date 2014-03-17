@@ -6,12 +6,8 @@ import com.maxsvett.fourchan.FourChan;
 import com.maxsvett.fourchan.board.Board;
 import com.maxsvett.fourchan.page.Page;
 import com.maxsvett.fourchan.post.Post;
-import com.maxsvett.fourchan.thread.*;
 import com.maxsvett.fourchan.thread.Thread;
-import org.apache.commons.collections.buffer.CircularFifoBuffer;
 import org.apache.http.NoHttpResponseException;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpRequestRetryHandler;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
@@ -20,7 +16,6 @@ import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.protocol.HttpContext;
 import org.jibble.pircbot.PircBot;
 import org.jibble.pircbot.User;
@@ -32,6 +27,7 @@ import org.tsd.tsdbot.runnable.IRCListenerThread;
 import org.tsd.tsdbot.runnable.StrawPoll;
 import org.tsd.tsdbot.runnable.ThreadManager;
 import org.tsd.tsdbot.runnable.TweetPoll;
+import org.tsd.tsdbot.tsdtv.TSDTV;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
 import twitter4j.Status;
@@ -52,6 +48,8 @@ public class TSDBot extends PircBot implements Runnable {
 
     private static Logger logger = LoggerFactory.getLogger("TSDBot");
 
+    private static TSDBot instance = null;
+
     private java.lang.Thread mainThread;
     private final TSDDatabase database;
     private HashMap<NotificationType, NotificationManager> notificationManagers = new HashMap<>();
@@ -67,13 +65,20 @@ public class TSDBot extends PircBot implements Runnable {
     public boolean debug = false;
     public static long blunderCount = 0;
 
-    public TSDBot(String name, String[] channels, boolean debug) {
+    public static void build(String name, String[] channels, boolean debug) {
+        instance = new TSDBot(name, channels, debug);
+    }
+
+    public static TSDBot getInstance() {
+        return instance;
+    }
+
+    private TSDBot(String name, String[] channels, boolean debug) {
         
         this.name = name;
         this.debug = debug;
 
-        database = new TSDDatabase();
-        database.initialize();
+        database = TSDDatabase.getInstance();
         logger.info("Database initialized successfully");
 
         setName(name);
@@ -116,11 +121,9 @@ public class TSDBot extends PircBot implements Runnable {
             logger.error("ERROR INITIALIZING NOTIFICATION MANAGERS", e);
         }
 
-        try {
-            tsdtv = new TSDTV(this);
-        } catch (IOException e) {
-            logger.error("Error initializing TSDTV", e);
-        }
+        tsdtv = TSDTV.getInstance();
+        tsdtv.buildSchedule();
+        logger.info("TSDTV initialized successfully");
 
         mainThread = new java.lang.Thread(this);
         mainThread.start();
@@ -213,7 +216,7 @@ public class TSDBot extends PircBot implements Runnable {
             }
 
             try {
-                tsdtv.play(channel, subdir, query);
+                tsdtv.prepareOnDemand(subdir, query);
             } catch (Exception e) {
                 sendMessage(channel, "Error: " + e.getMessage());
             }
@@ -337,7 +340,7 @@ public class TSDBot extends PircBot implements Runnable {
         if(!getUserFromNick(channel,sender).hasPriv(User.Priv.SUPEROP)) {
             kick(channel, sender, "Stop that.");
         } else {
-            partChannel(channel,"ABORT ABORT ABORT");
+            partChannel(channel, "ABORT ABORT ABORT");
         }
     }
 
@@ -476,7 +479,7 @@ public class TSDBot extends PircBot implements Runnable {
         TwitterManager mgr = (TwitterManager) notificationManagers.get(NotificationType.TWITTER);
 
         if(cmdParts.length == 1) {
-            sendMessage(channel,cmd.getUsage());
+            sendMessage(channel, cmd.getUsage());
         } else {
             try {
                 String subCmd = cmdParts[1];

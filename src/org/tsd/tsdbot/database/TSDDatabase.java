@@ -17,12 +17,14 @@ public class TSDDatabase {
     private static String connectionString = "jdbc:h2:tcp://localhost/" + System.getProperty("user.dir") + "/db";
     private Connection conn;
 
-    static {
-        try {
-            Class.forName("org.h2.Driver");
-        } catch (ClassNotFoundException e) {
-            logger.error("TSDDatabase init error", e);
+    private static TSDDatabase instance = null;
+
+    public static TSDDatabase getInstance() {
+        if(instance == null) {
+            instance = new TSDDatabase();
+            instance.initialize();
         }
+        return instance;
     }
 
     public Connection getConnection() {
@@ -46,8 +48,9 @@ public class TSDDatabase {
     public void initialize() {
         try {
             initTomCruiseDb();
-        } catch (SQLException e) {
-            e.printStackTrace();
+            initTSDTVDB();
+        } catch (SQLException | IOException e) {
+            logger.error("TSDDB init error",e);
         }
     }
 
@@ -90,22 +93,6 @@ public class TSDDatabase {
 
     private void initTSDTVDB() throws SQLException, IOException {
 
-        // reload all blocks
-        String blocksTable = "TSDTV_BLOCK";
-        String dropBlocks = String.format("drop table if exists %s", blocksTable);
-        try(PreparedStatement ps = getConnection().prepareStatement(dropBlocks)) {
-            ps.execute();
-        }
-
-        String createBlocks = String.format("create table %s (" +
-                "id int auto_increment," +
-                "name varchar," +
-                "quartzString varchar," +
-                "primary key (id))", blocksTable);
-        try(PreparedStatement ps = getConnection().prepareStatement(createBlocks)) {
-            ps.executeUpdate();
-        }
-
         // load new shows
         String showsTable = "TSDTV_SHOW";
         String createShows = String.format("create table if not exists %s (" +
@@ -118,7 +105,7 @@ public class TSDDatabase {
         }
 
         Properties prop = new Properties();
-        InputStream fis = TSDBotLauncher.class.getResourceAsStream("/tsdbot.properties");
+        InputStream fis = TSDDatabase.class.getResourceAsStream("/tsdbot.properties");
         prop.load(fis);
         String catalogPath = prop.getProperty("tsdtv.catalog");
         File catalogDir = new File(catalogPath);
@@ -139,46 +126,6 @@ public class TSDDatabase {
                 }
             }
         }
-
-        // reload all episodes
-        String episodesTable = "TSDTV_EPISODE";
-        String dropEpisodes = String.format("drop table if exists %s", episodesTable);
-        try(PreparedStatement ps = getConnection().prepareStatement(dropEpisodes)) {
-            ps.execute();
-        }
-
-        String createEpisodes = String.format("create table %s (" +
-                "blockId int," +
-                "showId int," +
-                "order int)" +
-                blocksTable);
-        try(PreparedStatement ps = getConnection().prepareStatement(createEpisodes)) {
-            ps.executeUpdate();
-        }
-
-        FileInputStream schedule = new FileInputStream(new File(prop.getProperty("tsdtv.schedule")));
-        try(BufferedReader br = new BufferedReader(new InputStreamReader(schedule))) {
-            String line = null;
-            while((line = br.readLine()) != null) {
-                if(line.startsWith("BLOCK")) {
-                    String blockName = line.substring(line.indexOf("=") + 1);
-                    String quartzString = br.readLine();
-                    LinkedList<String> shows = new LinkedList<>();
-                    while(!(line = br.readLine()).equals("ENDBLOCK")) {
-                        shows.add(line);
-                    }
-
-                    String newBlock = String.format(
-                            "insert into %s (name, schedule) values ('%s', '%s')",
-                            blocksTable, blockName, quartzString);
-                    try(PreparedStatement ps = getConnection().prepareStatement(newBlock)) {
-                        ps.executeUpdate();
-                    }
-
-                }
-            }
-        }
-
 
     }
 
