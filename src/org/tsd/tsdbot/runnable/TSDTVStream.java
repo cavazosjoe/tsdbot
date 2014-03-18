@@ -29,6 +29,7 @@ public class TSDTVStream implements Runnable {
         pb.directory(new File(scriptDir));
         pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
         pb.redirectError(ProcessBuilder.Redirect.INHERIT);
+        boolean playNext = true;
         synchronized (TSDTV.getInstance()) {
             try {
                 Process p = pb.start();
@@ -37,8 +38,9 @@ public class TSDTVStream implements Runnable {
                 logger.error("IOException", ioe);
             } catch (InterruptedException e) {
                 logger.info("TSDTV stream interrupted");
+                playNext = false;
             }
         }
-        TSDTV.getInstance().finishStream();
+        TSDTV.getInstance().finishStream(playNext);
     }
 }

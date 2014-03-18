@@ -7,6 +7,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.protocol.HttpContext;
@@ -33,7 +34,6 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
     private static Logger logger = LoggerFactory.getLogger(HboForumManager.class);
 
     private HttpClient client;
-    private HttpContext context;
 
     private static final Pattern newThreadPattern = Pattern.compile("<tr><td><a name='m_(\\d+)'");
     private static final Pattern postInfoPattern = Pattern.compile(
@@ -49,12 +49,11 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
                 + "sub|sup|pre|del|code|blockquote|strike|kbd|br|hr|area|map|object|embed|param|link|form|small|big|script|object|embed|link|style|form|input)$");
     }
 
-    public HboForumManager(HttpClient client, HttpContext context) {
+    public HboForumManager(HttpClient client) {
         super(5);
         hboSdf = new SimpleDateFormat("MM/dd/yy HH:mm a");
         hboSdf.setTimeZone(TimeZone.getTimeZone("America/New_York"));
         this.client = client;
-        this.context = context;
     }
 
     @Override
@@ -62,6 +61,7 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
 
         LinkedList<HboForumPost> notifications = new LinkedList<>();
 
+        HttpContext context = HttpClientContext.create();
         HttpGet indexGet = null;
         HttpResponse indexResponse = null;
         HttpEntity indexEntity = null;

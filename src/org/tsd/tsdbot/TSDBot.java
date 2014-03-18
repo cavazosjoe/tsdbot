@@ -60,7 +60,6 @@ public class TSDBot extends PircBot implements Runnable {
 
     private PoolingHttpClientConnectionManager poolingManager;
     private CloseableHttpClient httpClient;
-    private HttpContext httpContext;
 
     public boolean debug = false;
     public static long blunderCount = 0;
@@ -103,7 +102,6 @@ public class TSDBot extends PircBot implements Runnable {
             }
         };
         httpClient = HttpClients.custom().setConnectionManager(poolingManager).setRetryHandler(retryHandler).build();
-        httpContext = HttpClientContext.create();
         logger.info("HttpClient initialized successfully");
 
         WebClient webClient = new WebClient(BrowserVersion.CHROME);
@@ -113,7 +111,7 @@ public class TSDBot extends PircBot implements Runnable {
         Twitter twitterClient = TwitterFactory.getSingleton();
 
         try {
-            notificationManagers.put(NotificationType.HBO_FORUM, new HboForumManager(httpClient, httpContext));
+            notificationManagers.put(NotificationType.HBO_FORUM, new HboForumManager(httpClient));
             notificationManagers.put(NotificationType.DBO_FORUM, new DboForumManager(webClient));
             notificationManagers.put(NotificationType.HBO_NEWS, new HboNewsManager());
             notificationManagers.put(NotificationType.DBO_NEWS, new DboNewsManager());
@@ -217,7 +215,7 @@ public class TSDBot extends PircBot implements Runnable {
             }
 
             try {
-                tsdtv.prepareOnDemand(subdir, query);
+                tsdtv.prepareOnDemand(channel, subdir, query);
             } catch (Exception e) {
                 sendMessage(channel, "Error: " + e.getMessage());
             }
@@ -640,7 +638,6 @@ public class TSDBot extends PircBot implements Runnable {
                 }
 
                 poolingManager.closeIdleConnections(60, TimeUnit.SECONDS);
-                logger.info("Closed idle connections");
 
             } catch (Exception e) {
                 logger.error("TSDBot.run() error", e);

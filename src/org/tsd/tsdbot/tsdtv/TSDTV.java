@@ -104,10 +104,7 @@ public class TSDTV {
                 metadata.get("title") + " -- http://www.twitch.tv/tsd_irc");
     }
 
-    public void prepareOnDemand(String dir, String query) throws Exception {
-
-        if(runningStream != null)
-            throw new Exception("There is already a stream running");
+    public void prepareOnDemand(String channel, String dir, String query) throws Exception {
 
         File searchingDir;
         if(dir == null) searchingDir = new File(catalogDir);
@@ -133,7 +130,11 @@ public class TSDTV {
             throw new Exception(ex.toString());
         }
 
-        play(new TSDTVProgram(matchedFiles.get(0).getAbsolutePath()));
+        TSDTVProgram program = new TSDTVProgram(matchedFiles.get(0).getAbsolutePath());
+        if(runningStream != null) {
+            queue.addLast(program);
+            TSDBot.getInstance().sendMessage(channel, "There is already a stream running. Your show has been enqueued");
+        } else play(program);
 
     }
 
@@ -151,26 +152,40 @@ public class TSDTV {
         queue.clear();
 
         Connection dbConn = TSDDatabase.getInstance().getConnection();
+
+        // use dynamic map to get correct episode numbers for repeating shows
+        HashMap<String, Integer> episodeNums = new HashMap<>(); // show -> episode num
         for(String show : programs) {
-            // find the current episode to play and add it to the queue
-            String q = String.format("select currentEpisode from TSDTV_SHOW where name = '%s'", show);
-            try(PreparedStatement ps = dbConn.prepareStatement(q) ; ResultSet result = ps.executeQuery()) {
-                while(result.next()) {
-                    int episodeNum = result.getInt("currentEpisode");
-                    logger.info("Looking for episode {} of {}", episodeNum, show);
-                    File showDir = new File(catalogDir + "/" + show);
-                    if(showDir.exists()) {
-                        for(File f : showDir.listFiles()) {
-                            if(f.getName().startsWith("" + episodeNum)) {
-                                queue.addLast(new TSDTVProgram(f.getAbsolutePath(), show, episodeNum));
-                                logger.info("Added {} to queue", f.getAbsolutePath());
-                                break;
-                            }
-                        }
-                    } else {
-                        logger.error("Could not find show directory: {}", catalogDir + "/" + show);
+
+            int episodeNum = 0;
+            if(!episodeNums.containsKey(show)) {
+                // this show hasn't appeared in the block yet -- get current episode num from DB
+                String q = String.format("select currentEpisode from TSDTV_SHOW where name = '%s'", show);
+                try(PreparedStatement ps = dbConn.prepareStatement(q) ; ResultSet result = ps.executeQuery()) {
+                    while(result.next()) {
+                        episodeNum = result.getInt("currentEpisode");
+                        episodeNums.put(show, episodeNum);
                     }
                 }
+            } else {
+                // this show has appeared in the block -- increment episode num
+                if(episodeNums.get(show)+1 > getNumberOfEpisodes(show)) episodeNum = 1; // wrap if we reached the end
+                else episodeNum = episodeNums.get(show)+1;
+                episodeNums.put(show,episodeNum);
+            }
+
+            logger.info("Looking for episode {} of {}", episodeNum, show);
+            File showDir = new File(catalogDir + "/" + show);
+            if(showDir.exists()) {
+                for(File f : showDir.listFiles()) {
+                    if(f.getName().startsWith("" + episodeNum)) {
+                        queue.addLast(new TSDTVProgram(f.getAbsolutePath(), show, episodeNum));
+                        logger.info("Added {} to queue", f.getAbsolutePath());
+                        break;
+                    }
+                }
+            } else {
+                logger.error("Could not find show directory: {}", catalogDir + "/" + show);
             }
         }
 
@@ -228,7 +243,6 @@ public class TSDTV {
                                 .build();
 
                         scheduler.scheduleJob(job, cronTrigger);
-
                     }
                 }
             }
@@ -240,9 +254,9 @@ public class TSDTV {
         }
     }
 
-    public void finishStream() {
+    public void finishStream(boolean playNext) {
         runningStream = null;
-        if(!queue.isEmpty()) {
+        if(playNext && !queue.isEmpty()) {
             play(queue.pop());
         }
     }
@@ -281,5 +295,19 @@ public class TSDTV {
 
         return metadata;
 
+    }
+
+    public int getNumberOfEpisodes(String show) {
+        int count = 0;
+        File showDir = new File(catalogDir + "/" + show);
+        if(showDir.exists()) {
+            for(File f : showDir.listFiles()) {
+                if(f.isFile()) count++;
+            }
+        } else {
+            logger.error("Could not find show directory: {}", catalogDir + "/" + show);
+        }
+
+        return count;
     }
 }
