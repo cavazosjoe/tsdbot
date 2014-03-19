@@ -220,6 +220,26 @@ public class TSDBot extends PircBot implements Runnable {
                 sendMessage(channel, "Error: " + e.getMessage());
             }
 
+        } else if(subCmd.equals("kill")) {
+
+            if(!getUserFromNick(channel, sender).hasPriv(User.Priv.OP)) {
+                sendMessage(channel, "Only ops can use that");
+                return;
+            }
+            tsdtv.kill();
+            sendMessage(channel, "The stream has been killed");
+
+        } else if(subCmd.equals("reload")) {
+
+            if(!getUserFromNick(channel, sender).hasPriv(User.Priv.OP)) {
+                sendMessage(channel, "Only ops can use that");
+                return;
+            }
+            tsdtv.buildSchedule();
+            sendMessage(channel, "The schedule has been reloaded");
+
+        } else if(subCmd.equals("schedule")) {
+            tsdtv.printSchedule(channel);
         }
 
     }

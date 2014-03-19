@@ -2,6 +2,7 @@ package org.tsd.tsdbot.tsdtv;
 
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
+import org.quartz.impl.matchers.GroupMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
@@ -15,10 +16,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Properties;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.regex.Pattern;
 
 import static org.quartz.JobBuilder.*;
 import static org.quartz.TriggerBuilder.*;
@@ -33,13 +33,16 @@ public class TSDTV {
 
     private static final TSDTV instance = new TSDTV();
 
+    private static final Pattern episodeNumberPattern = Pattern.compile("^(\\d+).*",Pattern.DOTALL);
+
     private String scriptDir;
     private String catalogDir;
     private String scheduleLoc;
 
+    private Scheduler scheduler;
     private LinkedList<TSDTVProgram> queue = new LinkedList<>(); // file paths
 
-    private Thread runningStream;
+    private ThreadStream runningStream;
 
     public TSDTV() {
         try {
@@ -81,8 +84,10 @@ public class TSDTV {
     }
 
     private void play(TSDTVProgram program) {
-        runningStream = new Thread(new TSDTVStream(scriptDir, program.filePath));
-        runningStream.start();
+        TSDTVStream stream = new TSDTVStream(scriptDir, program.filePath);
+        Thread thread = new Thread(stream);
+        runningStream = new ThreadStream(thread, stream);
+        runningStream.begin();
 
         if(program.show != null && program.episodeNum > 0) {
             try {
@@ -142,11 +147,9 @@ public class TSDTV {
 
         logger.info("Preparing TSDTV block: {}", blockName);
 
-        synchronized (this) {
-            if(runningStream != null) {
-                runningStream.notify(); // end running stream
-                logger.info("Ended currently running stream");
-            }
+        if(runningStream != null) {
+            runningStream.kill(); // end running stream
+            logger.info("Ended currently running stream");
         }
 
         queue.clear();
@@ -176,12 +179,17 @@ public class TSDTV {
 
             logger.info("Looking for episode {} of {}", episodeNum, show);
             File showDir = new File(catalogDir + "/" + show);
+            java.util.regex.Matcher epNumMatcher;
             if(showDir.exists()) {
                 for(File f : showDir.listFiles()) {
-                    if(f.getName().startsWith("" + episodeNum)) {
-                        queue.addLast(new TSDTVProgram(f.getAbsolutePath(), show, episodeNum));
-                        logger.info("Added {} to queue", f.getAbsolutePath());
-                        break;
+                    epNumMatcher = episodeNumberPattern.matcher(f.getName());
+                    while(epNumMatcher.find()) {
+                        int epNum = Integer.parseInt(epNumMatcher.group(1));
+                        if(epNum == episodeNum) {
+                            queue.addLast(new TSDTVProgram(f.getAbsolutePath(), show, episodeNum));
+                            logger.info("Added {} to queue", f.getAbsolutePath());
+                            break;
+                        }
                     }
                 }
             } else {
@@ -204,10 +212,75 @@ public class TSDTV {
         else logger.error("Could not find any shows for block...");
     }
 
+    public void printSchedule(String channel) {
+
+        HashMap<String, String> metadata;
+
+        if(runningStream != null) {
+            metadata = getVideoMetadata(runningStream.stream.getMovie());
+            String np = "NOW PLAYING: " + metadata.get("artist") + " - " + metadata.get("title");
+            TSDBot.getInstance().sendMessage(channel, np);
+        }
+
+        if(!queue.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("On deck: ");
+            boolean first = true;
+            for(TSDTVProgram program : queue) {
+                if(!first) sb.append(", ");
+                sb.append(program.show);
+                first = false;
+            }
+            TSDBot.getInstance().sendMessage(channel, sb.toString());
+        }
+
+        try {
+            Set<JobKey> keys = scheduler.getJobKeys(GroupMatcher.<JobKey>anyGroup());
+            TreeMap<Date, JobDetail> jobMap = new TreeMap<>();
+            for(JobKey key : keys) {
+                List<Trigger> triggers = (List<Trigger>) scheduler.getTriggersOfJob(key);
+                if(!triggers.isEmpty()) {
+                    Date nextFireTime = triggers.get(0).getNextFireTime();
+                    jobMap.put(nextFireTime, scheduler.getJobDetail(key));
+                }
+            }
+
+            if(!jobMap.isEmpty()) {
+                StringBuilder sb = null;
+                SimpleDateFormat sdf = new SimpleDateFormat("HH:mm a z");
+                sdf.setTimeZone(TimeZone.getTimeZone("America/New_York"));
+                for(Date d : jobMap.descendingKeySet()) {
+                    sb = new StringBuilder();
+                    sb.append(sdf.format(d)).append(" -- ");
+                    JobDetail job = jobMap.get(d);
+                    String name = job.getJobDataMap().getString("name");
+                    String schedule = job.getJobDataMap().getString("schedule");
+                    sb.append(name).append(": ");
+                    String[] scheduleParts = schedule.split(";;");
+                    boolean first = true;
+                    for(String s : scheduleParts) {
+                        if(!first) sb.append(", ");
+                        sb.append(s);
+                        first = false;
+                    }
+                    TSDBot.getInstance().sendMessage(channel, sb.toString());
+                }
+            }
+
+        } catch (SchedulerException e) {
+            TSDBot.getInstance().sendMessage(channel, "(Error retrieving scheduled info)");
+            logger.error("Error getting scheduled info", e);
+        }
+    }
+
     public void buildSchedule() {
         try {
-            SchedulerFactory schedulerFactory = new StdSchedulerFactory();
-            Scheduler scheduler = schedulerFactory.getScheduler();
+            if(scheduler == null) {
+                SchedulerFactory schedulerFactory = new StdSchedulerFactory();
+                scheduler = schedulerFactory.getScheduler();
+            } else {
+                scheduler.clear();
+            }
 
             JobDetail job;
             CronTrigger cronTrigger;
@@ -251,6 +324,13 @@ public class TSDTV {
 
         } catch (Exception e) {
             logger.error("Error building TSDTV schedule", e);
+        }
+    }
+
+    public void kill() {
+        logger.info("Received kill signal...");
+        if(runningStream != null) {
+            runningStream.kill();
         }
     }
 
@@ -309,5 +389,23 @@ public class TSDTV {
         }
 
         return count;
+    }
+
+    class ThreadStream {
+        public Thread thread;
+        public TSDTVStream stream;
+
+        public ThreadStream(Thread thread, TSDTVStream stream) {
+            this.thread = thread;
+            this.stream = stream;
+        }
+
+        public void begin() {
+            thread.start();
+        }
+
+        public void kill() {
+            thread.interrupt();
+        }
     }
 }

@@ -107,34 +107,9 @@ public class TestDriver {
 
         // --------------------
 
-//        Connection conn = TSDDatabase.getConnection();
-//        boolean exists = TSDDatabase.tableExists("TESTTABLE");
-//        System.out.println(exists);
-        JFXPanel fxPanel = new JFXPanel();
 
-//        Media media = new Media("file:///C:/Users/Joe/Downloads/Space%20Ghost%20Coast%20To%20Coast/Season%208/bafmeal.m4v");
-        MediaPlayer mediaPlayer;
-        final Media media = new Media("file:///C:/Users/Joe/Downloads/Space%20Ghost%20Coast%20To%20Coast/Season%208/bafmeal.m4v");
-        media.getMetadata().addListener(new MapChangeListener<String, Object>() {
-            @Override
-            public void onChanged(Change<? extends String, ? extends Object> ch) {
-                if (ch.wasAdded()) {
-                    System.out.println(ch.getKey());
-                    System.out.println(ch.getValueAdded());
-                }
-            }
-        });
+        String fileName = "12--A_Movie_In_The_Folder--5--555--.mp4";
+        int i=0;
 
-        mediaPlayer = new MediaPlayer(media);
-        mediaPlayer.setOnError(new Runnable() {
-            @Override
-            public void run() {
-                final String errorMessage = media.getError().getMessage();
-                // Handle errors during playback
-                System.out.println("MediaPlayer Error: " + errorMessage);
-            }
-        });
-
-        mediaPlayer.play();
     }
 }
