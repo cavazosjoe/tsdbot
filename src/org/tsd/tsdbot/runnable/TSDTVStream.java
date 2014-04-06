@@ -14,39 +14,36 @@ public class TSDTVStream implements Runnable {
 
     private static Logger logger = LoggerFactory.getLogger(TSDTVStream.class);
 
-    private String scriptDir;
-    private String movie;
+    private String[] ffmpegParts;
+    private String pathToMovie;
 
-    public TSDTVStream(String scriptDir, String movieToPlay) {
-        this.scriptDir = scriptDir;
-        this.movie = movieToPlay;
+    public TSDTVStream(String[] ffmpegParts, String pathToMovie) {
+        this.ffmpegParts = ffmpegParts;
+        this.pathToMovie = pathToMovie;
     }
 
-    public String getMovie() {
-        return movie;
+    public String getPathToMovie() {
+        return pathToMovie;
     }
 
     @Override
     public void run() {
-        logger.info("[TSDTV] preparing movie " + movie);
-        ProcessBuilder pb = new ProcessBuilder("./tsdtv.sh", movie);
-        pb.directory(new File(scriptDir));
+        logger.info("[TSDTV] preparing movie " + pathToMovie);
+        ProcessBuilder pb = new ProcessBuilder(ffmpegParts);
+        pb.redirectError(ProcessBuilder.Redirect.INHERIT);
         boolean playNext = true;
         try {
             Process p = pb.start();
             try {
-                while(isRunning(p)) {
-                    Thread.sleep(5000);
-                    if(Thread.interrupted()) {
-                        logger.info("TSDTV detected thread interrupt");
-                        throw new InterruptedException();
-                    }
-                }
+                logger.info("TSDTV stream started, waiting...");
+                p.waitFor();
+                logger.info("TSDTV stream ended normally");
             } catch (InterruptedException e) {
                 logger.info("TSDTV stream interrupted");
+                playNext = false;
+            } finally {
                 p.destroy();
                 logger.info("TSDTV stream destroyed");
-                playNext = false;
             }
         } catch (IOException e) {
             logger.error("IOException", e);
@@ -55,12 +52,4 @@ public class TSDTVStream implements Runnable {
         TSDTV.getInstance().finishStream(playNext);
     }
 
-    private boolean isRunning(Process p) {
-        try {
-            p.exitValue();
-            return false;
-        } catch (Exception e) {
-            return true;
-        }
-    }
 }

@@ -13,7 +13,7 @@ import java.util.Map;
  */
 public class HistoryBuff {
 
-    private static final int CHANNEL_HISTORY_SIZE = 20; // 20 message history per channel
+    private static final int CHANNEL_HISTORY_SIZE = 500; // 500 message history per channel
     private Map<String, CircularFifoBuffer> channelHistory = new HashMap<>();
 
     public void initialize(String[] channels) {
@@ -40,7 +40,7 @@ public class HistoryBuff {
 
     }
 
-    public List<Message> getFilteredPossibilities(String channel, String targetUser) {
+    public List<Message> getMessagesByChannel(String channel, String targetUser) {
         LinkedList<Message> possibilities = new LinkedList<>();
 
         if (!channelHistory.containsKey(channel)) {

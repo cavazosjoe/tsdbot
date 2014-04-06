@@ -28,6 +28,7 @@ import org.tsd.tsdbot.runnable.StrawPoll;
 import org.tsd.tsdbot.runnable.ThreadManager;
 import org.tsd.tsdbot.runnable.TweetPoll;
 import org.tsd.tsdbot.tsdtv.TSDTV;
+import org.tsd.tsdbot.util.GVUtil;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
 import twitter4j.Status;
@@ -169,6 +170,7 @@ public class TSDBot extends PircBot implements Runnable {
                 case CHOOSE: choose(channel, message); break;
                 case FILENAME: filename(channel); break;
                 case TSDTV: tsdtv(channel, sender, cmdParts); break;
+                case GV: gv(channel, cmdParts); break;
             }
         } else {
             String replaceResult = Replacer.tryStringReplace(channel, message, historyBuff);
@@ -178,6 +180,40 @@ public class TSDBot extends PircBot implements Runnable {
 
         historyBuff.updateHistory(channel, message, sender);
 
+    }
+
+    private void gv(String channel, String[] cmdParts) {
+        Random rand = new Random();
+        if(cmdParts.length == 1) {
+            List<HistoryBuff.Message> history = historyBuff.getMessagesByChannel(channel, null);
+            if(history.size() == 0) return;
+            HistoryBuff.Message randomMsg = history.get(rand.nextInt(history.size()));
+            sendMessage(channel, "<" + randomMsg.sender + "> " + randomMsg.text);
+            sendMessage(channel, GVUtil.getRandomGvResponse());
+        } else if(cmdParts.length == 2) {
+
+            if(!cmdParts[1].equals("pls")) {
+                sendMessage(channel, Command.GV.getUsage());
+            } else {
+                List<HistoryBuff.Message> gvLines = historyBuff.getMessagesByChannel(channel, "general");
+                if(gvLines.size() == 0) gvLines = historyBuff.getMessagesByChannel(channel,"gv");
+                if(gvLines.size() == 0) return;
+
+                String runOnSentence = null;
+                int i=0;
+                while(runOnSentence == null && i < gvLines.size()) {
+                    runOnSentence = GVUtil.breakUpSentence(gvLines.get(i).text);
+                    i++;
+                }
+
+                if(runOnSentence == null) {
+                    sendMessage(channel, "I don't see anything wrong here, quit being mean");
+                    return;
+                }
+
+                sendMessage(channel, runOnSentence);
+            }
+        }
     }
 
     private void tsdtv(String channel, String sender, String[] cmdParts) {
@@ -706,6 +742,15 @@ public class TSDBot extends PircBot implements Runnable {
                 new String[]{".cmd"},
                 "Have the bot send you a list of commands",
                 "USAGE: .cmd",
+                null
+        ),
+
+        GV(
+                new String[]{".gv"},
+                "The Generally Vague Utility, I guess, but I don't know why you would want to use it, unless you had" +
+                        "a good reason, but I guess that goes without saying, even though I never really had to," +
+                        "because if I did have to, I would have just done it",
+                "USAGE: .gv [pls]",
                 null
         ),
 

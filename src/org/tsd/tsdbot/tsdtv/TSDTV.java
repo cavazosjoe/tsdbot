@@ -35,7 +35,6 @@ public class TSDTV {
 
     private static final Pattern episodeNumberPattern = Pattern.compile("^(\\d+).*",Pattern.DOTALL);
 
-    private String scriptDir;
     private String catalogDir;
     private String scheduleLoc;
 
@@ -44,13 +43,12 @@ public class TSDTV {
 
     private ThreadStream runningStream;
 
-    public TSDTV() {
+    private TSDTV() {
         try {
             Properties prop = new Properties();
             InputStream fis = TSDBotLauncher.class.getResourceAsStream("/tsdbot.properties");
             prop.load(fis);
             catalogDir = prop.getProperty("tsdtv.catalog");
-            scriptDir = prop.getProperty("mainDir");
             scheduleLoc = prop.getProperty("tsdtv.schedule");
         } catch (IOException e) {
             logger.error("Error initializing TSDTV", e);
@@ -84,7 +82,7 @@ public class TSDTV {
     }
 
     private void play(TSDTVProgram program) {
-        TSDTVStream stream = new TSDTVStream(scriptDir, program.filePath);
+        TSDTVStream stream = new TSDTVStream(ffmpegCommand(program.filePath), program.filePath);
         Thread thread = new Thread(stream);
         runningStream = new ThreadStream(thread, stream);
         runningStream.begin();
@@ -104,9 +102,13 @@ public class TSDTV {
         }
 
         HashMap<String,String> metadata = getVideoMetadata(program.filePath);
+        String artist = metadata.get("artist");
+        if(artist == null) artist = program.show;
+        String title = metadata.get("title");
+        if(title == null) title = program.filePath.substring(program.filePath.lastIndexOf("/")+1);
 
-        TSDBot.getInstance().broadcast("[TSDTV] NOW PLAYING: " + metadata.get("artist") + ": " +
-                metadata.get("title") + " -- http://www.twitch.tv/tsd_irc");
+        TSDBot.getInstance().broadcast("[TSDTV] NOW PLAYING: " + artist + ": " + title
+                + " -- http://irc.teamschoolyd.org/tsdtv.html");
     }
 
     public void prepareOnDemand(String channel, String dir, String query) throws Exception {
@@ -114,9 +116,21 @@ public class TSDTV {
         File searchingDir;
         if(dir == null) searchingDir = new File(catalogDir);
         else {
-            searchingDir = new File(catalogDir + "/" + dir);
-            if(!searchingDir.exists())
-                throw new Exception("Could not find directory " + dir + " (case sensitive)");
+            List<File> matchingDirs = new LinkedList<>();
+            for(File f : (new File(catalogDir)).listFiles()) {
+                if(f.isDirectory() && f.getName().toLowerCase().contains(dir.toLowerCase()))
+                    matchingDirs.add(f);
+            }
+
+            if(matchingDirs.size() == 0)
+                throw new Exception("Could not find directory matching \"" + dir + "\"");
+            else if(matchingDirs.size() > 1) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("Found multiple directories matching for \"").append(dir).append("\":");
+                for(File f : matchingDirs)
+                    sb.append(" ").append(f.getName());
+                throw new Exception(sb.toString());
+            } else searchingDir = matchingDirs.get(0);
         }
 
         LinkedList<File> matchedFiles = new LinkedList<>();
@@ -217,9 +231,15 @@ public class TSDTV {
         HashMap<String, String> metadata;
 
         if(runningStream != null) {
-            metadata = getVideoMetadata(runningStream.stream.getMovie());
-            String np = "NOW PLAYING: " + metadata.get("artist") + " - " + metadata.get("title");
-            TSDBot.getInstance().sendMessage(channel, np);
+            metadata = getVideoMetadata(runningStream.stream.getPathToMovie());
+            String artist = metadata.get("artist");
+            String title = metadata.get("title");
+
+            String np;
+            if(artist == null || title == null) np = runningStream.stream.getPathToMovie();
+            else np = metadata.get("artist") + " - " + metadata.get("title");
+
+            TSDBot.getInstance().sendMessage(channel, "NOW PLAYING: " + np);
         }
 
         if(!queue.isEmpty()) {
@@ -247,9 +267,9 @@ public class TSDTV {
 
             if(!jobMap.isEmpty()) {
                 StringBuilder sb = null;
-                SimpleDateFormat sdf = new SimpleDateFormat("HH:mm a z");
+                SimpleDateFormat sdf = new SimpleDateFormat("EEE HH:mm a z");
                 sdf.setTimeZone(TimeZone.getTimeZone("America/New_York"));
-                for(Date d : jobMap.descendingKeySet()) {
+                for(Date d : jobMap.keySet()) {
                     sb = new StringBuilder();
                     sb.append(sdf.format(d)).append(" -- ");
                     JobDetail job = jobMap.get(d);
@@ -338,6 +358,8 @@ public class TSDTV {
         runningStream = null;
         if(playNext && !queue.isEmpty()) {
             play(queue.pop());
+        } else {
+            queue.clear();
         }
     }
 
@@ -347,7 +369,6 @@ public class TSDTV {
 
         try {
             ProcessBuilder pb = new ProcessBuilder("ffmpeg", "-i", moviePath);
-            pb.directory(new File(scriptDir));
             Process p = pb.start();
             p.waitFor();
             InputStream out = p.getErrorStream();
@@ -391,7 +412,28 @@ public class TSDTV {
         return count;
     }
 
-    class ThreadStream {
+    public String[] ffmpegCommand(String targetFile) {
+        return new String[]{
+                "ffmpeg",
+                "-re",
+                "-y",
+                "-i",       targetFile,
+                "-c:v",     "libx264",
+                "-preset",  "ultrafast",
+                "-b:v",     "400k",
+                "-r",       "20",
+                "-s",       "640x360",
+                "-vf",      "yadif",
+                "-strict",  "experimental",
+                "-c:a",     "aac",
+                "-b:a",     "50k",
+                "-ar",      "44100",
+                "-f",       "flv",
+                "rtmp://localhost/live/tsdtv"
+        };
+    }
+
+    static class ThreadStream {
         public Thread thread;
         public TSDTVStream stream;
 

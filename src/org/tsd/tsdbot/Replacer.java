@@ -27,7 +27,7 @@ public class Replacer {
             // Trim off any leading "/g" looking stuff that comes before the username
             String user = theRest.replaceFirst("^(/g ?|/)\\s*", "");
 
-            List<Message> possibilities = historyBuffer.getFilteredPossibilities(channel, user);
+            List<Message> possibilities = historyBuffer.getMessagesByChannel(channel, user);
 
             for (Message m: possibilities) {
                 String replaced = replace(m.text, find, replace);
