@@ -15,9 +15,9 @@ public class TSDTVProgram {
         this.episodeNum = episodeNum;
     }
 
-    public TSDTVProgram(String filePath) {
+    public TSDTVProgram(String filePath, String show) {
         this.filePath = filePath;
-        this.show = null;
+        this.show = show;
         this.episodeNum = -1;
     }
 }

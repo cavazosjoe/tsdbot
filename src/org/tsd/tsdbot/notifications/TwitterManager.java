@@ -28,11 +28,14 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     private static final String SCHOOLY = "Schooly_D";
     private static final String USER_HANDLE = "TSD_IRC";
     private static final long USER_ID = 2349834990l;
+    private static final long EXCEPTION_COOLDOWN = 1000 * 60 * 2; // 2 minutes
+    private static final long COOLDOWN_PERIOD = 1000 * 60 * 60; // 1 hour
 
     private TSDBot bot;
     private Twitter twitter;
     private TwitterStream stream;
     private HashMap<Long,User> following;
+    private HashMap<Long, Long> cooldown; // userId -> timestamp of last tweet
 
     public TwitterManager(final TSDBot bot, Twitter twitter) throws IOException {
         super(5);
@@ -56,13 +59,17 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
             logger.info("Twitter API initialized successfully");
 
             this.following = new HashMap<>();
+            this.cooldown = new HashMap<>();
             Long[] followingIds = ArrayUtils.toObject(twitter.getFriendsIDs(USER_ID, -1).getIDs());
-            for(Long id : followingIds) following.put(id, twitter.showUser(id));
+            for(Long id : followingIds) {
+                following.put(id, twitter.showUser(id));
+                cooldown.put(id, 0L);
+            }
 
             if(!bot.debug) { // disable streaming if in debug mode
 
                 final DelayQueue<DelayedImpl> throttle = new DelayQueue<>();
-                throttle.put(new DelayedImpl(60 * 1000)); // delay for a minute
+                throttle.put(new DelayedImpl(EXCEPTION_COOLDOWN)); // delay for two minutes
 
                 ConfigurationBuilder cb = new ConfigurationBuilder()
                         .setOAuthConsumerKey(CONSUMER_KEY)
@@ -79,10 +86,14 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
                         if(status.getUser().getId() == USER_ID) return;
 
                         // don't display tweets from people we don't follow
-                        if(!following.containsValue(status.getUser())) return;
+                        if(!following.containsKey(status.getUser().getId())) return;
 
                         // don't display replies to tweets from people we don't follow
                         if(status.getInReplyToUserId() > 0 && (!following.containsKey(status.getInReplyToUserId()))) return;
+
+                        // don't display the tweet if the tweeter has tweeted < 1 hour ago
+                        if(System.currentTimeMillis() - cooldown.get(status.getUser().getId()) < COOLDOWN_PERIOD) return;
+                        else cooldown.put(status.getUser().getId(), System.currentTimeMillis());
 
                         Tweet newTweet = new Tweet(status);
                         recentNotifications.addFirst(newTweet);
@@ -112,7 +123,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
                         TSDBot.blunderCount++;
                         try {
                             throttle.take();
-                            throttle.put(new DelayedImpl(60 * 1000));
+                            throttle.put(new DelayedImpl(EXCEPTION_COOLDOWN));
                         } catch (InterruptedException e1) {
                             e1.printStackTrace();
                         }
@@ -146,6 +157,10 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
         return twitter.updateStatus(text);
     }
 
+    public Status retweet(Tweet toRetweet) throws TwitterException {
+        return twitter.retweetStatus(toRetweet.getStatus().getId());
+    }
+
     public Status postReply(Tweet replyTo, String text) throws TwitterException {
 
         if(text.startsWith("@")) { // text = @whoever I thought you were dead!
@@ -173,6 +188,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
             User followed = twitter.createFriendship(handle);
             if(followed != null) {
                 following.put(followed.getId(), followed);
+                cooldown.put(followed.getId(), 0L);
                 refreshFollowersFilter();
                 bot.sendMessage(channel, "Now following @" + followed.getScreenName());
             }
@@ -188,6 +204,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
             User unfollowed = twitter.destroyFriendship(handle);
             if(unfollowed != null) {
                 following.remove(unfollowed.getId());
+                cooldown.remove(unfollowed.getId());
                 refreshFollowersFilter();
                 bot.sendMessage(channel, "No longer following @" + unfollowed.getScreenName());
             }

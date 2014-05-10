@@ -29,8 +29,6 @@ public class GVUtil {
             "Why would you care?",
             "That's something I've always found interesting",
             "That's something I never found interesting, sorry",
-            "My prof would probably disagree",
-            "ur a faget",
             "I don't understand. Why?",
             "This isn't really something I want to discuss, sorry",
             "This isn't something I want to discuss, sorry",
@@ -39,7 +37,8 @@ public class GVUtil {
             "That's not very interesting",
             "Why am I supposed to care about that?",
             "I'd ask you to elaborate but I don't really care, sorry",
-            "I'd ask you to elaborate but I'm not interested, sorry"
+            "I'd ask you to elaborate but I'm not interested, sorry",
+            "I know I'm late but I read this and I don't care"
     };
 
     public static String getRandomGvResponse() {

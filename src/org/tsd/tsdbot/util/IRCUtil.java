@@ -1,8 +1,10 @@
 package org.tsd.tsdbot.util;
 
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.LinkedList;
+import java.util.List;
 
 import static com.rosaloves.bitlyj.Bitly.*;
 
@@ -40,7 +42,16 @@ public class IRCUtil {
                 .call(shorten(url)).getShortUrl();
     }
 
-    public static boolean fuzzyMatches(String targetUser, String sender) {
-        return sender.toLowerCase().startsWith(targetUser.toLowerCase());
+    public static boolean fuzzyMatches(String query, String element) {
+        return element.toLowerCase().contains(query.toLowerCase());
     }
+
+    public static List<String> fuzzyMatcher(String query, List<String> elements) {
+        LinkedList<String> matches = new LinkedList<>();
+        for(String e : elements) {
+            if(fuzzyMatches(query, e)) matches.add(e);
+        }
+        return matches;
+    }
+
 }

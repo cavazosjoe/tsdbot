@@ -239,6 +239,15 @@ public class TSDBot extends PircBot implements Runnable {
                 sendMessage(channel, "Error retrieving catalog: " + e.getMessage());
             }
 
+        } else if(subCmd.equals("replay")) {
+
+            if(cmdParts.length < 3) {
+                sendMessage(channel, Command.TSDTV.getUsage());
+                return;
+            }
+
+            tsdtv.prepareBlockReplay(channel, cmdParts[2]);
+
         } else if(subCmd.equals("play")) {
 
             String subdir = null;
@@ -275,7 +284,12 @@ public class TSDBot extends PircBot implements Runnable {
             sendMessage(channel, "The schedule has been reloaded");
 
         } else if(subCmd.equals("schedule")) {
-            tsdtv.printSchedule(channel);
+
+            if(cmdParts.length > 2 && cmdParts[2].equalsIgnoreCase("today"))
+                tsdtv.printSchedule(channel, true);
+            else
+                tsdtv.printSchedule(channel, false);
+
         }
 
     }
@@ -572,13 +586,30 @@ public class TSDBot extends PircBot implements Runnable {
                         for(NotificationEntity not : matchedTweets) returnString += (" " + not.getKey());
                         returnString += ". Help me out here";
                         sendMessage(channel,returnString);
-                    }
-                    else {
+                    } else {
                         String tweet = "";
                         for(int i=3 ; i < cmdParts.length ; i++) tweet += (cmdParts[i] + " ");
                         Status postedReply = mgr.postReply(matchedTweets.get(0),tweet);
                         sendMessage(channel,"Reply successful: " + "https://twitter.com/TSD_IRC/status/" + postedReply.getId());
                         logger.info("[TWITTER] Posted reply: {}", "https://twitter.com/TSD_IRC/status/" + postedReply.getId());
+                    }
+                } else if(subCmd.equals("retweet")) {
+                    if(!isOp) {
+                        sendMessage(channel,"Only ops can use .tw retweet");
+                        return;
+                    }
+                    String retweetString = cmdParts[2];
+                    LinkedList<TwitterManager.Tweet> matchedTweets = mgr.getNotificationByTail(retweetString);
+                    if(matchedTweets.size() == 0) sendMessage(channel,"Could not find tweet with ID matching" + retweetString + " in recent history");
+                    else if(matchedTweets.size() > 1) {
+                        String returnString = "Found multiple matching Tweets in recent history:";
+                        for(NotificationEntity not : matchedTweets) returnString += (" " + not.getKey());
+                        returnString += ". Help me out here";
+                        sendMessage(channel,returnString);
+                    } else {
+                        Status retweet = mgr.retweet(matchedTweets.get(0));
+                        sendMessage(channel,"Retweet successful: " + "https://twitter.com/TSD_IRC/status/" + retweet.getId());
+                        logger.info("[TWITTER] Posted retweet: {}", "https://twitter.com/TSD_IRC/status/" + retweet.getId());
                     }
                 } else if(subCmd.equals("follow")) {
                     if(!isOp) {

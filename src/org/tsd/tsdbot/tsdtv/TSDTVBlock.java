@@ -27,7 +27,7 @@ public class TSDTVBlock implements Job {
         Collections.addAll(blockSchedule, scheduleParts);
 
         try {
-            TSDTV.getInstance().prepareScheduledBlock(name, blockSchedule);
+            TSDTV.getInstance().prepareScheduledBlock(name, blockSchedule, 0);
         } catch (SQLException e) {
             logger.error("Error preparing scheduled block", e);
         }

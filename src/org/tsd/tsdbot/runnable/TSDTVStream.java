@@ -1,11 +1,13 @@
 package org.tsd.tsdbot.runnable;
 
+import com.maxsvett.fourchan.thread.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.tsdtv.TSDTV;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.Thread;
 
 /**
  * Created by Joe on 3/9/14.
@@ -26,8 +28,19 @@ public class TSDTVStream implements Runnable {
         return pathToMovie;
     }
 
+    public String getMovieName() {
+        return pathToMovie.substring(pathToMovie.lastIndexOf("/")+1);
+    }
+
     @Override
     public void run() {
+        try {
+            Thread.sleep(500); // wait for half a second
+        } catch (InterruptedException e) {
+            logger.error("Interrupted during stream delay");
+            TSDTV.getInstance().finishStream(false);
+            return;
+        }
         logger.info("[TSDTV] preparing movie " + pathToMovie);
         ProcessBuilder pb = new ProcessBuilder(ffmpegParts);
         pb.redirectError(ProcessBuilder.Redirect.INHERIT);
