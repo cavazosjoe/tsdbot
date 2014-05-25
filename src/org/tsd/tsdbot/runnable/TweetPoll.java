@@ -26,15 +26,16 @@ public class TweetPoll extends IRCListenerThread {
     private HashSet<String> ayes = new HashSet<>();
     private boolean aborted = false;
 
-    public TweetPoll(TSDBot bot, String channel, ThreadManager threadManager, String proposer, TwitterManager twitterManager, int numUsers, String proposedTweet, TwitterManager.Tweet replyTo) throws Exception {
+    public TweetPoll(TSDBot bot, String channel, String proposer, TwitterManager twitterManager, String proposedTweet, TwitterManager.Tweet replyTo) throws Exception {
 
-        super(threadManager, channel);
+        super(channel);
 
         this.bot = bot;
         this.twitterManager = twitterManager;
         this.proposedTweet = proposedTweet;
         this.proposer = proposer;
 
+        int numUsers = bot.getNonBotUsers(channel).size();
         if(numUsers <= 5) this.requiredVotes = numUsers;
         else this.requiredVotes = (int)(2*Math.log(numUsers));
 

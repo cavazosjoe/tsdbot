@@ -1,11 +1,9 @@
 package org.tsd.tsdbot.runnable;
 
-import com.maxsvett.fourchan.thread.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.tsdtv.TSDTV;
+import org.tsd.tsdbot.functions.TSDTV;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.Thread;
 

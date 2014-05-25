@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.tsd.tsdbot.database.TSDDatabase;
+import org.tsd.tsdbot.functions.TomCruise;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -22,14 +23,14 @@ public class TomCruiseTest {
     String insertClip = "insert into TomCruiseClips ( id, clip ) values ( 9999, 'https://www.youtube.com/watch?v=7yP9MmzyTIg' )";
     String deleteClip = "delete from TomCruiseClips where id = 9999";
 
+    private TomCruise tomCruise;
     private TSDDatabase db;
 
     @Before
     public void setup() {
 
-        db = new TSDDatabase();
-        db.initialize();
-
+        db = TSDDatabase.getInstance();
+        tomCruise = new TomCruise();
 
         try {
 
@@ -68,21 +69,22 @@ public class TomCruiseTest {
     @Test
     public void testRandomClip() throws ClassNotFoundException, SQLException {
 
-        assertNotNull(TomCruise.getRandomClip(db.getConnection()));
+
+        assertNotNull(tomCruise.getRandomClip(db.getConnection()));
 
     }
 
     @Test
     public void testRandomQuote() throws ClassNotFoundException, SQLException {
 
-        assertNotNull(TomCruise.getRandomQuote(db.getConnection()));
+        assertNotNull(tomCruise.getRandomQuote(db.getConnection()));
 
     }
 
     @Test
     public void testRandomWhatever() throws ClassNotFoundException, SQLException {
 
-        assertNotNull(TomCruise.getRandom(db.getConnection()));
+        assertNotNull(tomCruise.getRandom(db.getConnection()));
 
     }
 

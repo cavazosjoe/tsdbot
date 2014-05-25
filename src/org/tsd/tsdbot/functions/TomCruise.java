@@ -1,23 +1,81 @@
-package org.tsd.tsdbot;
+package org.tsd.tsdbot.functions;
 
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.TSDDatabase;
-import org.tsd.tsdbot.util.IRCUtil;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 
 /**
- * Created by Joe on 2/19/14.
+ * Created by Joe on 5/24/14.
  */
-public class TomCruise {
+public class TomCruise implements MainFunction {
 
-    private static final Random rand = new Random();
+    @Override
+    public void run(String channel, String sender, String text) {
+
+        String[] cmdParts = text.split("\\s+");
+        TSDBot bot = TSDBot.getInstance();
+        TSDDatabase database = TSDDatabase.getInstance();
+
+        if(cmdParts.length == 1) {
+            bot.sendMessage(channel, getRandom(database.getConnection()));
+        } else if(cmdParts[1].equals("quote")) {
+            bot. sendMessage(channel, getRandomQuote(database.getConnection()));
+        } else if(cmdParts[1].equals("clip")) {
+            bot.sendMessage(channel, getRandomClip(database.getConnection()));
+        } else {
+            bot.sendMessage(channel, TSDBot.Command.TOM_CRUISE.getUsage());
+        }
+    }
+
+    public String getRandom(Connection conn) {
+
+        Random rand = new Random();
+
+        if (rand.nextBoolean()) { // flip a coin
+            return getRandomClip(conn);
+        }
+
+        return getRandomQuote(conn);
+    }
+
+    public String getRandomClip(Connection conn) {
+
+        String sql = "select data from TOMCRUISE where type = 'clip' order by rand() limit 1";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return null; // Maybe return something from an emergency collection defined in this class
+    }
+
+    public String getRandomQuote(Connection conn) {
+
+        String sql = "select data from TOMCRUISE where type = 'quote' order by rand() limit 1";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString(1);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return null; // Maybe return something from an emergency collection defined in this class
+    }
+
+    // stuff below is used for database seeding
 
     public static final String[] quotes = new String[] {
             "Get with it. Millions of galaxies of hundreds of millions of stars, in a speck on one in a blink. That’s " +
@@ -97,45 +155,4 @@ public class TomCruise {
             "https://www.youtube.com/watch?v=nf7_eayBkxA",
             "https://www.youtube.com/watch?v=XO4f-JqXG7g"
     };
-
-    public static String getRandom(Connection conn) {
-
-        if (rand.nextBoolean()) { // flip a coin
-            return getRandomClip(conn);
-        }
-
-        return getRandomQuote(conn);
-    }
-
-    public static String getRandomClip(Connection conn) {
-
-        String sql = "select data from TOMCRUISE where type = 'clip' order by rand() limit 1";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getString(1);
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return null; // Maybe return something from an emergency collection defined in this class
-    }
-
-    public static String getRandomQuote(Connection conn) {
-
-        String sql = "select data from TOMCRUISE where type = 'quote' order by rand() limit 1";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getString(1);
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return null; // Maybe return something from an emergency collection defined in this class
-    }
 }

@@ -13,13 +13,21 @@ import java.util.Map;
  */
 public class HistoryBuff {
 
+    private static HistoryBuff instance = null;
     private static final int CHANNEL_HISTORY_SIZE = 500; // 500 message history per channel
     private Map<String, CircularFifoBuffer> channelHistory = new HashMap<>();
 
-    public void initialize(String[] channels) {
+    private HistoryBuff(String[] channels) {
         for(String channel : channels)
             channelHistory.put(channel, new CircularFifoBuffer(CHANNEL_HISTORY_SIZE));
     }
+
+    public static HistoryBuff build(String [] channels) {
+        if(instance == null) instance = new HistoryBuff(channels);
+        return instance;
+    }
+
+    public static HistoryBuff getInstance() { return instance; }
 
     public synchronized void updateHistory(String channel, String message, String sender) {
 
@@ -60,8 +68,8 @@ public class HistoryBuff {
     }
 
     public class Message {
-        String text;
-        String sender;
+        public String text;
+        public String sender;
         //Date date?
     }
 }

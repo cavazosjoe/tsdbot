@@ -1,16 +1,19 @@
-package org.tsd.tsdbot.util;
+package org.tsd.tsdbot.functions;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.HistoryBuff;
+import org.tsd.tsdbot.TSDBot;
 
+import java.util.List;
 import java.util.Random;
 
 /**
  * Created by Joe on 4/5/14.
  */
-public class GVUtil {
+public class GeeVee implements MainFunction {
 
-    private static Logger logger = LoggerFactory.getLogger("GVUtil");
+    private static Logger logger = LoggerFactory.getLogger(GeeVee.class);
 
     private static String[] gvResponses = new String[]{
             "I don't think you understand, but whatever",
@@ -68,5 +71,41 @@ public class GVUtil {
             e.printStackTrace();
         }
         return null;
+    }
+
+    @Override
+    public void run(String channel, String sender, String text) {
+        Random rand = new Random();
+        TSDBot bot = TSDBot.getInstance();
+        HistoryBuff historyBuff = HistoryBuff.getInstance();
+        String[] cmdParts = text.split("\\s+");
+        if(cmdParts.length == 1) {
+            List<HistoryBuff.Message> history = historyBuff.getMessagesByChannel(channel, null);
+            if(history.size() == 0) return;
+            HistoryBuff.Message randomMsg = history.get(rand.nextInt(history.size()));
+            bot.sendMessage(channel, "<" + randomMsg.sender + "> " + randomMsg.text);
+            bot.sendMessage(channel, GeeVee.getRandomGvResponse());
+        } else if(cmdParts.length == 2) {
+
+            if(!cmdParts[1].equals("pls")) {
+                bot.sendMessage(channel, TSDBot.Command.GV.getUsage());
+            } else {
+                List<HistoryBuff.Message> gvLines = historyBuff.getMessagesByChannel(channel, "general");
+                if(gvLines.size() == 0) gvLines = historyBuff.getMessagesByChannel(channel,"gv");
+                if(gvLines.size() == 0) return;
+
+                String runOnSentence = null;
+                int i=0;
+                while(runOnSentence == null && i < gvLines.size()) {
+                    runOnSentence = GeeVee.breakUpSentence(gvLines.get(i).text);
+                    i++;
+                }
+
+                if(runOnSentence == null)
+                    bot.sendMessage(channel, "I don't see anything wrong here, quit being mean");
+                else
+                    bot.sendMessage(channel, runOnSentence);
+            }
+        }
     }
 }

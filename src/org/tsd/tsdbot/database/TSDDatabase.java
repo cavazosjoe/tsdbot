@@ -2,8 +2,9 @@ package org.tsd.tsdbot.database;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.TSDBotLauncher;
-import org.tsd.tsdbot.TomCruise;
+import org.tsd.tsdbot.functions.TomCruise;
 
 import java.io.*;
 import java.sql.*;
@@ -48,7 +49,9 @@ public class TSDDatabase {
     public void initialize() {
         try {
             initTomCruiseDb();
-            initTSDTVDB();
+            if(!TSDBot.getInstance().isDebug()) {
+                initTSDTVDB();
+            }
         } catch (SQLException | IOException e) {
             logger.error("TSDDB init error",e);
         }

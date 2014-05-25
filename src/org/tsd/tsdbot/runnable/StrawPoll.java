@@ -21,9 +21,9 @@ public class StrawPoll extends IRCListenerThread {
     private HashSet<Vote> votes = new HashSet<>();
     private boolean aborted = false;
 
-    public StrawPoll(TSDBot bot, String channel, String proposer, ThreadManager threadManager, String question, int duration, String[] options) throws Exception {
+    public StrawPoll(TSDBot bot, String channel, String proposer, String question, int duration, String[] options) throws Exception {
 
-        super(threadManager,channel);
+        super(channel);
 
         this.bot = bot;
         this.proposer = proposer;

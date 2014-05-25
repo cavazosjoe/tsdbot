@@ -17,14 +17,9 @@ public abstract class IRCListenerThread implements Callable {
     protected long startTime = -1;
     protected final Object mutex = new Object();
 
-    public IRCListenerThread(ThreadManager threadManager, String channel) {
-        this.manager = threadManager;
+    public IRCListenerThread(String channel) {
         this.channel = channel;
         this.listeningCommands = new HashSet<>();
-    }
-
-    protected void shutdown() {
-        manager.removeThread(this);
     }
 
     public String getChannel() {

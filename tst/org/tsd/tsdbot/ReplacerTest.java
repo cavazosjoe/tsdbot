@@ -4,6 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.tsd.tsdbot.functions.Replace;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -12,10 +13,12 @@ import static org.junit.Assert.assertNull;
 public class ReplacerTest {
     
     HistoryBuff historyBuff;
+    Replace replace;
 
     @Before
     public void setup() {
-        historyBuff = new HistoryBuff();
+        replace = new Replace();
+        historyBuff = HistoryBuff.build(new String[]{"tsd"});
 
         historyBuff.updateHistory("tsd", "This is a good test", "tarehart");
         historyBuff.updateHistory("tsd", "Some corgi stuff", "Tex");
@@ -30,45 +33,44 @@ public class ReplacerTest {
     @Test
     public void tryDifferentFormats() {
 
-        String replacement = Replacer.tryStringReplace("tsd", "s/good/superb/g", historyBuff);
+        String replacement = replace.tryStringReplace("tsd", "s/good/superb/g", historyBuff);
         assertEquals(makeMessage("This is a superb test", "tarehart"), replacement);
 
-        replacement = Replacer.tryStringReplace("tsd", "s/good/superb/", historyBuff);
+        replacement = replace.tryStringReplace("tsd", "s/good/superb/", historyBuff);
         assertEquals(makeMessage("This is a superb test", "tarehart"), replacement);
 
-        replacement = Replacer.tryStringReplace("tsd", "s/good/superb", historyBuff);
+        replacement = replace.tryStringReplace("tsd", "s/good/superb", historyBuff);
         assertEquals(makeMessage("This is a superb test", "tarehart"), replacement);
 
-        replacement = Replacer.tryStringReplace("tsd", "s/good/superb/tarehart", historyBuff);
+        replacement = replace.tryStringReplace("tsd", "s/good/superb/tarehart", historyBuff);
         assertEquals(makeMessage("This is a superb test", "tarehart"), replacement);
 
-        replacement = Replacer.tryStringReplace("tsd", "s/good/superb/g tarehart", historyBuff);
+        replacement = replace.tryStringReplace("tsd", "s/good/superb/g tarehart", historyBuff);
         assertEquals(makeMessage("This is a superb test", "tarehart"), replacement);
     }
 
     @Test
     public void testRecentMessagePrecedence() {
-        String replacement = Replacer.tryStringReplace("tsd", "s/corgi/dog", historyBuff);
+        String replacement = replace.tryStringReplace("tsd", "s/corgi/dog", historyBuff);
         assertEquals(makeMessage("A funny dog joke", "Schooly_D"), replacement);
     }
 
     @Test
     public void testCensorship() {
-        String replacement = Replacer.tryStringReplace("tsd", "s/corgi/ /Schooly_D", historyBuff);
+        String replacement = replace.tryStringReplace("tsd", "s/corgi/ /Schooly_D", historyBuff);
         assertEquals(makeMessage("A funny   joke", "Schooly_D"), replacement);
     }
 
     @Test
     public void testRegex() {
-        String replacement = Replacer.tryStringReplace("tsd", "s/\\.*/dudes", historyBuff);
+        String replacement = replace.tryStringReplace("tsd", "s/\\.*/dudes", historyBuff);
         assertNull(replacement); // No regex allowed.
     }
 
     @Test
     public void testCorrectSelf() {
-        String replacement = Replacer.tryStringReplace("nomansland", "s/something/dudes", "bot", historyBuff);
+        String replacement = replace.tryStringReplace("nomansland", "s/something/dudes", "bot", historyBuff);
         assertEquals("I said what I meant.", replacement);
     }
-
 
 }

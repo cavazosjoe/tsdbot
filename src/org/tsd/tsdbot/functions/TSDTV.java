@@ -1,5 +1,6 @@
-package org.tsd.tsdbot.tsdtv;
+package org.tsd.tsdbot.functions;
 
+import org.jibble.pircbot.User;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.impl.matchers.GroupMatcher;
@@ -9,6 +10,8 @@ import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.TSDBotLauncher;
 import org.tsd.tsdbot.database.TSDDatabase;
 import org.tsd.tsdbot.runnable.TSDTVStream;
+import org.tsd.tsdbot.tsdtv.TSDTVBlock;
+import org.tsd.tsdbot.tsdtv.TSDTVProgram;
 import org.tsd.tsdbot.util.IRCUtil;
 
 import java.io.*;
@@ -29,7 +32,7 @@ import static org.quartz.CronScheduleBuilder.*;
 /**
  * Created by Joe on 3/9/14.
  */
-public class TSDTV {
+public class TSDTV implements MainFunction {
 
     private static Logger logger = LoggerFactory.getLogger(TSDTV.class);
 
@@ -61,6 +64,88 @@ public class TSDTV {
 
     public static TSDTV getInstance() {
         return instance;
+    }
+    
+    @Override
+    public void run(String channel, String sender, String text) {
+
+        TSDBot bot = TSDBot.getInstance();
+        String[] cmdParts = text.split("\\s+");
+        TSDBot.Command cmd = TSDBot.Command.TSDTV;
+        
+        if(cmdParts.length < 2) {
+            bot.sendMessage(channel, cmd.getUsage());
+            return;
+        }
+
+        String subCmd = cmdParts[1];
+
+        if(subCmd.equals("catalog")) {
+
+            String subdir = null;
+            if(cmdParts.length > 2) {
+                subdir = cmdParts[2].replaceAll("/","");
+            }
+
+            try {
+                bot.sendMessage(channel, "I'm sending you a list of my available movies, " + sender);
+                catalog(sender, subdir);
+            } catch (Exception e) {
+                bot.sendMessage(channel, "Error retrieving catalog: " + e.getMessage());
+            }
+
+        } else if(subCmd.equals("replay")) {
+
+            if(cmdParts.length < 3) {
+                bot.sendMessage(channel, cmd.getUsage());
+                return;
+            }
+
+            prepareBlockReplay(channel, cmdParts[2]);
+
+        } else if(subCmd.equals("play")) {
+
+            String subdir = null;
+            String query;
+            if(cmdParts.length > 3) {
+                subdir = cmdParts[2].replaceAll("/","");
+                query = cmdParts[3].replaceAll("/", "");
+            } else {
+                query = cmdParts[2].replaceAll("/","");
+            }
+
+            try {
+                prepareOnDemand(channel, subdir, query);
+            } catch (Exception e) {
+                bot.sendMessage(channel, "Error: " + e.getMessage());
+            }
+
+        } else if(subCmd.equals("kill")) {
+
+            if(!bot.getUserFromNick(channel, sender).hasPriv(User.Priv.OP)) {
+                bot.sendMessage(channel, "Only ops can use that");
+                return;
+            }
+            kill();
+            bot.sendMessage(channel, "The stream has been killed");
+
+        } else if(subCmd.equals("reload")) {
+
+            if(!bot.getUserFromNick(channel, sender).hasPriv(User.Priv.OP)) {
+                bot.sendMessage(channel, "Only ops can use that");
+                return;
+            }
+            buildSchedule();
+            bot.sendMessage(channel, "The schedule has been reloaded");
+
+        } else if(subCmd.equals("schedule")) {
+
+            if(cmdParts.length > 2 && cmdParts[2].equalsIgnoreCase("all"))
+                printSchedule(channel, false);
+            else
+                printSchedule(channel, true);
+
+        }
     }
 
     public void catalog(String requester, String subdir) throws Exception {

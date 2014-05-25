@@ -14,11 +14,19 @@ import javafx.collections.ObservableMap;
 import javafx.embed.swing.JFXPanel;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
+import org.apache.http.Header;
+import org.apache.http.NoHttpResponseException;
+import org.apache.http.client.HttpRequestRetryHandler;
 import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.client.LaxRedirectStrategy;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.protocol.HttpContext;
 import org.tsd.tsdbot.database.TSDDatabase;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -34,6 +42,7 @@ import twitter4j.auth.AccessToken;
 import twitter4j.auth.RequestToken;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.Thread;
 import java.net.MalformedURLException;
@@ -108,8 +117,46 @@ public class TestDriver {
         // --------------------
 
 
-        String fileName = "12--A_Movie_In_The_Folder--5--555--.mp4";
-        int i=0;
+//        PoolingHttpClientConnectionManager poolingManager = new PoolingHttpClientConnectionManager();
+//        poolingManager.setMaxTotal(100);
+//        HttpRequestRetryHandler retryHandler = new HttpRequestRetryHandler() {
+//            @Override
+//            public boolean retryRequest(IOException e, int i, HttpContext httpContext) {
+//                if(i >= 5) return false; // don't try more than 5 times
+//                return e instanceof NoHttpResponseException;
+//            }
+//        };
+//        CloseableHttpClient httpClient = HttpClients.custom()
+//                .setConnectionManager(poolingManager)
+//                .setRetryHandler(retryHandler)
+//                .build();
+//        final String url = "http://sonicfanon.wikia.com/wiki/Special:Random";
+//        HttpPost post = new HttpPost(url);
+//        try {
+//            post.setHeader("User-Agent", "Mozilla/4.0");
+//            CloseableHttpResponse response = httpClient.execute(post);
+//            if(response.getStatusLine().getStatusCode()==302) {
+//                int i=0;
+//            }
+//        } catch (Exception e) {
+//            int i=0;
+//        } finally {
+//            post.releaseConnection();
+//        }
+
+        // ------------------------------
+
+        String one = ".dbof do something";
+        String two = ".dbox do nothing";
+        String three = "s/blergh/blah";
+        String four = "s/flargh/fleh/hurrr";
+        String five = ".dbofff";
+
+        String p1 = "^\\.dbof .*";
+        String p2 = "^s/[\\w]+/[^/]+";
+
+        System.out.println("wlkejf");
+
 
     }
 }
