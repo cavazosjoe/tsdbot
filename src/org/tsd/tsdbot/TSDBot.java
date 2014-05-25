@@ -118,6 +118,7 @@ public class TSDBot extends PircBot implements Runnable {
         functions.put(Command.FOURCHAN, new FourChan());
         functions.put(Command.TOM_CRUISE, new TomCruise());
         functions.put(Command.REPLACE, new Replace());
+        functions.put(Command.DEEJ, new Deej());
 
         OmniPost omniPost = new OmniPost();
         functions.put(Command.DBO_FORUM, omniPost);
@@ -249,6 +250,13 @@ public class TSDBot extends PircBot implements Runnable {
                 "^\\.cmd$",
                 "Have the bot send you a list of commands",
                 "USAGE: .cmd",
+                null
+        ),
+
+        DEEJ(
+                "^\\.deej$",
+                "DeeJ utility. Picks a random line from the channel history and makes it all fancy and shit",
+                "USAGE: .deej",
                 null
         ),
 
