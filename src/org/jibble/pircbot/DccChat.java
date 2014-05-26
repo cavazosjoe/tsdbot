@@ -14,8 +14,8 @@ found at http://www.jibble.org/licenses/
 
 package org.jibble.pircbot;
 
-import java.net.*;
 import java.io.*;
+import java.net.Socket;
 
 /**
  * This class is used to allow the bot to interact with a DCC Chat session.

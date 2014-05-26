@@ -1,6 +1,5 @@
 package org.tsd.tsdbot.notifications;
 
-import org.apache.commons.collections.buffer.CircularFifoBuffer;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +12,10 @@ import twitter4j.conf.ConfigurationBuilder;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;

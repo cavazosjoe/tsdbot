@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.functions.TSDTV;
 
 import java.io.IOException;
-import java.lang.Thread;
 
 /**
  * Created by Joe on 3/9/14.

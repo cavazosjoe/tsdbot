@@ -1,10 +1,10 @@
 package com.maxsvett.fourchan;
 
-import java.util.Scanner;
-
 import com.maxsvett.fourchan.board.Board;
 import com.maxsvett.fourchan.captcha.Captcha;
 import com.maxsvett.fourchan.post.SubmitPost;
+
+import java.util.Scanner;
 
 public class Testing {
 	

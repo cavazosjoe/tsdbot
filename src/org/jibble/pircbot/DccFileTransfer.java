@@ -14,8 +14,10 @@ found at http://www.jibble.org/licenses/
 
 package org.jibble.pircbot;
 
-import java.net.*;
 import java.io.*;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 
 /**
  * This class is used to administer a DCC file transfer.

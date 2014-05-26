@@ -3,12 +3,12 @@ package org.tsd.tsdbot.database;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
-import org.tsd.tsdbot.TSDBotLauncher;
 import org.tsd.tsdbot.functions.TomCruise;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.*;
-import java.util.LinkedList;
 import java.util.Properties;
 
 public class TSDDatabase {

@@ -16,7 +16,6 @@ import org.tsd.tsdbot.functions.*;
 import org.tsd.tsdbot.notifications.*;
 import org.tsd.tsdbot.runnable.IRCListenerThread;
 import org.tsd.tsdbot.runnable.ThreadManager;
-import org.tsd.tsdbot.functions.TSDTV;
 import twitter4j.Twitter;
 import twitter4j.TwitterFactory;
 
@@ -31,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class TSDBot extends PircBot implements Runnable {
 
-    private static Logger logger = LoggerFactory.getLogger("TSDBot");
+    private static Logger logger = LoggerFactory.getLogger(TSDBot.class);
 
     private static TSDBot instance = null;
 
@@ -119,6 +118,7 @@ public class TSDBot extends PircBot implements Runnable {
         functions.put(Command.TOM_CRUISE, new TomCruise());
         functions.put(Command.REPLACE, new Replace());
         functions.put(Command.DEEJ, new Deej());
+        functions.put(Command.STRAWPOLL, new StrawPoll());
 
         OmniPost omniPost = new OmniPost();
         functions.put(Command.DBO_FORUM, omniPost);
@@ -284,7 +284,7 @@ public class TSDBot extends PircBot implements Runnable {
         ),
 
         REPLACE(
-                "^s/[\\w]+/[^/]+",
+                "^s/.*?/[^/]*",
                 "Replace stuff",
                 "USAGE: s/text1/text2",
                 null

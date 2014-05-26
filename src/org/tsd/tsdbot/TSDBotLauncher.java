@@ -2,15 +2,9 @@ package org.tsd.tsdbot;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.runnable.TSDTVStream;
-import sun.reflect.Reflection;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * Created by Joe on 2/18/14.

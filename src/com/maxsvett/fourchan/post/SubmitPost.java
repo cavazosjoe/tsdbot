@@ -1,8 +1,8 @@
 package com.maxsvett.fourchan.post;
 
-import java.io.File;
-
 import com.maxsvett.fourchan.board.Board;
+
+import java.io.File;
 
 /**
  * Passed to {@link #SubmitPost()}

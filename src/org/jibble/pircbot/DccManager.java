@@ -14,7 +14,8 @@ found at http://www.jibble.org/licenses/
 
 package org.jibble.pircbot;
 
-import java.util.*;
+import java.util.StringTokenizer;
+import java.util.Vector;
 
 /**
  * This class is used to process DCC events from the server.

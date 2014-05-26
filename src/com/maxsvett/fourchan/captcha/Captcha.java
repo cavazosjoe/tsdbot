@@ -1,9 +1,9 @@
 package com.maxsvett.fourchan.captcha;
 
+import com.maxsvett.fourchan.Util;
+
 import java.net.MalformedURLException;
 import java.net.URL;
-
-import com.maxsvett.fourchan.Util;
 
 public class Captcha {
 	

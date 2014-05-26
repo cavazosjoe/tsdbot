@@ -1,12 +1,12 @@
 package com.maxsvett.fourchan.post;
 
+import com.google.gson.JsonObject;
+import com.maxsvett.fourchan.board.Board;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Calendar;
 import java.util.Locale;
-
-import com.google.gson.JsonObject;
-import com.maxsvett.fourchan.board.Board;
 
 /**
  * A 4chan post

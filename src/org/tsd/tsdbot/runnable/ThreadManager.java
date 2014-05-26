@@ -4,10 +4,11 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import org.tsd.tsdbot.TSDBot;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 /**
  * Created by Joe on 2/22/14.

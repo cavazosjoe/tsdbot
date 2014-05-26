@@ -1,56 +1,5 @@
 package org.tsd.tsdbot;
 
-import com.gargoylesoftware.htmlunit.BrowserVersion;
-import com.gargoylesoftware.htmlunit.WebClient;
-import com.gargoylesoftware.htmlunit.html.HtmlPage;
-import com.gargoylesoftware.htmlunit.javascript.host.xml.XMLDocument;
-import com.gargoylesoftware.htmlunit.xml.XmlPage;
-import com.maxsvett.fourchan.thread.*;
-import it.sauronsoftware.feed4j.FeedParser;
-import it.sauronsoftware.feed4j.bean.Feed;
-import javafx.application.Application;
-import javafx.collections.MapChangeListener;
-import javafx.collections.ObservableMap;
-import javafx.embed.swing.JFXPanel;
-import javafx.scene.media.Media;
-import javafx.scene.media.MediaPlayer;
-import org.apache.http.Header;
-import org.apache.http.NoHttpResponseException;
-import org.apache.http.client.HttpRequestRetryHandler;
-import org.apache.http.client.ResponseHandler;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.BasicResponseHandler;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.client.LaxRedirectStrategy;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.protocol.HttpContext;
-import org.tsd.tsdbot.database.TSDDatabase;
-import org.tsd.tsdbot.util.HtmlSanitizer;
-import org.tsd.tsdbot.util.IRCUtil;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import twitter4j.IDs;
-import twitter4j.Twitter;
-import twitter4j.TwitterException;
-import twitter4j.TwitterFactory;
-import twitter4j.auth.AccessToken;
-import twitter4j.auth.RequestToken;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.lang.Thread;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.sql.Connection;
-import java.util.Observable;
-import java.util.regex.Pattern;
-
 /**
  * Created by Joe on 2/19/14.
  */

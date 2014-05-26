@@ -1,7 +1,6 @@
 package org.tsd.tsdbot.notifications;
 
 import java.util.Date;
-import java.util.LinkedList;
 
 /**
  * Created by Joe on 2/18/14.

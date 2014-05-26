@@ -1,12 +1,12 @@
 package org.tsd.tsdbot.util;
 
 import org.apache.commons.lang3.StringEscapeUtils;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.LinkedList;
 import java.util.List;
 
-import static com.rosaloves.bitlyj.Bitly.*;
+import static com.rosaloves.bitlyj.Bitly.as;
+import static com.rosaloves.bitlyj.Bitly.shorten;
 
 /**
  * Created by Joe on 2/19/14.
