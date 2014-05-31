@@ -18,9 +18,17 @@ public class Deej implements MainFunction {
         HistoryBuff historyBuff = HistoryBuff.getInstance();
         List<HistoryBuff.Message> history = historyBuff.getMessagesByChannel(channel, null);
 
-        if(history.size() > 0) {
-            String returnString = String.format(formats[rand.nextInt(formats.length)], history.get(rand.nextInt(history.size())).text);
-            bot.sendMessage(channel, returnString);
+        // keep sampling random messages, discarding ones that are commands
+        String chosen = null;
+        while(history.size() > 0 && chosen == null) {
+            HistoryBuff.Message msg = history.get(rand.nextInt(history.size()));
+            if(TSDBot.Command.fromString(msg.text).size() == 0) chosen = msg.text;
+            history.remove(msg);
+        }
+
+        if(chosen != null) {
+            // return the deej-formatted selected message
+            bot.sendMessage(channel, String.format(formats[rand.nextInt(formats.length)], chosen));
         }
     }
 

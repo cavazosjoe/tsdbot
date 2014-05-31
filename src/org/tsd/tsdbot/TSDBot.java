@@ -284,7 +284,7 @@ public class TSDBot extends PircBot implements Runnable {
         ),
 
         REPLACE(
-                "^s/.*?/[^/]*",
+                "^s/.+?/[^/]*",
                 "Replace stuff",
                 "USAGE: s/text1/text2",
                 null
@@ -377,7 +377,7 @@ public class TSDBot extends PircBot implements Runnable {
         ),
 
         SANIC(
-                "^\\.sanic.*",
+                "^\\.sanic$",
                 "Sanic function. Retrieves a random page from the Sonic fanfiction wiki",
                 "USAGE: .sanic",
                 null
