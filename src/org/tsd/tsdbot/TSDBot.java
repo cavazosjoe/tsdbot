@@ -222,7 +222,7 @@ public class TSDBot extends PircBot implements Runnable {
     public LinkedList<User> getNonBotUsers(String channel) {
         LinkedList<User> ret = new LinkedList<>();
         for(User u : getUsers(channel)) {
-            if( (!u.getNick().toLowerCase().contains("tsdbot")) && (!u.getNick().equalsIgnoreCase("tipsfedora")) )
+            if( (!u.getNick().toLowerCase().contains("bot")) && (!u.getNick().equalsIgnoreCase("tipsfedora")) )
                 ret.add(u);
         }
         return ret;

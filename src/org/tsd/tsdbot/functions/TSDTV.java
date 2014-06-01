@@ -52,9 +52,8 @@ public class TSDTV implements MainFunction {
     private ThreadStream runningStream;
 
     private TSDTV() {
-        try {
-            Properties prop = new Properties();
-            InputStream fis = TSDTV.class.getResourceAsStream("/tsdbot.properties");
+        Properties prop = new Properties();
+        try(InputStream fis = TSDTV.class.getResourceAsStream("/tsdbot.properties")) {
             prop.load(fis);
             catalogDir = prop.getProperty("tsdtv.catalog");
             scheduleLoc = prop.getProperty("tsdtv.schedule");

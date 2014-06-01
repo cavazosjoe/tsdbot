@@ -106,27 +106,29 @@ public class TSDDatabase {
             ps.executeUpdate();
         }
 
-        Properties prop = TSDBot.getInstance().getProperties();
-        String catalogPath = prop.getProperty("tsdtv.catalog");
-        File catalogDir = new File(catalogPath);
-        for(File f : catalogDir.listFiles()) {
-            if(f.isDirectory()) {
-                String q = String.format("select count(*) from %s where name = '%s'", showsTable, f.getName());
-                try(PreparedStatement ps = getConnection().prepareStatement(q) ; ResultSet result = ps.executeQuery()) {
-                    result.next();
-                    if(result.getInt(1) == 0) { // show does not exist in db, add it
-                        String insertShow = String.format(
-                                "insert into %s (name, currentEpisode) values ('%s',1)",
-                                showsTable,
-                                f.getName());
-                        try(PreparedStatement ps1 = getConnection().prepareCall(insertShow)) {
-                            ps1.executeUpdate();
+        try(InputStream fis = TSDDatabase.class.getResourceAsStream("/tsdbot.properties")) {
+            Properties prop = new Properties();
+            prop.load(fis);
+            String catalogPath = prop.getProperty("tsdtv.catalog");
+            File catalogDir = new File(catalogPath);
+            for(File f : catalogDir.listFiles()) {
+                if(f.isDirectory()) {
+                    String q = String.format("select count(*) from %s where name = '%s'", showsTable, f.getName());
+                    try(PreparedStatement ps = getConnection().prepareStatement(q) ; ResultSet result = ps.executeQuery()) {
+                        result.next();
+                        if(result.getInt(1) == 0) { // show does not exist in db, add it
+                            String insertShow = String.format(
+                                    "insert into %s (name, currentEpisode) values ('%s',1)",
+                                    showsTable,
+                                    f.getName());
+                            try(PreparedStatement ps1 = getConnection().prepareCall(insertShow)) {
+                                ps1.executeUpdate();
+                            }
                         }
                     }
                 }
             }
         }
-
     }
 
     public boolean tableExists(String tableName) throws SQLException {

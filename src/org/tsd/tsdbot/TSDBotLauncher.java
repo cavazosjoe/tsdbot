@@ -34,9 +34,11 @@ public class TSDBotLauncher {
         log.info("channel={}, server={} , name={} , debug={}", channel, server, name, debug);
 
         Properties prop = new Properties();
-        InputStream fis = TSDBotLauncher.class.getResourceAsStream("/tsdbot.properties");
-        prop.load(fis);
-        String nickservPass = prop.getProperty("nickserv.pass");
+        String nickservPass = null;
+        try(InputStream fis = TSDBotLauncher.class.getResourceAsStream("/tsdbot.properties")) {
+            prop.load(fis);
+            nickservPass = prop.getProperty("nickserv.pass");
+        }
 
         TSDBot bot = TSDBot.build(name,new String[]{channel},debug, prop);
         bot.setVerbose(false);
