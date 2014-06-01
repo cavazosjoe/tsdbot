@@ -155,7 +155,10 @@ public class TSDTV implements MainFunction {
                 case 1: msg = "There is 1 viewer watching the stream"; break;
                 default: msg = "There are " + count + " viewers watching the stream"; break;
             }
-            bot.sendMessage(sender, msg);
+            if(runningStream == null) {
+                msg += ". But there isn't a stream running anyway";
+            }
+            bot.sendMessage(channel, msg);
         }
     }
 
