@@ -146,6 +146,16 @@ public class TSDTV implements MainFunction {
             else
                 printSchedule(channel, true);
 
+        } else if(subCmd.equals("viewers")) {
+
+            int count = getViewerCount();
+            String msg;
+            switch (count) {
+                case -1: msg = "An error occurred getting the viewer count"; break;
+                case 1: msg = "There is 1 viewer watching the stream"; break;
+                default: msg = "There are " + count + " viewers watching the stream"; break;
+            }
+            bot.sendMessage(sender, msg);
         }
     }
 
@@ -582,6 +592,34 @@ public class TSDTV implements MainFunction {
             }
         }
         return -1;
+    }
+
+    private int getViewerCount() {
+
+        //TODO: extend this to match connections with chat users
+
+        String matchString = "^ffserver.*TSDHQ\\.local:8090->.*\\(ESTABLISHED\\)$";
+        int viewerCount = 0;
+
+        try {
+            ProcessBuilder pb = new ProcessBuilder("lsof", "-i", "tcp:8090");
+            Process p = pb.start();
+            p.waitFor();
+            InputStream out = p.getInputStream();
+            InputStreamReader reader = new InputStreamReader(out);
+            BufferedReader br = new BufferedReader(reader);
+            String line;
+            while( (line = br.readLine()) != null ) {
+                logger.info(line);
+                if(line.trim().matches(matchString))
+                    viewerCount++;
+            }
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+            return -1;
+        }
+
+        return viewerCount;
     }
 
     private HashMap<Integer, StreamType> getVideoStreams(String moviePath) {
