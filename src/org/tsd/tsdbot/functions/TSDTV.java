@@ -51,15 +51,9 @@ public class TSDTV implements MainFunction {
     private ThreadStream runningStream;
 
     private TSDTV() {
-        try {
-            Properties prop = new Properties();
-            InputStream fis = TSDBotLauncher.class.getResourceAsStream("/tsdbot.properties");
-            prop.load(fis);
-            catalogDir = prop.getProperty("tsdtv.catalog");
-            scheduleLoc = prop.getProperty("tsdtv.schedule");
-        } catch (IOException e) {
-            logger.error("Error initializing TSDTV", e);
-        }
+        Properties prop = TSDBot.getInstance().getProperties();
+        catalogDir = prop.getProperty("tsdtv.catalog");
+        scheduleLoc = prop.getProperty("tsdtv.schedule");
     }
 
     public static TSDTV getInstance() {
@@ -667,9 +661,11 @@ public class TSDTV implements MainFunction {
 
     private String[] ffmpegCommand(String targetFile) {
 
+        String ffmpeg = TSDBot.getInstance().getProperties().getProperty("tsdtv.ffmpeg");
+
         return new String[]{
                 "nice",     "-n","8",
-                "ffmpeg",
+                ffmpeg,
                 "-re",
                 "-y",
                 "-i",       targetFile,

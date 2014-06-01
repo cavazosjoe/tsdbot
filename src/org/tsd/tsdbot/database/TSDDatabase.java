@@ -106,9 +106,7 @@ public class TSDDatabase {
             ps.executeUpdate();
         }
 
-        Properties prop = new Properties();
-        InputStream fis = TSDDatabase.class.getResourceAsStream("/tsdbot.properties");
-        prop.load(fis);
+        Properties prop = TSDBot.getInstance().getProperties();
         String catalogPath = prop.getProperty("tsdtv.catalog");
         File catalogDir = new File(catalogPath);
         for(File f : catalogDir.listFiles()) {

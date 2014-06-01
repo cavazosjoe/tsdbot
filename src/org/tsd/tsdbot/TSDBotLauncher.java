@@ -38,7 +38,7 @@ public class TSDBotLauncher {
         prop.load(fis);
         String nickservPass = prop.getProperty("nickserv.pass");
 
-        TSDBot bot = TSDBot.build(name,new String[]{channel},debug);
+        TSDBot bot = TSDBot.build(name,new String[]{channel},debug, prop);
         bot.setVerbose(false);
         bot.setMessageDelay(10); //10 ms
         bot.connect(server);

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -39,6 +40,7 @@ public class TSDBot extends PircBot implements Runnable {
     private ThreadManager threadManager = new ThreadManager(10);
     private HistoryBuff historyBuff = null;
     private String name;
+    private Properties properties;
 
     private PoolingHttpClientConnectionManager poolingManager;
     private CloseableHttpClient httpClient;
@@ -48,9 +50,9 @@ public class TSDBot extends PircBot implements Runnable {
     public boolean debug = false;
     public static long blunderCount = 0;
 
-    public static TSDBot build(String name, String[] channels, boolean debug) {
+    public static TSDBot build(String name, String[] channels, boolean debug, Properties properties) {
         if(instance == null)
-            instance = new TSDBot(name, channels, debug);
+            instance = new TSDBot(name, channels, debug, properties);
         return instance;
     }
 
@@ -58,10 +60,11 @@ public class TSDBot extends PircBot implements Runnable {
         return instance;
     }
 
-    private TSDBot(String name, String[] channels, boolean debug) {
+    private TSDBot(String name, String[] channels, boolean debug, Properties properties) {
         
         this.name = name;
         this.debug = debug;
+        this.properties = properties;
 
         setName(name);
         setAutoNickChange(true);
@@ -155,6 +158,10 @@ public class TSDBot extends PircBot implements Runnable {
 
     public boolean isDebug() {
         return debug;
+    }
+
+    public Properties getProperties() {
+        return properties;
     }
 
     @Override

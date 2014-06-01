@@ -45,9 +45,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
 
             this.bot = bot;
 
-            Properties prop = new Properties();
-            InputStream fis = TwitterManager.class.getResourceAsStream("/tsdbot.properties");
-            prop.load(fis);
+            Properties prop = bot.getProperties();
 
             String CONSUMER_KEY = prop.getProperty("twitter.consumer_key");
             String CONSUMER_KEY_SECRET = prop.getProperty("twitter.consumer_key_secret");
