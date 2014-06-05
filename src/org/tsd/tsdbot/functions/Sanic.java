@@ -16,7 +16,7 @@ public class Sanic implements MainFunction {
     private static final Logger logger = LoggerFactory.getLogger(Sanic.class);
 
     @Override
-    public void run(String channel, String sender, String text) {
+    public void run(String channel, String sender, String ident, String text) {
 
         TSDBot bot = TSDBot.getInstance();
         CloseableHttpClient httpClient = bot.getHttpClient();

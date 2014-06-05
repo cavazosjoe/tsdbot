@@ -17,7 +17,7 @@ public class Replace implements MainFunction {
     private Pattern commandFormat = Pattern.compile("^s/([^/]+)/([^/]*)(.*)$");
 
     @Override
-    public void run(String channel, String sender, String text) {
+    public void run(String channel, String sender, String ident, String text) {
 
         HistoryBuff historyBuff = HistoryBuff.getInstance();
         TSDBot bot = TSDBot.getInstance();

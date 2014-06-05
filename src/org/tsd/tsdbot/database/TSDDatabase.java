@@ -13,9 +13,9 @@ import java.util.Properties;
 
 public class TSDDatabase {
 
-    private static Logger logger = LoggerFactory.getLogger("TSDDatabase");
+    private static Logger logger = LoggerFactory.getLogger(TSDDatabase.class);
     private static String testQ = "select 1";
-    private static String connectionString = "jdbc:h2:tcp://localhost/" + System.getProperty("user.dir") + "/db";
+    private static String connectionString = "jdbc:h2:tcp://localhost/" + System.getProperty("user.dir") + "/irc/db";
     private Connection conn;
 
     private static TSDDatabase instance = null;

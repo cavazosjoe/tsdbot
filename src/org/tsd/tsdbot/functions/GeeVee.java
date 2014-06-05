@@ -74,7 +74,7 @@ public class GeeVee implements MainFunction {
     }
 
     @Override
-    public void run(String channel, String sender, String text) {
+    public void run(String channel, String sender, String ident, String text) {
         Random rand = new Random();
         TSDBot bot = TSDBot.getInstance();
         HistoryBuff historyBuff = HistoryBuff.getInstance();

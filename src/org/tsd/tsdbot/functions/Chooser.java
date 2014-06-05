@@ -15,7 +15,7 @@ public class Chooser implements MainFunction {
     };
 
     @Override
-    public void run(String channel, String sender, String text) {
+    public void run(String channel, String sender, String ident, String text) {
         String[] args = text.split("\\s+",2);
         if(args.length == 2) {
             String[] choices = args[1].split("[\\s]*\\|[\\s]*");

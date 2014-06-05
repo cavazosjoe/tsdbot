@@ -20,10 +20,7 @@ import twitter4j.Twitter;
 import twitter4j.TwitterFactory;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -39,6 +36,7 @@ public class TSDBot extends PircBot implements Runnable {
     private HashMap<NotificationType, NotificationManager> notificationManagers = new HashMap<>();
     private ThreadManager threadManager = new ThreadManager(10);
     private HistoryBuff historyBuff = null;
+    private Archivist archivist = null;
     private String name;
     private Properties properties;
 
@@ -76,6 +74,13 @@ public class TSDBot extends PircBot implements Runnable {
         }
 
         historyBuff = HistoryBuff.build(getChannels());
+
+        try {
+            archivist = new Archivist(properties, channels);
+            logger.info("Archivist initialized successfully");
+        } catch (IOException e) {
+            logger.error("Could not initialize Archivist", e);
+        }
 
         poolingManager = new PoolingHttpClientConnectionManager();
         poolingManager.setMaxTotal(100);
@@ -123,6 +128,8 @@ public class TSDBot extends PircBot implements Runnable {
         functions.put(Command.DEEJ, new Deej());
         functions.put(Command.STRAWPOLL, new StrawPoll());
 
+        functions.put(Command.RECAP, archivist);
+
         OmniPost omniPost = new OmniPost();
         functions.put(Command.DBO_FORUM, omniPost);
         functions.put(Command.DBO_NEWS, omniPost);
@@ -165,8 +172,82 @@ public class TSDBot extends PircBot implements Runnable {
     }
 
     @Override
-    protected synchronized void onPrivateMessage(String sender, String login, String hostname, String message) {
+    public synchronized void sendMessage(String target, String text) {
+        super.sendMessage(target, text);
+        archivist.log(Archivist.EventType.MESSAGE, target, Archivist.EventType.MESSAGE.toString(),
+                System.currentTimeMillis(),
+                Archivist.stdSdf.format(new Date()),
+                getNick(),
+                getLogin(),
+                text);
+    }
 
+    @Override protected synchronized void onUserList(String channel, User[] users) {}
+    @Override protected synchronized void onPrivateMessage(String sender, String login, String hostname, String message) {}
+    @Override protected synchronized void onAction(String sender, String login, String hostname, String target, String action) {
+        archivist.log(Archivist.EventType.ACTION, target, Archivist.EventType.ACTION.toString(),
+                System.currentTimeMillis(),
+                Archivist.stdSdf.format(new Date()),
+                sender,
+                action);
+    }
+    @Override protected synchronized void onNotice(String sourceNick, String sourceLogin, String sourceHostname, String target, String notice) {}
+    @Override protected synchronized void onJoin(String channel, String sender, String login, String hostname) {
+        archivist.log(Archivist.EventType.JOIN, channel, Archivist.EventType.JOIN.toString(),
+                System.currentTimeMillis(),
+                Archivist.stdSdf.format(new Date()),
+                sender,
+                login,
+                hostname,
+                channel);
+    }
+    @Override protected synchronized void onPart(String channel, String sender, String login, String hostname) {
+        archivist.log(Archivist.EventType.PART, channel, Archivist.EventType.PART.toString(),
+                System.currentTimeMillis(),
+                Archivist.stdSdf.format(new Date()),
+                sender,
+                channel);
+    }
+    @Override protected synchronized void onNickChange(String oldNick, String login, String hostname, String newNick) {
+        archivist.log(Archivist.EventType.NICK_CHANGE, null, Archivist.EventType.NICK_CHANGE.toString(),
+                System.currentTimeMillis(),
+                Archivist.stdSdf.format(new Date()),
+                oldNick,
+                newNick);
+    }
+    @Override protected synchronized void onKick(String channel, String kickerNick, String kickerLogin, String kickerHostname, String recipientNick, String reason) {
+        archivist.log(Archivist.EventType.KICK, channel, Archivist.EventType.KICK.toString(),
+                System.currentTimeMillis(),
+                Archivist.stdSdf.format(new Date()),
+                kickerNick,
+                recipientNick,
+                channel,
+                reason);
+    }
+    @Override protected synchronized void onQuit(String sourceNick, String sourceLogin, String sourceHostname, String reason) {}
+    @Override protected synchronized void onTopic(String channel, String topic, String setBy, long date, boolean changed) {
+        archivist.log(Archivist.EventType.TOPIC, channel, Archivist.EventType.TOPIC.toString(),
+                System.currentTimeMillis(),
+                Archivist.stdSdf.format(new Date()),
+                setBy,
+                topic);
+    }
+    @Override protected synchronized void onChannelInfo(String channel, int userCount, String topic) {}
+    @Override protected synchronized void onMode(String channel, String sourceNick, String sourceLogin, String sourceHostname, String mode) {
+        archivist.log(Archivist.EventType.CHANNEL_MODE, channel, Archivist.EventType.CHANNEL_MODE.toString(),
+                System.currentTimeMillis(),
+                Archivist.stdSdf.format(new Date()),
+                sourceNick,
+                mode,
+                channel);
+    }
+    @Override protected synchronized void onUserMode(String targetNick, String sourceNick, String sourceLogin, String sourceHostname, String mode) {
+        archivist.log(Archivist.EventType.USER_MODE, null, Archivist.EventType.USER_MODE.toString(),
+                System.currentTimeMillis(),
+                Archivist.stdSdf.format(new Date()),
+                sourceNick,
+                mode,
+                targetNick);
     }
 
     @Override
@@ -176,7 +257,7 @@ public class TSDBot extends PircBot implements Runnable {
 
         List<Command> matchingCommands = Command.fromString(message);
         for(Command c : matchingCommands) {
-            functions.get(c).run(channel, sender, message);
+            functions.get(c).run(channel, sender, login, message);
 
             // propagate command to all listening threads
             for(IRCListenerThread listenerThread : threadManager.getThreadsByChannel(channel))
@@ -184,6 +265,13 @@ public class TSDBot extends PircBot implements Runnable {
         }
 
         historyBuff.updateHistory(channel, message, sender);
+
+        archivist.log(Archivist.EventType.MESSAGE, channel, Archivist.EventType.MESSAGE.toString(),
+                System.currentTimeMillis(),
+                Archivist.stdSdf.format(new Date()),
+                sender,
+                login,
+                message);
 
     }
 
@@ -387,6 +475,13 @@ public class TSDBot extends PircBot implements Runnable {
                 "^\\.sanic$",
                 "Sanic function. Retrieves a random page from the Sonic fanfiction wiki",
                 "USAGE: .sanic",
+                null
+        ),
+
+        RECAP(
+                "^\\.recap.*",
+                "Recap function. Get a personalized review of what you missed",
+                "USAGE: wip",
                 null
         );
 

@@ -7,7 +7,6 @@ import org.quartz.impl.matchers.GroupMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
-import org.tsd.tsdbot.TSDBotLauncher;
 import org.tsd.tsdbot.database.TSDDatabase;
 import org.tsd.tsdbot.runnable.TSDTVStream;
 import org.tsd.tsdbot.tsdtv.TSDTVBlock;
@@ -68,7 +67,7 @@ public class TSDTV implements MainFunction {
     }
     
     @Override
-    public void run(String channel, String sender, String text) {
+    public void run(String channel, String sender, String ident, String text) {
 
         TSDBot bot = TSDBot.getInstance();
         String[] cmdParts = text.split("\\s+");
@@ -156,7 +155,7 @@ public class TSDTV implements MainFunction {
                 default: msg = "There are " + count + " viewers watching the stream"; break;
             }
             if(runningStream == null) {
-                msg += ". But there isn't a stream running anyway";
+                msg += ". But there isn't a stream running";
             }
             bot.sendMessage(channel, msg);
         }
@@ -195,8 +194,10 @@ public class TSDTV implements MainFunction {
                 Connection dbConn = TSDDatabase.getInstance().getConnection();
                 String update = "update TSDTV_SHOW set currentEpisode = ? where name = ?";
                 try(PreparedStatement ps = dbConn.prepareStatement(update)) {
-                    ps.setInt(1,program.episodeNum+1);
-                    ps.setString(2,program.show);
+                    // loop to episode 1 if we're playing the last episode of the show
+                    int newEpNumber = (getNumberOfEpisodes(program.show) <= program.episodeNum) ? 1 : program.episodeNum+1;
+                    ps.setInt(1, newEpNumber);
+                    ps.setString(2, program.show);
                     ps.executeUpdate();
                 }
             } catch (Exception e) {
@@ -590,7 +591,7 @@ public class TSDTV implements MainFunction {
         Connection dbConn = TSDDatabase.getInstance().getConnection();
         String q = String.format("select currentEpisode from TSDTV_SHOW where name = '%s'", show);
         try(PreparedStatement ps = dbConn.prepareStatement(q) ; ResultSet result = ps.executeQuery()) {
-            while(result.next()) {
+            if(result.next()) {
                 return result.getInt("currentEpisode");
             }
         }
@@ -605,7 +606,7 @@ public class TSDTV implements MainFunction {
         int viewerCount = 0;
 
         try {
-            ProcessBuilder pb = new ProcessBuilder("lsof", "-i", "tcp:8090");
+            ProcessBuilder pb = new ProcessBuilder("lsof", "-n", "-i", "tcp:8090");
             Process p = pb.start();
             p.waitFor();
             InputStream out = p.getInputStream();

@@ -8,7 +8,7 @@ import org.tsd.tsdbot.TSDBot;
 public class StrawPoll implements MainFunction {
 
     @Override
-    public void run(String channel, String sender, String text) {
+    public void run(String channel, String sender, String ident, String text) {
 
         TSDBot bot = TSDBot.getInstance();
         String[] cmdParts = text.split(";");

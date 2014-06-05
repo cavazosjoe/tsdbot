@@ -15,7 +15,7 @@ import java.util.Random;
 public class TomCruise implements MainFunction {
 
     @Override
-    public void run(String channel, String sender, String text) {
+    public void run(String channel, String sender, String ident, String text) {
 
         String[] cmdParts = text.split("\\s+");
         TSDBot bot = TSDBot.getInstance();

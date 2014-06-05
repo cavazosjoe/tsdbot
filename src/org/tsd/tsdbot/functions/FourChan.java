@@ -26,7 +26,7 @@ public class FourChan implements MainFunction {
     private static final Logger logger = LoggerFactory.getLogger(FourChan.class);
 
     @Override
-    public void run(String channel, String sender, String text) {
+    public void run(String channel, String sender, String ident, String text) {
 
         String[] cmdParts = text.split("\\s+");
         TSDBot bot = TSDBot.getInstance();

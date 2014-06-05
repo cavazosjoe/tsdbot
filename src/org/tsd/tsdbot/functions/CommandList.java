@@ -8,7 +8,7 @@ import org.tsd.tsdbot.TSDBot;
 public class CommandList implements MainFunction {
 
     @Override
-    public void run(String channel, String sender, String text) {
+    public void run(String channel, String sender, String ident, String text) {
 
         TSDBot bot = TSDBot.getInstance();
 

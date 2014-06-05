@@ -5,5 +5,5 @@ package org.tsd.tsdbot.functions;
  */
 public interface MainFunction {
 
-    public void run(String channel, String sender, String text);
+    public void run(String channel, String sender, String ident, String text);
 }
