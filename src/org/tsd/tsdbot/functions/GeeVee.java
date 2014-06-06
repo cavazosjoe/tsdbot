@@ -91,9 +91,9 @@ public class GeeVee implements MainFunction {
             if(!cmdParts[1].equals("pls")) {
                 bot.sendMessage(channel, TSDBot.Command.GV.getUsage());
             } else {
-                List<HistoryBuff.Message> gvLines = historyBuff.getMessagesByChannel(channel, "general");
+                List<HistoryBuff.Message> gvLines = historyBuff.getMessagesByChannel(channel, "general_vagueness");
                 if(gvLines.size() == 0) gvLines = historyBuff.getMessagesByChannel(channel,"gv");
-                if(gvLines.size() == 0) return;
+                //if(gvLines.size() == 0) return;
 
                 String runOnSentence = null;
                 int i=0;
