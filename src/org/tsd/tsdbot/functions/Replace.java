@@ -25,6 +25,8 @@ public class Replace implements MainFunction {
         String replaceResult = tryStringReplace(channel, text, historyBuff);
         if(replaceResult != null)
             bot.sendMessage(channel, replaceResult);
+        else bot.sendMessage(channel, sender + " \u0002meant\u0002 to say: durrr");
+        //else bot.sendMessage(channel, "Sorry, but I couldn't find that.");
     }
 
     public String tryStringReplace(String channel, String message, HistoryBuff historyBuffer) {
@@ -55,6 +57,7 @@ public class Replace implements MainFunction {
             if (myName != null && IRCUtil.fuzzyMatches(user, myName)) {
                 return "I said what I meant.";
             }
+            
 
         }
 
