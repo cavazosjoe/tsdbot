@@ -41,7 +41,8 @@ public class GeeVee implements MainFunction {
             "Why am I supposed to care about that?",
             "I'd ask you to elaborate but I don't really care, sorry",
             "I'd ask you to elaborate but I'm not interested, sorry",
-            "I know I'm late but I read this and I don't care"
+            "I know I'm late but I read this and I don't care",
+            "I'm trying to imagine how this could be lamer and I'm having trouble, maybe if someone's mom was involved?"
     };
 
     public static String getRandomGvResponse() {
