@@ -11,7 +11,11 @@ public class Chooser implements MainFunction {
 
     private static String[] formats = new String[] {
             "Go with %s",
-            "I choose %s"
+            "I choose %s",
+            "Rejoice, Guardian! The holders of the ancient ways have chosen %s",
+            "I don't always choose, but when I do, I choose %s",
+            "Always bet on %s"
+            
     };
 
     @Override
