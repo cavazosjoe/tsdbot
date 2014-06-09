@@ -177,8 +177,8 @@ public class TSDBot extends PircBot implements Runnable {
         archivist.log(Archivist.EventType.MESSAGE, target, Archivist.EventType.MESSAGE.toString(),
                 System.currentTimeMillis(),
                 Archivist.stdSdf.format(new Date()),
-                getNick(),
                 getLogin(),
+                getNick(),
                 text);
     }
 
@@ -206,6 +206,7 @@ public class TSDBot extends PircBot implements Runnable {
                 System.currentTimeMillis(),
                 Archivist.stdSdf.format(new Date()),
                 sender,
+                login,
                 channel);
     }
     @Override protected synchronized void onNickChange(String oldNick, String login, String hostname, String newNick) {
@@ -255,6 +256,13 @@ public class TSDBot extends PircBot implements Runnable {
 
         logger.info("{}: <{}> {}", channel, sender, message);
 
+        archivist.log(Archivist.EventType.MESSAGE, channel, Archivist.EventType.MESSAGE.toString(),
+                System.currentTimeMillis(),
+                Archivist.stdSdf.format(new Date()),
+                login,
+                sender,
+                message);
+
         List<Command> matchingCommands = Command.fromString(message);
         for(Command c : matchingCommands) {
             functions.get(c).run(channel, sender, login, message);
@@ -265,13 +273,6 @@ public class TSDBot extends PircBot implements Runnable {
         }
 
         historyBuff.updateHistory(channel, message, sender);
-
-        archivist.log(Archivist.EventType.MESSAGE, channel, Archivist.EventType.MESSAGE.toString(),
-                System.currentTimeMillis(),
-                Archivist.stdSdf.format(new Date()),
-                sender,
-                login,
-                message);
 
     }
 
