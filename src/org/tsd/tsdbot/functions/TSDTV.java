@@ -602,7 +602,7 @@ public class TSDTV implements MainFunction {
 
         //TODO: extend this to match connections with chat users
 
-        String matchString = "^ffserver.*TSDHQ\\.local:8090->.*\\(ESTABLISHED\\)$";
+        String matchString = "^ffserver.*192\\.168\\.1\\.100:8090->.*\\(ESTABLISHED\\)$";
         int viewerCount = 0;
 
         try {
@@ -619,7 +619,7 @@ public class TSDTV implements MainFunction {
                     viewerCount++;
             }
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+            logger.error("Error retrieving viewer count", e);
             return -1;
         }
 

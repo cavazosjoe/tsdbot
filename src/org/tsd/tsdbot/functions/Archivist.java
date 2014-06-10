@@ -4,6 +4,7 @@ import org.jpaste.pastebin.Pastebin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
+import sun.awt.image.ImageWatched;
 
 import java.io.*;
 import java.net.URL;
@@ -88,95 +89,137 @@ public class Archivist /*Exedol*/ implements MainFunction {
 
         TSDBot bot = TSDBot.getInstance();
 
-        String niceChannel = channel.replace("#","");
-        try(BufferedReader br = new BufferedReader(new FileReader(archiveDir + niceChannel + ".log"))) {
+        String[] cmdParts = text.split("\\s+");
 
-            LinkedList<String> capturedText = new LinkedList<>();
-            LinkedList<String> captureBuffer = new LinkedList<>();
-            boolean recording = false;
+        if(cmdParts.length == 1) {
 
-            // value must be list because multiple events can happen on same millisecond
-            TreeMap<Long, LinkedList<String>> pastFiveMinutes = new TreeMap<>(); // timestamp -> message
+            String niceChannel = channel.replace("#","");
+            try(BufferedReader br = new BufferedReader(new FileReader(archiveDir + niceChannel + ".log"))) {
 
-            String line;
-            while( (line = br.readLine()) != null ) {
+                LinkedList<String> capturedText = new LinkedList<>();
+                LinkedList<String> captureBuffer = new LinkedList<>();
+                boolean recording = false;
 
-                if(line.startsWith(EventType.JOIN.toString())) {
-                    // someone joined, analyze to see if it's our guy
-                    Matcher m = joinPattern.matcher(line);
-                    while(m.find()) {
-                        String id = m.group(3);
-                        if(ident.equals(id)) {
-                            // it's a match, save buffer if it's not empty, otherwise save past five minutes
-                            if(captureBuffer.isEmpty()) {
-                                capturedText = new LinkedList<>();
-                                capturedText.add("--- YOU JOINED WITHOUT LEAVING FIRST: DISPLAYING FIVE MINUTES OF " +
-                                        "CHAT PRIOR TO YOUR LAST JOIN ---");
-                                for(Long key : pastFiveMinutes.keySet()) {
-                                    capturedText.addAll(pastFiveMinutes.get(key));
+                // value must be list because multiple events can happen on same millisecond
+                TreeMap<Long, LinkedList<String>> pastFiveMinutes = new TreeMap<>(); // timestamp -> message
+
+                String line;
+                while( (line = br.readLine()) != null ) {
+
+                    if(line.startsWith(EventType.JOIN.toString())) {
+                        // someone joined, analyze to see if it's our guy
+                        Matcher m = joinPattern.matcher(line);
+                        while(m.find()) {
+                            String id = m.group(3);
+                            if(ident.equals(id)) {
+                                // it's a match, save buffer if it's not empty, otherwise save past five minutes
+                                if(captureBuffer.isEmpty()) {
+                                    capturedText = new LinkedList<>();
+                                    capturedText.add("--- YOU JOINED WITHOUT LEAVING FIRST: DISPLAYING FIVE MINUTES OF " +
+                                            "CHAT PRIOR TO YOUR LAST JOIN ---");
+                                    for(Long key : pastFiveMinutes.keySet()) {
+                                        capturedText.addAll(pastFiveMinutes.get(key));
+                                    }
+                                } else {
+                                    captureBuffer.addLast(line);
+                                    capturedText = (LinkedList<String>) captureBuffer.clone();
                                 }
-                            } else {
-                                captureBuffer.addLast(line);
-                                capturedText = (LinkedList<String>) captureBuffer.clone();
+                                captureBuffer.clear(); // clear the buffer when we detect the person joined
+                                recording = false;
                             }
-                            captureBuffer.clear(); // clear the buffer when we detect the person joined
-                            recording = false;
+                        }
+                    } else if(line.startsWith(EventType.PART.toString())) {
+                        // someone left, analyze to see if it's our guy
+                        Matcher m = partPattern.matcher(line);
+                        while(m.find()) {
+                            String id = m.group(3);
+                            if(ident.equals(id)) {
+                                // it's a match, start recording into the buffer
+                                recording = true;
+                            }
                         }
                     }
-                } else if(line.startsWith(EventType.PART.toString())) {
-                    // someone left, analyze to see if it's our guy
-                    Matcher m = partPattern.matcher(line);
-                    while(m.find()) {
-                        String id = m.group(3);
-                        if(ident.equals(id)) {
-                            // it's a match, start recording into the buffer
-                            recording = true;
-                        }
+
+                    if(recording)
+                        captureBuffer.addLast(line);
+
+                    // get the message's time in a really lazy way
+                    Long now = Long.parseLong(line.substring(13,26));
+                    if(pastFiveMinutes.containsKey(now)) {
+                        pastFiveMinutes.get(now).addLast(line);
+                    } else {
+                        LinkedList<String> m = new LinkedList<>();
+                        m.add(line);
+                        pastFiveMinutes.put(now, m);
                     }
+
+                    pastFiveMinutes = trimFiveMinuteBuffer(pastFiveMinutes, now);
+
                 }
 
-                if(recording)
-                    captureBuffer.addLast(line);
+                StringBuilder output = new StringBuilder();
 
-                // get the message's time in a really lazy way
-                Long now = Long.parseLong(line.substring(13,26));
-                if(pastFiveMinutes.containsKey(now)) {
-                    pastFiveMinutes.get(now).addLast(line);
+                if(capturedText.isEmpty()) {
+                    for(Long key : pastFiveMinutes.keySet()) {
+                        for(String s : pastFiveMinutes.get(key)) {
+                            log.info("-5MIN RECAP || " + s);
+                            output.append(s).append(System.getProperty("line.separator"));
+                        }
+                    }
                 } else {
-                    LinkedList<String> m = new LinkedList<>();
-                    m.add(line);
-                    pastFiveMinutes.put(now, m);
-                }
-
-                pastFiveMinutes = trimFiveMinuteBuffer(pastFiveMinutes, now);
-
-            }
-
-            StringBuilder output = new StringBuilder();
-
-            if(capturedText.isEmpty()) {
-                for(Long key : pastFiveMinutes.keySet()) {
-                    for(String s : pastFiveMinutes.get(key)) {
-                        log.info("-5MIN RECAP || " + s);
+                    for(String s : capturedText) {
+                        log.info("RECAP || " + s);
                         output.append(s).append(System.getProperty("line.separator"));
                     }
                 }
-            } else {
-                for(String s : capturedText) {
-                    log.info("RECAP || " + s);
-                    output.append(s).append(System.getProperty("line.separator"));
+
+                if(!(output.toString().isEmpty())) {
+                    URL url = Pastebin.pastePaste(pastebinKey, output.toString());
+                    if(capturedText.isEmpty())
+                        bot.sendMessage(channel, "I don't think you've missed anything. I'll recap the last five minutes");
+                    bot.sendMessage(channel, getRawPastebinURL(url));
                 }
+
+            } catch (Exception e) {
+                log.error("Error reading logging file",e);
             }
 
-            if(!(output.toString().isEmpty())) {
-                URL url = Pastebin.pastePaste(pastebinKey, output.toString());
-                if(capturedText.isEmpty())
-                    bot.sendMessage(channel, "I don't think you've missed anything. I'll recap the last five minutes");
-                bot.sendMessage(channel, getRawPastebinURL(url));
-            }
+        } else { // .recap 15
+            Integer minutes;
+            try {
+                minutes = Integer.parseInt(cmdParts[1]);
 
-        } catch (Exception e) {
-            log.error("Error reading logging file",e);
+                String niceChannel = channel.replace("#","");
+                try(BufferedReader br = new BufferedReader(new FileReader(archiveDir + niceChannel + ".log"))) {
+                    String line;
+                    boolean recording = false;
+                    Long now = System.currentTimeMillis();
+                    Long timestamp;
+                    LinkedList<String> catchup = new LinkedList<>();
+                    while( (line = br.readLine()) != null ) {
+                        timestamp = Long.parseLong(line.substring(13,26));
+                        if(recording || now - timestamp < 1000 * 60 * minutes) {
+                            catchup.addLast(line);
+                            recording = true;
+                        }
+                    }
+
+                    StringBuilder output = new StringBuilder();
+                    for(String s : catchup) {
+                        output.append(s).append(System.getProperty("line.separator"));
+                    }
+
+                    URL url = Pastebin.pastePaste(pastebinKey, output.toString());
+                    bot.sendMessage(channel, "Here are the chat logs from the past " + minutes + " minutes: " + getRawPastebinURL(url));
+
+                } catch (Exception e) {
+                    log.error("There was an error processing the channel archive", e);
+                }
+
+            } catch (NumberFormatException nfe) {
+                // the second argument isn't a number
+                bot.sendMessage(channel, TSDBot.Command.RECAP.getUsage());
+            }
         }
     }
 

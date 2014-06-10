@@ -482,7 +482,7 @@ public class TSDBot extends PircBot implements Runnable {
         RECAP(
                 "^\\.recap.*",
                 "Recap function. Get a personalized review of what you missed",
-                "USAGE: wip",
+                "USAGE: .recap [ minutes (integer) ]",
                 null
         );
 
