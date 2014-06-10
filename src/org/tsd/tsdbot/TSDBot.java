@@ -202,6 +202,7 @@ public class TSDBot extends PircBot implements Runnable {
                 channel);
     }
     @Override protected synchronized void onPart(String channel, String sender, String login, String hostname) {
+        // when someone leaves the channel
         archivist.log(Archivist.EventType.PART, channel, Archivist.EventType.PART.toString(),
                 System.currentTimeMillis(),
                 Archivist.stdSdf.format(new Date()),
@@ -225,7 +226,15 @@ public class TSDBot extends PircBot implements Runnable {
                 channel,
                 reason);
     }
-    @Override protected synchronized void onQuit(String sourceNick, String sourceLogin, String sourceHostname, String reason) {}
+    @Override protected synchronized void onQuit(String sourceNick, String sourceLogin, String sourceHostname, String reason) {
+        // when someone quits the server
+        archivist.log(Archivist.EventType.QUIT, null, Archivist.EventType.QUIT.toString(),
+                System.currentTimeMillis(),
+                Archivist.stdSdf.format(new Date()),
+                sourceNick,
+                sourceLogin,
+                reason);
+    }
     @Override protected synchronized void onTopic(String channel, String topic, String setBy, long date, boolean changed) {
         archivist.log(Archivist.EventType.TOPIC, channel, Archivist.EventType.TOPIC.toString(),
                 System.currentTimeMillis(),

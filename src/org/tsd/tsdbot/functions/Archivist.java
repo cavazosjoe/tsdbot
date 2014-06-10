@@ -128,7 +128,7 @@ public class Archivist /*Exedol*/ implements MainFunction {
                                 recording = false;
                             }
                         }
-                    } else if(line.startsWith(EventType.PART.toString())) {
+                    } else if(line.startsWith(EventType.PART.toString()) || line.startsWith(EventType.QUIT.toString())) {
                         // someone left, analyze to see if it's our guy
                         Matcher m = partPattern.matcher(line);
                         while(m.find()) {
@@ -241,8 +241,9 @@ public class Archivist /*Exedol*/ implements MainFunction {
 
     public static enum EventType {
         JOIN("* %s (%s@%s) has joined %s"),
-        PART("* %s (%s) has quit (%s)"),
-        MESSAGE("%-10s|%-20s%s"),
+        PART("* %s (%s) has left %s"),
+        QUIT("* %s (%s) has quit (%s)"),
+        MESSAGE("%-10s%20s||%s"),
         CHANNEL_MODE("* %s sets mode %s for %s"),
         USER_MODE("* %s sets mode %s for %s"),
         TOPIC("* %s has changed the topic to \"%s\""),
