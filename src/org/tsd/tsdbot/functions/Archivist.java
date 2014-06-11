@@ -23,9 +23,14 @@ public class Archivist /*Exedol*/ implements MainFunction {
     public static final String stdPfx = "%-13s%-15d%-16s";
     public static final SimpleDateFormat stdSdf = new SimpleDateFormat("[MMM dd HH:mm]");
 
-    private static final Pattern generalPattern = Pattern.compile("^([A-Z_]+)\\s+([0-9]+)\\s+\\[.*?\\]\\s+(.*)",Pattern.DOTALL);
-    private static final Pattern joinPattern = Pattern.compile("^JOIN\\s+([0-9]+)\\s+\\[.*?\\]\\s+\\*\\s([\\S]+)\\s\\((\\S+?)@.*",Pattern.DOTALL);
-    private static final Pattern partPattern = Pattern.compile("^PART\\s+([0-9]+)\\s+\\[.*?\\]\\s+\\*\\s([\\S]+)\\s\\(([\\S]+)\\).*",Pattern.DOTALL);
+    private static final Pattern generalPattern =
+            Pattern.compile("^([A-Z_]+)\\s+([0-9]+)\\s+\\[.*?\\]\\s+(.*)",Pattern.DOTALL);
+
+    private static final Pattern joinPattern =
+            Pattern.compile(         "^JOIN\\s+([0-9]+)\\s+\\[.*?\\]\\s+\\*\\s([\\S]+)\\s\\((\\S+?)@.*",Pattern.DOTALL);
+
+    private static final Pattern partPattern =
+            Pattern.compile("^(?:PART|QUIT)\\s+([0-9]+)\\s+\\[.*?\\]\\s+\\*\\s([\\S]+)\\s\\((\\S+?)\\).*",Pattern.DOTALL);
 
     private static final long fiveMinutes = 1000 * 60 * 5;
 
@@ -134,7 +139,12 @@ public class Archivist /*Exedol*/ implements MainFunction {
                         while(m.find()) {
                             String id = m.group(3);
                             if(ident.equals(id)) {
-                                // it's a match, start recording into the buffer
+                                // it's a match, if we're not recording, start
+                                // if we are recording, dump what's been captured -- the guy was here to see it anyway
+                                if(recording) {
+                                    captureBuffer.clear();
+                                    capturedText.clear();
+                                }
                                 recording = true;
                             }
                         }
