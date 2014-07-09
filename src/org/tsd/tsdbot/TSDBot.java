@@ -16,6 +16,7 @@ import org.tsd.tsdbot.functions.*;
 import org.tsd.tsdbot.notifications.*;
 import org.tsd.tsdbot.runnable.IRCListenerThread;
 import org.tsd.tsdbot.runnable.ThreadManager;
+import org.tsd.tsdbot.util.ArchivistUtil;
 import twitter4j.Twitter;
 import twitter4j.TwitterFactory;
 
@@ -174,90 +175,91 @@ public class TSDBot extends PircBot implements Runnable {
     @Override
     public synchronized void sendMessage(String target, String text) {
         super.sendMessage(target, text);
-        archivist.log(Archivist.EventType.MESSAGE, target, Archivist.EventType.MESSAGE.toString(),
+        archivist.log(target, ArchivistUtil.getRawMessage(
                 System.currentTimeMillis(),
-                Archivist.stdSdf.format(new Date()),
-                getLogin(),
                 getNick(),
-                text);
+                getLogin(),
+                text
+        ));
     }
 
     @Override protected synchronized void onUserList(String channel, User[] users) {}
     @Override protected synchronized void onPrivateMessage(String sender, String login, String hostname, String message) {}
     @Override protected synchronized void onAction(String sender, String login, String hostname, String target, String action) {
-        archivist.log(Archivist.EventType.ACTION, target, Archivist.EventType.ACTION.toString(),
+        archivist.log(target, ArchivistUtil.getRawAction(
                 System.currentTimeMillis(),
-                Archivist.stdSdf.format(new Date()),
                 sender,
-                action);
+                login,
+                action
+        ));
     }
     @Override protected synchronized void onNotice(String sourceNick, String sourceLogin, String sourceHostname, String target, String notice) {}
     @Override protected synchronized void onJoin(String channel, String sender, String login, String hostname) {
-        archivist.log(Archivist.EventType.JOIN, channel, Archivist.EventType.JOIN.toString(),
+        archivist.log(channel, ArchivistUtil.getRawJoin(
                 System.currentTimeMillis(),
-                Archivist.stdSdf.format(new Date()),
                 sender,
                 login,
                 hostname,
-                channel);
+                channel
+        ));
     }
     @Override protected synchronized void onPart(String channel, String sender, String login, String hostname) {
         // when someone leaves the channel
-        archivist.log(Archivist.EventType.PART, channel, Archivist.EventType.PART.toString(),
+        archivist.log(channel, ArchivistUtil.getRawPart(
                 System.currentTimeMillis(),
-                Archivist.stdSdf.format(new Date()),
                 sender,
                 login,
-                channel);
+                channel
+        ));
     }
     @Override protected synchronized void onNickChange(String oldNick, String login, String hostname, String newNick) {
-        archivist.log(Archivist.EventType.NICK_CHANGE, null, Archivist.EventType.NICK_CHANGE.toString(),
+        archivist.log(null, ArchivistUtil.getRawNickChange(
                 System.currentTimeMillis(),
-                Archivist.stdSdf.format(new Date()),
                 oldNick,
-                newNick);
+                newNick
+        ));
     }
     @Override protected synchronized void onKick(String channel, String kickerNick, String kickerLogin, String kickerHostname, String recipientNick, String reason) {
-        archivist.log(Archivist.EventType.KICK, channel, Archivist.EventType.KICK.toString(),
+        archivist.log(channel, ArchivistUtil.getRawKick(
                 System.currentTimeMillis(),
-                Archivist.stdSdf.format(new Date()),
                 kickerNick,
                 recipientNick,
                 channel,
-                reason);
+                reason
+        ));
     }
     @Override protected synchronized void onQuit(String sourceNick, String sourceLogin, String sourceHostname, String reason) {
         // when someone quits the server
-        archivist.log(Archivist.EventType.QUIT, null, Archivist.EventType.QUIT.toString(),
+        archivist.log(null, ArchivistUtil.getRawQuit(
                 System.currentTimeMillis(),
-                Archivist.stdSdf.format(new Date()),
                 sourceNick,
                 sourceLogin,
-                reason);
+                reason
+        ));
     }
     @Override protected synchronized void onTopic(String channel, String topic, String setBy, long date, boolean changed) {
-        archivist.log(Archivist.EventType.TOPIC, channel, Archivist.EventType.TOPIC.toString(),
+        archivist.log(channel, ArchivistUtil.getRawTopicChange(
                 System.currentTimeMillis(),
-                Archivist.stdSdf.format(new Date()),
                 setBy,
-                topic);
+                topic
+        ));
     }
     @Override protected synchronized void onChannelInfo(String channel, int userCount, String topic) {}
     @Override protected synchronized void onMode(String channel, String sourceNick, String sourceLogin, String sourceHostname, String mode) {
-        archivist.log(Archivist.EventType.CHANNEL_MODE, channel, Archivist.EventType.CHANNEL_MODE.toString(),
+        archivist.log(channel, ArchivistUtil.getRawChannelMode(
                 System.currentTimeMillis(),
-                Archivist.stdSdf.format(new Date()),
                 sourceNick,
                 mode,
-                channel);
+                channel
+        ));
     }
     @Override protected synchronized void onUserMode(String targetNick, String sourceNick, String sourceLogin, String sourceHostname, String mode) {
-        archivist.log(Archivist.EventType.USER_MODE, null, Archivist.EventType.USER_MODE.toString(),
+        archivist.log(null, ArchivistUtil.getRawUserMode(
                 System.currentTimeMillis(),
-                Archivist.stdSdf.format(new Date()),
                 sourceNick,
                 mode,
-                targetNick);
+                targetNick
+        ));
     }
 
     @Override
@@ -265,12 +267,12 @@ public class TSDBot extends PircBot implements Runnable {
 
         logger.info("{}: <{}> {}", channel, sender, message);
 
-        archivist.log(Archivist.EventType.MESSAGE, channel, Archivist.EventType.MESSAGE.toString(),
+        archivist.log(channel, ArchivistUtil.getRawMessage(
                 System.currentTimeMillis(),
-                Archivist.stdSdf.format(new Date()),
-                login,
                 sender,
-                message);
+                login,
+                message
+        ));
 
         List<Command> matchingCommands = Command.fromString(message);
         for(Command c : matchingCommands) {

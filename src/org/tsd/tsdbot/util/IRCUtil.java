@@ -1,5 +1,6 @@
 package org.tsd.tsdbot.util;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 
 import java.util.LinkedList;
@@ -12,6 +13,8 @@ import static com.rosaloves.bitlyj.Bitly.shorten;
  * Created by Joe on 2/19/14.
  */
 public class IRCUtil {
+
+    public static final String LINE_SEPARATOR = System.getProperty("line.separator");
 
     private static final int MAX_MSG_LEN = 510;
 
@@ -52,6 +55,10 @@ public class IRCUtil {
             if(fuzzyMatches(query, e)) matches.add(e);
         }
         return matches;
+    }
+
+    public static String getRandomString() {
+        return RandomStringUtils.randomAlphanumeric(10);
     }
 
 }

@@ -499,7 +499,9 @@ public class TSDTV implements MainFunction {
 
     public void buildSchedule() {
         try {
+            logger.info("Building TSDTV schedule...");
             if(scheduler == null) {
+                logger.info("No schedule found, creating new one...");
                 SchedulerFactory schedulerFactory = new StdSchedulerFactory();
                 scheduler = schedulerFactory.getScheduler();
             } else {
@@ -542,6 +544,8 @@ public class TSDTV implements MainFunction {
                         scheduler.scheduleJob(job, cronTrigger);
                     }
                 }
+            } catch (Exception e) {
+                logger.error("Error reading TSDTV schedule", e);
             }
 
             scheduler.start();
