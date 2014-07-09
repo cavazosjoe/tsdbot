@@ -122,7 +122,7 @@ public class Archivist /*Exedol*/ implements MainFunction {
                                     capturedText.addAll(pastFiveMinutes.get(key));
                                 }
                             } else {
-                                captureBuffer.addLast(EventType.JOIN.getPrettyFormatted(line));
+                                captureBuffer.addLast(line);
                                 capturedText = (LinkedList<String>) captureBuffer.clone();
                             }
                             captureBuffer.clear(); // clear the buffer when we detect the person joined
@@ -143,7 +143,7 @@ public class Archivist /*Exedol*/ implements MainFunction {
                     }
 
                     if(recording) {
-                        captureBuffer.addLast(lineEvent.getPrettyFormatted(line));
+                        captureBuffer.addLast(line);
                     }
 
                     // get the message's time
@@ -185,7 +185,7 @@ public class Archivist /*Exedol*/ implements MainFunction {
                     try(BufferedWriter writer = new BufferedWriter(new FileWriter(recapFile))) {
                         writer.write(output.toString());
                         writer.flush();
-                        bot.sendMessage(channel, "http://irc.teamschoolyd.org/" + fileName);
+                        bot.sendMessage(channel, "http://irc.teamschoolyd.org/recaps/" + fileName);
                     }
                 }
 
@@ -223,7 +223,7 @@ public class Archivist /*Exedol*/ implements MainFunction {
                     try(BufferedWriter writer = new BufferedWriter(new FileWriter(recapFile))) {
                         writer.write(output.toString());
                         writer.flush();
-                        bot.sendMessage(channel, "Here are the chat logs from the past " + minutes + " minutes: http://irc.teamschoolyd.org/" + fileName);
+                        bot.sendMessage(channel, "Here are the chat logs from the past " + minutes + " minutes: http://irc.teamschoolyd.org/recaps/" + fileName);
                     }
 
                 } catch (Exception e) {
