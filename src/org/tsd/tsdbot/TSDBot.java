@@ -128,6 +128,7 @@ public class TSDBot extends PircBot implements Runnable {
         functions.put(Command.REPLACE, new Replace());
         functions.put(Command.DEEJ, new Deej());
         functions.put(Command.STRAWPOLL, new StrawPoll());
+        functions.put(Command.WORKBOT, new Wod());
 
         functions.put(Command.RECAP, archivist);
 
@@ -494,6 +495,13 @@ public class TSDBot extends PircBot implements Runnable {
                 "^\\.recap.*",
                 "Recap function. Get a personalized review of what you missed",
                 "USAGE: .recap [ minutes (integer) ]",
+                null
+        ),
+
+        WORKBOT(
+                "^\\.(wod|workbot|werkbot).*",
+                "TSD WorkBot. Get a randomized workout for today, you lazy sack of shit",
+                "USAGE: .workbot [ options ]",
                 null
         );
 

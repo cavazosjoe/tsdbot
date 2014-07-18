@@ -247,7 +247,7 @@ public class Archivist /*Exedol*/ implements MainFunction {
         return buffer;
     }
 
-    public enum EventType {
+    public static enum EventType {
         JOIN("%s (%s@%s) has joined %s") {
             @Override
             public String getPrettyFormatted(String raw) {
@@ -267,6 +267,9 @@ public class Archivist /*Exedol*/ implements MainFunction {
             }
         },
         QUIT("%s (%s) has quit (%s)") {
+            public void blah() {
+
+            }
             @Override
             public String getPrettyFormatted(String raw) {
                 // 0:PART 1:99999999 2:nickname 3:ident 4-N:reason
