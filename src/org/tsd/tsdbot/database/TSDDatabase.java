@@ -15,7 +15,8 @@ public class TSDDatabase {
 
     private static Logger logger = LoggerFactory.getLogger(TSDDatabase.class);
     private static String testQ = "select 1";
-    private static String connectionString = "jdbc:h2:tcp://localhost/" + System.getProperty("user.dir") + "/irc/db";
+    private static String connectionPrefix = "jdbc:h2:tcp://localhost";
+    private static String connectionString = null;
     private Connection conn;
 
     private static TSDDatabase instance = null;
@@ -48,6 +49,14 @@ public class TSDDatabase {
 
     public void initialize() {
         try {
+
+            try(InputStream fis = TSDDatabase.class.getResourceAsStream("/tsdbot.properties")) {
+                Properties prop = new Properties();
+                prop.load(fis);
+                String dbDir = prop.getProperty("dbDir");
+                connectionString = connectionPrefix + dbDir;
+            }
+
             initTomCruiseDb();
             if(!TSDBot.getInstance().isDebug()) {
                 initTSDTVDB();
