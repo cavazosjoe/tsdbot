@@ -21,7 +21,10 @@ import twitter4j.Twitter;
 import twitter4j.TwitterFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -129,6 +132,7 @@ public class TSDBot extends PircBot implements Runnable {
         functions.put(Command.DEEJ, new Deej());
         functions.put(Command.STRAWPOLL, new StrawPoll());
         functions.put(Command.WORKBOT, new Wod());
+        functions.put(Command.CATCHUP, new Catchup());
 
         functions.put(Command.RECAP, archivist);
 
@@ -277,7 +281,7 @@ public class TSDBot extends PircBot implements Runnable {
 
         List<Command> matchingCommands = Command.fromString(message);
         for(Command c : matchingCommands) {
-            functions.get(c).run(channel, sender, login, message);
+            functions.get(c).engage(channel, sender, login, message);
 
             // propagate command to all listening threads
             for(IRCListenerThread listenerThread : threadManager.getThreadsByChannel(channel))
@@ -502,6 +506,13 @@ public class TSDBot extends PircBot implements Runnable {
                 "^\\.(wod|workbot|werkbot).*",
                 "TSD WorkBot. Get a randomized workout for today, you lazy sack of shit",
                 "USAGE: .workbot [ options ]",
+                null
+        ),
+
+        CATCHUP(
+                "^\\.catchup",
+                "Catchup function. Get a dramatic summary of recent chat history",
+                "USAGE: .catchup",
                 null
         );
 

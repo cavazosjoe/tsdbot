@@ -6,7 +6,7 @@ import org.tsd.tsdbot.TSDBot;
 /**
  * Created by Joe on 5/24/14.
  */
-public class ShutItDown implements MainFunction {
+public class ShutItDown extends MainFunction {
 
     @Override
     public void run(String channel, String sender, String ident, String text) {

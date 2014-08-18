@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 /**
  * Created by Joe on 5/24/14.
  */
-public class Filename implements MainFunction {
+public class Filename extends MainFunction {
 
     private static final Logger logger = LoggerFactory.getLogger(Filename.class);
 

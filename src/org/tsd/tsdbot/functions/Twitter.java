@@ -15,7 +15,7 @@ import java.util.LinkedList;
 /**
  * Created by Joe on 5/24/14.
  */
-public class Twitter implements MainFunction {
+public class Twitter extends MainFunction {
 
     private static final Logger logger = LoggerFactory.getLogger(Twitter.class);
 

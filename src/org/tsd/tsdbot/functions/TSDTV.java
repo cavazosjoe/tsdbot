@@ -31,7 +31,7 @@ import static org.quartz.TriggerBuilder.newTrigger;
 /**
  * Created by Joe on 3/9/14.
  */
-public class TSDTV implements MainFunction {
+public class TSDTV extends MainFunction {
 
     private static Logger logger = LoggerFactory.getLogger(TSDTV.class);
 
@@ -158,17 +158,45 @@ public class TSDTV implements MainFunction {
                 msg += ". But there isn't a stream running";
             }
             bot.sendMessage(channel, msg);
+
+        } else if(subCmd.equals("current")) {
+
+            // .tsdtv current ippo
+            if(cmdParts.length > 2) {
+                try {
+                    File show = getFuzzyShow(cmdParts[2]);
+                    int nextEpisode = getCurrentEpisode(show.getName());
+                    if(nextEpisode > getNumberOfEpisodes(show.getName()))
+                        nextEpisode = 1;
+
+                    int prevEpisode = getCurrentEpisode(show.getName()) - 1;
+                    if(prevEpisode < 1)
+                        prevEpisode = getNumberOfEpisodes(show.getName());
+
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("The next episode of ")
+                            .append(show.getName())
+                            .append(" will be ")
+                            .append(nextEpisode)
+                            .append(". The previously watched episode was ")
+                            .append(prevEpisode)
+                            .append(".");
+                    bot.sendMessage(channel, sb.toString());
+                } catch (Exception e) {
+                    bot.sendMessage(channel, "Error: " + e.getMessage());
+                }
+            } else {
+                bot.sendMessage(channel, cmd.getUsage());
+            }
         }
     }
 
     public void catalog(String requester, String subdir) throws Exception {
         File printingDir;
-        if(subdir == null) printingDir = new File(catalogDir);
-        else {
-            printingDir = new File(catalogDir + "/" + subdir);
-            if(!printingDir.exists())
-                throw new Exception("Could not locate directory " + subdir + " (case sensitive)");
-        }
+        if(subdir == null)
+            printingDir = new File(catalogDir);
+        else
+            printingDir = getFuzzyShow(subdir);
 
         boolean first = true;
         StringBuilder catalogBuilder = new StringBuilder();
@@ -222,29 +250,8 @@ public class TSDTV implements MainFunction {
 
     public void prepareOnDemand(String channel, String dir, String query) throws Exception {
 
-        File searchingDir;
-        String show = null;
-        if(dir == null) searchingDir = new File(catalogDir);
-        else {
-            List<File> matchingDirs = new LinkedList<>();
-            for(File f : (new File(catalogDir)).listFiles()) {
-                if(f.isDirectory() && f.getName().toLowerCase().contains(dir.toLowerCase()))
-                    matchingDirs.add(f);
-            }
-
-            if(matchingDirs.size() == 0)
-                throw new Exception("Could not find directory matching \"" + dir + "\"");
-            else if(matchingDirs.size() > 1) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("Found multiple directories matching for \"").append(dir).append("\":");
-                for(File f : matchingDirs)
-                    sb.append(" ").append(f.getName());
-                throw new Exception(sb.toString());
-            } else {
-                searchingDir = matchingDirs.get(0);
-                show = searchingDir.getName();
-            }
-        }
+        File searchingDir = getFuzzyShow(dir);
+        String show = searchingDir.getName();
 
         LinkedList<File> matchedFiles = new LinkedList<>();
         if("random".equals(query)) {
@@ -568,6 +575,28 @@ public class TSDTV implements MainFunction {
             play(queue.pop());
         } else {
             queue.clear();
+        }
+    }
+
+    private File getFuzzyShow(String query) throws Exception {
+
+        // return the File object, use it to getName or getPath
+        List<File> matchingDirs = new LinkedList<>();
+        for(File f : (new File(catalogDir)).listFiles()) {
+            if(f.isDirectory() && f.getName().toLowerCase().contains(query.toLowerCase()))
+                matchingDirs.add(f);
+        }
+
+        if(matchingDirs.size() == 0)
+            throw new Exception("Could not find directory matching \"" + query + "\"");
+        else if(matchingDirs.size() > 1) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Found multiple directories matching for \"").append(query).append("\":");
+            for(File f : matchingDirs)
+                sb.append(" ").append(f.getName());
+            throw new Exception(sb.toString());
+        } else {
+            return matchingDirs.get(0);
         }
     }
 

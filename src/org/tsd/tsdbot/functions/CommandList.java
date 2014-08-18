@@ -5,7 +5,7 @@ import org.tsd.tsdbot.TSDBot;
 /**
  * Created by Joe on 5/24/14.
  */
-public class CommandList implements MainFunction {
+public class CommandList extends MainFunction {
 
     @Override
     public void run(String channel, String sender, String ident, String text) {

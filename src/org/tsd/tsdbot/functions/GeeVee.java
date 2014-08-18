@@ -11,7 +11,7 @@ import java.util.Random;
 /**
  * Created by Joe on 4/5/14.
  */
-public class GeeVee implements MainFunction {
+public class GeeVee extends MainFunction {
 
     private static Logger logger = LoggerFactory.getLogger(GeeVee.class);
 

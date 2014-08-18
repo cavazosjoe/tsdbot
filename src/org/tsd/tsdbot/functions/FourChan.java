@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 /**
  * Created by Joe on 5/24/14.
  */
-public class FourChan implements MainFunction {
+public class FourChan extends MainFunction {
 
     private static final Logger logger = LoggerFactory.getLogger(FourChan.class);
 

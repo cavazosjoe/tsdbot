@@ -11,7 +11,7 @@ import org.tsd.tsdbot.TSDBot;
 /**
  * Created by Joe on 5/24/14.
  */
-public class Sanic implements MainFunction {
+public class Sanic extends MainFunction {
 
     private static final Logger logger = LoggerFactory.getLogger(Sanic.class);
 

@@ -8,7 +8,7 @@ import java.util.Random;
 /**
  * Created by Joe on 5/24/14.
  */
-public class BlunderCount implements MainFunction {
+public class BlunderCount extends MainFunction {
 
     private static String[] responses = new String[]{
             "",                                     "I saw that too. ",

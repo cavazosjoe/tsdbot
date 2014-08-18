@@ -15,6 +15,7 @@ import static com.rosaloves.bitlyj.Bitly.shorten;
 public class IRCUtil {
 
     public static final String LINE_SEPARATOR = System.getProperty("line.separator");
+    public static final String BOLD_CHAR = "\u0002";
 
     private static final int MAX_MSG_LEN = 510;
 

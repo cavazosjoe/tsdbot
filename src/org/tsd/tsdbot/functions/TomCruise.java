@@ -12,7 +12,7 @@ import java.util.Random;
 /**
  * Created by Joe on 5/24/14.
  */
-public class TomCruise implements MainFunction {
+public class TomCruise extends MainFunction {
 
     @Override
     public void run(String channel, String sender, String ident, String text) {

@@ -1,24 +1,19 @@
 package org.tsd.tsdbot.functions;
 
-import org.jpaste.pastebin.Pastebin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.ArchivistUtil;
 import org.tsd.tsdbot.util.IRCUtil;
-import sun.awt.image.ImageWatched;
 
 import java.io.*;
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Created by Joe on 6/4/14.
  */
-public class Archivist /*Exedol*/ implements MainFunction {
+public class Archivist /*Exedol*/ extends MainFunction {
 
     private static final Logger log = LoggerFactory.getLogger(Archivist.class);
 

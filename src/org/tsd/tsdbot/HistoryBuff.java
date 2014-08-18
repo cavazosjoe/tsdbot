@@ -14,7 +14,7 @@ import java.util.Map;
 public class HistoryBuff {
 
     private static HistoryBuff instance = null;
-    private static final int CHANNEL_HISTORY_SIZE = 500; // 500 message history per channel
+    private static final int CHANNEL_HISTORY_SIZE = 750; // 500 message history per channel
     private Map<String, CircularFifoBuffer> channelHistory = new HashMap<>();
 
     private HistoryBuff(String[] channels) {

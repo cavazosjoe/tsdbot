@@ -9,7 +9,7 @@ import java.util.Random;
 /**
  * Created by Joe on 7/9/2014.
  */
-public class Wod implements MainFunction {
+public class Wod extends MainFunction {
 
     @Override
     public void run(String channel, String sender, String ident, String text) {

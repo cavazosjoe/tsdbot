@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 /**
  * Created by Joe on 5/24/14.
  */
-public class Replace implements MainFunction {
+public class Replace extends MainFunction {
 
     // Detects commands which look like s/find/replace/ username
     private Pattern commandFormat = Pattern.compile("^s/([^/]+)/([^/]*)(.*)$");

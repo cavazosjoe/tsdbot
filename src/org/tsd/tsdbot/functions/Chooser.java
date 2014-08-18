@@ -7,7 +7,7 @@ import java.util.Random;
 /**
  * Created by Joe on 3/1/14.
  */
-public class Chooser implements MainFunction {
+public class Chooser extends MainFunction {
 
     private static String[] formats = new String[] {
             "Go with %s",

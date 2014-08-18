@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * Created by Joe on 5/24/14.
  */
-public class OmniPost implements MainFunction {
+public class OmniPost extends MainFunction {
     
     @Override
     public void run(String channel, String sender, String ident, String text) {
