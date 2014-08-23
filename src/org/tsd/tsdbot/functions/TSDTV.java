@@ -188,6 +188,8 @@ public class TSDTV extends MainFunction {
             } else {
                 bot.sendMessage(channel, cmd.getUsage());
             }
+        } else if(subCmd.equals("links")) {
+            bot.sendMessage(channel, getLinks(true));
         }
     }
 
@@ -240,10 +242,7 @@ public class TSDTV extends MainFunction {
             String title = metadata.get("title");
             if(title == null) title = program.filePath.substring(program.filePath.lastIndexOf("/")+1);
 
-            String msg = "[TSDTV] NOW PLAYING: " + artist + ": " + title +
-                    " -- PREMIUM: http://irc.teamschoolyd.org/tsdtv.html" +
-                    " -- POVERTY: http://irc.teamschoolyd.org/tsdtv-poverty.html" +
-                    " -- VLC: http://irc.teamschoolyd.org:8090/premium.flv | http://irc.teamschoolyd.org:8090/poverty.flv";
+            String msg = "[TSDTV] NOW PLAYING: " + artist + ": " + title + " -- " + getLinks(false);
             TSDBot.getInstance().broadcast(msg.replaceAll("_"," "));
         }
     }
@@ -287,7 +286,7 @@ public class TSDTV extends MainFunction {
 
     }
 
-    public void prepareScheduledBlock(String blockName, LinkedList<String> programs, int offset) throws SQLException {
+    public void prepareScheduledBlock(String blockId, String blockName, LinkedList<String> programs, int offset) throws SQLException {
 
         logger.info("Preparing TSDTV block: {} with offset {}", blockName, offset);
 
@@ -297,6 +296,13 @@ public class TSDTV extends MainFunction {
         }
 
         queue.clear();
+
+        // prepare the block intro if it exists
+        String blockIntro = null;
+        if(blockId != null) {
+            blockIntro = getBlockIntro(blockId);
+            queue.addLast(new TSDTVProgram(blockIntro, ".intros"));
+        }
 
         // use dynamic map to get correct episode numbers for repeating shows
         // use offset to handle replays/reruns
@@ -317,6 +323,11 @@ public class TSDTV extends MainFunction {
                 }
 
             } else {
+
+                String introPath = getShowIntro(show);
+                if(introPath != null) {
+                    queue.addLast(new TSDTVProgram(introPath, ".intros"));
+                }
 
                 int episodeNum = 0;
                 if(!episodeNums.containsKey(show)) {
@@ -365,6 +376,11 @@ public class TSDTV extends MainFunction {
 
         TSDBot.getInstance().broadcast(broadcastBuilder.toString());
 
+        if(blockIntro != null) {
+            // there's a block intro playing, link people to the stream while it plays
+            TSDBot.getInstance().broadcast(getLinks(false));
+        }
+
         if(!queue.isEmpty()) play(queue.pop());
         else logger.error("Could not find any shows for block...");
     }
@@ -404,13 +420,14 @@ public class TSDTV extends MainFunction {
                 JobDetail job = matchedJobs.get(0);
                 String name = job.getJobDataMap().getString("name");
                 String schedule = job.getJobDataMap().getString("schedule");
+                String blockId = job.getJobDataMap().getString("id");
                 String[] scheduleParts = schedule.split(";;");
 
                 LinkedList<String> blockSchedule = new LinkedList<>();
                 Collections.addAll(blockSchedule, scheduleParts);
 
                 try {
-                    prepareScheduledBlock(name, blockSchedule, -1);
+                    prepareScheduledBlock(blockId, name, blockSchedule, -1);
                 } catch (SQLException e) {
                     logger.error("Error preparing scheduled block", e);
                 }
@@ -524,7 +541,12 @@ public class TSDTV extends MainFunction {
                 while((line = br.readLine()) != null) {
                     if(line.startsWith("BLOCK")) {
                         String blockName = line.substring(line.indexOf("=") + 1);
-                        String quartzString = br.readLine();
+
+                        String blockLine = br.readLine();
+                        String blockId = blockLine.substring(blockLine.indexOf("=") + 1);
+
+                        String quartz = br.readLine();
+
                         LinkedList<String> shows = new LinkedList<>();
                         while(!(line = br.readLine()).equals("ENDBLOCK")) {
                             shows.add(line);
@@ -542,10 +564,11 @@ public class TSDTV extends MainFunction {
                                 .withIdentity(blockName)
                                 .usingJobData("schedule", scheduleBuilder.toString())
                                 .usingJobData("name", blockName)
+                                .usingJobData("id", blockId)
                                 .build();
 
                         cronTrigger = newTrigger()
-                                .withSchedule(cronSchedule(quartzString))
+                                .withSchedule(cronSchedule(quartz))
                                 .build();
 
                         scheduler.scheduleJob(job, cronTrigger);
@@ -620,6 +643,27 @@ public class TSDTV extends MainFunction {
         return null;
     }
 
+    private String getShowIntro(String show) {
+        File introDir = new File(catalogDir + "/" + show + "/.intros");
+        return getRandomFileFromDirectory(introDir);
+    }
+
+    private String getBlockIntro(String blockId) {
+        File introDir = new File(catalogDir + "/.blocks/" + blockId + "/intros");
+        return getRandomFileFromDirectory(introDir);
+    }
+
+    private String getRandomFileFromDirectory(File dir) {
+        if(dir.exists()) {
+            File[] files = dir.listFiles();
+            if(files == null || files.length == 0)
+                return null;
+            Random rand = new Random();
+            return files[rand.nextInt(files.length)].getAbsolutePath();
+        }
+        return null;
+    }
+
     private int getCurrentEpisode(String show) throws SQLException {
         Connection dbConn = TSDDatabase.getInstance().getConnection();
         String q = String.format("select currentEpisode from TSDTV_SHOW where name = '%s'", show);
@@ -657,6 +701,14 @@ public class TSDTV extends MainFunction {
         }
 
         return viewerCount;
+    }
+
+    private String getLinks(boolean includeVlc) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("PREMIUM: http://irc.teamschoolyd.org/tsdtv.html -- POVERTY: http://irc.teamschoolyd.org/tsdtv-poverty.html");
+        if(includeVlc)
+            sb.append(" -- VLC: http://irc.teamschoolyd.org:8090/premium.flv | http://irc.teamschoolyd.org:8090/poverty.flv");
+        return sb.toString();
     }
 
     private HashMap<Integer, StreamType> getVideoStreams(String moviePath) {

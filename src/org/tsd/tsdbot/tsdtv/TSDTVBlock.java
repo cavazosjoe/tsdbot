@@ -22,13 +22,14 @@ public class TSDTVBlock implements Job {
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         String name = jobExecutionContext.getJobDetail().getJobDataMap().getString("name");
         String schedule = jobExecutionContext.getJobDetail().getJobDataMap().getString("schedule");
+        String id = jobExecutionContext.getJobDetail().getJobDataMap().getString("id");
         String[] scheduleParts = schedule.split(";;");
 
         LinkedList<String> blockSchedule = new LinkedList<>();
         Collections.addAll(blockSchedule, scheduleParts);
 
         try {
-            TSDTV.getInstance().prepareScheduledBlock(name, blockSchedule, 0);
+            TSDTV.getInstance().prepareScheduledBlock(id, name, blockSchedule, 0);
         } catch (SQLException e) {
             logger.error("Error preparing scheduled block", e);
         }
