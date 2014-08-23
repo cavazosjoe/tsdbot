@@ -10,6 +10,7 @@ import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.TSDDatabase;
 import org.tsd.tsdbot.runnable.TSDTVStream;
 import org.tsd.tsdbot.tsdtv.TSDTVBlock;
+import org.tsd.tsdbot.tsdtv.TSDTVConstants;
 import org.tsd.tsdbot.tsdtv.TSDTVProgram;
 import org.tsd.tsdbot.util.IRCUtil;
 
@@ -38,8 +39,8 @@ public class TSDTV extends MainFunction {
     private static final TSDTV instance = new TSDTV();
 
     private static final Pattern episodeNumberPattern = Pattern.compile("^(\\d+).*",Pattern.DOTALL);
-    private static final int DAY_BOUNDARY_HOUR = 4; // 4:00 AM
-    private static final TimeZone TIME_ZONE = TimeZone.getTimeZone("America/New_York");
+    private static final int dayBoundaryHour = 4; // 4:00 AM
+    private static final TimeZone timeZone = TimeZone.getTimeZone("America/New_York");
 
     private String catalogDir;
     private String scheduleLoc;
@@ -237,9 +238,9 @@ public class TSDTV extends MainFunction {
 
         if(!program.show.startsWith(".")) { // skip commercials and bumps
             HashMap<String,String> metadata = getVideoMetadata(program.filePath);
-            String artist = metadata.get("artist");
+            String artist = metadata.get(TSDTVConstants.METADATA_ARTIST_FIELD);
             if(artist == null) artist = program.show;
-            String title = metadata.get("title");
+            String title = metadata.get(TSDTVConstants.METADATA_TITLE_FIELD);
             if(title == null) title = program.filePath.substring(program.filePath.lastIndexOf("/")+1);
 
             String msg = "[TSDTV] NOW PLAYING: " + artist + ": " + title + " -- " + getLinks(false);
@@ -253,19 +254,13 @@ public class TSDTV extends MainFunction {
         String show = searchingDir.getName();
 
         LinkedList<File> matchedFiles = new LinkedList<>();
-        if("random".equals(query)) {
-
-            Random rand = new Random();
-            int size = searchingDir.listFiles().length;
-            matchedFiles.add(searchingDir.listFiles()[rand.nextInt(size)]);
-
+        if(TSDTVConstants.RANDOM_QUERY.equals(query)) {
+            matchedFiles.add(getRandomFileFromDirectory(searchingDir));
         } else {
-
             for(File f : searchingDir.listFiles()) {
                 if(f.getName().toLowerCase().contains(query.toLowerCase()))
                     matchedFiles.add(f);
             }
-
         }
 
         if(matchedFiles.size() == 0) {
@@ -302,7 +297,7 @@ public class TSDTV extends MainFunction {
         if(blockId != null) {
             blockIntro = getBlockIntro(blockId);
             if(blockIntro != null)
-                queue.addLast(new TSDTVProgram(blockIntro, ".intros"));
+                queue.addLast(new TSDTVProgram(blockIntro, TSDTVConstants.INTRO_DIR_NAME));
         }
 
         // use dynamic map to get correct episode numbers for repeating shows
@@ -312,22 +307,20 @@ public class TSDTV extends MainFunction {
 
             if(show.startsWith(".")) { // commercial or bump, grab random
 
-                Random rand = new Random();
                 File showDir = new File(catalogDir + "/" + show);
-                if(showDir.exists()) {
-                    List<File> files = Arrays.asList(showDir.listFiles());
-                    File f = files.get(rand.nextInt(files.size()));
-                    queue.addLast(new TSDTVProgram(f.getAbsolutePath(), show));
-                    logger.info("Added {} to queue", f.getAbsolutePath());
+                String showPath = getRandomFilePathFromDirectory(showDir);
+                if(showPath != null) {
+                    queue.addLast(new TSDTVProgram(showPath, show));
+                    logger.info("Added {} to queue", showPath);
                 } else {
-                    logger.error("Could not find show directory: {}", catalogDir + "/" + show);
+                    logger.error("Could not find any shows in {}", showDir.getAbsolutePath());
                 }
 
             } else {
 
                 String introPath = getShowIntro(show);
                 if(introPath != null) {
-                    queue.addLast(new TSDTVProgram(introPath, ".intros"));
+                    queue.addLast(new TSDTVProgram(introPath, TSDTVConstants.INTRO_DIR_NAME));
                 }
 
                 int episodeNum = 0;
@@ -401,7 +394,7 @@ public class TSDTV extends MainFunction {
             LinkedList<JobDetail> matchedJobs = new LinkedList<>();
             for(JobKey key : keys) {
                 JobDetail jobDetail = scheduler.getJobDetail(key);
-                String name = jobDetail.getJobDataMap().getString("name");
+                String name = jobDetail.getJobDataMap().getString(TSDTVConstants.BLOCK_FIELD_NAME);
                 if(IRCUtil.fuzzyMatches(block, name))
                     matchedJobs.add(jobDetail);
             }
@@ -413,16 +406,16 @@ public class TSDTV extends MainFunction {
                 boolean first = true;
                 for(JobDetail job : matchedJobs) {
                     if(!first) sb.append(", ");
-                    sb.append(job.getJobDataMap().getString("name"));
+                    sb.append(job.getJobDataMap().getString(TSDTVConstants.BLOCK_FIELD_NAME));
                     first = false;
                 }
                 TSDBot.getInstance().sendMessage(channel, "Found multiple blocks matching \"" + block + "\": " + sb.toString());
             } else {
                 JobDetail job = matchedJobs.get(0);
-                String name = job.getJobDataMap().getString("name");
-                String schedule = job.getJobDataMap().getString("schedule");
-                String blockId = job.getJobDataMap().getString("id");
-                String[] scheduleParts = schedule.split(";;");
+                String name = job.getJobDataMap().getString(TSDTVConstants.BLOCK_FIELD_NAME);
+                String schedule = job.getJobDataMap().getString(TSDTVConstants.BLOCK_FIELD_SCHEDULE);
+                String blockId = job.getJobDataMap().getString(TSDTVConstants.BLOCK_FIELD_ID);
+                String[] scheduleParts = schedule.split(TSDTVConstants.BLOCK_SCHEDULE_DELIMITER);
 
                 LinkedList<String> blockSchedule = new LinkedList<>();
                 Collections.addAll(blockSchedule, scheduleParts);
@@ -446,12 +439,12 @@ public class TSDTV extends MainFunction {
 
         if(runningStream != null) {
             metadata = getVideoMetadata(runningStream.stream.getPathToMovie());
-            String artist = metadata.get("artist");
-            String title = metadata.get("title");
+            String artist = metadata.get(TSDTVConstants.METADATA_ARTIST_FIELD);
+            String title = metadata.get(TSDTVConstants.METADATA_TITLE_FIELD);
 
             String np;
             if(artist == null || title == null) np = runningStream.stream.getMovieName();
-            else np = metadata.get("artist") + " - " + metadata.get("title");
+            else np = artist + " - " + title;
 
             TSDBot.getInstance().sendMessage(channel, "NOW PLAYING: " + np);
         }
@@ -472,9 +465,9 @@ public class TSDTV extends MainFunction {
         try {
 
             GregorianCalendar endOfToday = new GregorianCalendar();
-            endOfToday.setTimeZone(TIME_ZONE);
-            endOfToday.set(Calendar.HOUR_OF_DAY, DAY_BOUNDARY_HOUR);
-            if(endOfToday.get(Calendar.HOUR_OF_DAY) >= DAY_BOUNDARY_HOUR)
+            endOfToday.setTimeZone(timeZone);
+            endOfToday.set(Calendar.HOUR_OF_DAY, dayBoundaryHour);
+            if(endOfToday.get(Calendar.HOUR_OF_DAY) >= dayBoundaryHour)
                 endOfToday.add(Calendar.DATE, 1);
 
             Set<JobKey> keys = scheduler.getJobKeys(GroupMatcher.<JobKey>anyGroup());
@@ -495,15 +488,15 @@ public class TSDTV extends MainFunction {
                     sdf = new SimpleDateFormat("HH:mm a z");
                 else
                     sdf = new SimpleDateFormat("EEE HH:mm a z");
-                sdf.setTimeZone(TIME_ZONE);
+                sdf.setTimeZone(timeZone);
                 for(Date d : jobMap.keySet()) {
                     sb = new StringBuilder();
                     sb.append(sdf.format(d)).append(" -- ");
                     JobDetail job = jobMap.get(d);
-                    String name = job.getJobDataMap().getString("name");
-                    String schedule = job.getJobDataMap().getString("schedule");
+                    String name = job.getJobDataMap().getString(TSDTVConstants.BLOCK_FIELD_NAME);
+                    String schedule = job.getJobDataMap().getString(TSDTVConstants.BLOCK_FIELD_SCHEDULE);
                     sb.append(name).append(": ");
-                    String[] scheduleParts = schedule.split(";;");
+                    String[] scheduleParts = schedule.split(TSDTVConstants.BLOCK_SCHEDULE_DELIMITER);
                     boolean first = true;
                     for(String s : scheduleParts) {
                         if(s.startsWith(".")) continue;
@@ -556,16 +549,16 @@ public class TSDTV extends MainFunction {
                         StringBuilder scheduleBuilder = new StringBuilder();
                         boolean first = true;
                         for(String show : shows) {
-                            if(!first) scheduleBuilder.append(";;");
+                            if(!first) scheduleBuilder.append(TSDTVConstants.BLOCK_SCHEDULE_DELIMITER);
                             scheduleBuilder.append(show);
                             first = false;
                         }
 
                         job = newJob(TSDTVBlock.class)
                                 .withIdentity(blockName)
-                                .usingJobData("schedule", scheduleBuilder.toString())
-                                .usingJobData("name", blockName)
-                                .usingJobData("id", blockId)
+                                .usingJobData(TSDTVConstants.BLOCK_FIELD_SCHEDULE, scheduleBuilder.toString())
+                                .usingJobData(TSDTVConstants.BLOCK_FIELD_NAME, blockName)
+                                .usingJobData(TSDTVConstants.BLOCK_FIELD_ID, blockId)
                                 .build();
 
                         cronTrigger = newTrigger()
@@ -645,24 +638,29 @@ public class TSDTV extends MainFunction {
     }
 
     private String getShowIntro(String show) {
-        File introDir = new File(catalogDir + "/" + show + "/.intros");
-        return getRandomFileFromDirectory(introDir);
+        File introDir = new File(catalogDir + "/" + show + "/" + TSDTVConstants.INTRO_DIR_NAME);
+        return getRandomFilePathFromDirectory(introDir);
     }
 
     private String getBlockIntro(String blockId) {
-        File introDir = new File(catalogDir + "/.blocks/" + blockId + "/intros");
-        return getRandomFileFromDirectory(introDir);
+        File introDir = new File(catalogDir + "/"
+                + TSDTVConstants.BLOCKS_DIR_NAME + "/" + blockId + "/" + TSDTVConstants.INTRO_DIR_NAME);
+        return getRandomFilePathFromDirectory(introDir);
     }
 
-    private String getRandomFileFromDirectory(File dir) {
+    private File getRandomFileFromDirectory(File dir) {
         if(dir.exists()) {
             File[] files = dir.listFiles();
             if(files == null || files.length == 0)
                 return null;
             Random rand = new Random();
-            return files[rand.nextInt(files.length)].getAbsolutePath();
+            return files[rand.nextInt(files.length)];
         }
         return null;
+    }
+
+    private String getRandomFilePathFromDirectory(File dir) {
+        return getRandomFileFromDirectory(dir).getAbsolutePath();
     }
 
     private int getCurrentEpisode(String show) throws SQLException {
@@ -767,7 +765,7 @@ public class TSDTV extends MainFunction {
                     // now get the duration
                     // Duration: 00:00:00.0, start=0000blahblah
                     String duration = line.substring(line.indexOf(":") + 1, line.indexOf(","));
-                    metadata.put("duration",duration);
+                    metadata.put(TSDTVConstants.METADATA_DURATION_FIELD, duration);
                     break;
                 }
             }

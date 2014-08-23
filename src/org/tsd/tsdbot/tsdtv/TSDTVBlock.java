@@ -20,10 +20,10 @@ public class TSDTVBlock implements Job {
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
-        String name = jobExecutionContext.getJobDetail().getJobDataMap().getString("name");
-        String schedule = jobExecutionContext.getJobDetail().getJobDataMap().getString("schedule");
-        String id = jobExecutionContext.getJobDetail().getJobDataMap().getString("id");
-        String[] scheduleParts = schedule.split(";;");
+        String name = jobExecutionContext.getJobDetail().getJobDataMap().getString(TSDTV.BLOCK_FIELD_NAME);
+        String schedule = jobExecutionContext.getJobDetail().getJobDataMap().getString(TSDTV.BLOCK_FIELD_SCHEDULE);
+        String id = jobExecutionContext.getJobDetail().getJobDataMap().getString(TSDTV.BLOCK_FIELD_ID);
+        String[] scheduleParts = schedule.split(TSDTV.BLOCK_SCHEDULE_DELIMITER);
 
         LinkedList<String> blockSchedule = new LinkedList<>();
         Collections.addAll(blockSchedule, scheduleParts);
