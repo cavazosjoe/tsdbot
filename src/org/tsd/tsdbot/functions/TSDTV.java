@@ -301,7 +301,8 @@ public class TSDTV extends MainFunction {
         String blockIntro = null;
         if(blockId != null) {
             blockIntro = getBlockIntro(blockId);
-            queue.addLast(new TSDTVProgram(blockIntro, ".intros"));
+            if(blockIntro != null)
+                queue.addLast(new TSDTVProgram(blockIntro, ".intros"));
         }
 
         // use dynamic map to get correct episode numbers for repeating shows
