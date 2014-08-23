@@ -14,7 +14,7 @@ public abstract class MainFunction {
     private Date lastUsed = null;
 
     protected MainFunction(int cooldownMinutes) {
-        this.cooldownMillis = Long.valueOf(cooldownMinutes * 60 * 1000);
+        this.cooldownMillis = (long)cooldownMinutes * 60 * 1000;
     }
 
     protected MainFunction() {}
@@ -25,7 +25,7 @@ public abstract class MainFunction {
             run(channel, sender, ident, text);
             lastUsed = new Date();
         } else {
-            int minutesLeft = (int) timeRemaining / (1000 * 60);
+            int minutesLeft = (int)Math.ceil( ((double)timeRemaining) / ((double)(1000 * 60)) ); // necessary?
             TSDBot.getInstance().sendMessage(channel, "That function will be available in " + minutesLeft + " minute(s)");
         }
     }

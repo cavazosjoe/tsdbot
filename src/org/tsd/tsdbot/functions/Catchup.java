@@ -13,7 +13,7 @@ import java.util.Random;
  */
 public class Catchup extends MainFunction {
 
-    private int cooldownMinutes = 10;
+    private static final int dramaCount = 4;
 
     public Catchup() {
         super(10);
@@ -29,7 +29,7 @@ public class Catchup extends MainFunction {
 
         // keep sampling random messages, discarding ones that are commands
         LinkedList<HistoryBuff.Message> chosen = new LinkedList<>();
-        while(history.size() > 0 && chosen.size() < 5) {
+        while(history.size() > 0 && chosen.size() < dramaCount) {
             HistoryBuff.Message msg = history.get(rand.nextInt(history.size()));
             if(TSDBot.Command.fromString(msg.text).size() == 0 && msg.text.length() < 80)
                 chosen.add(msg);
@@ -50,6 +50,8 @@ public class Catchup extends MainFunction {
             // end on an ominous note
             m = chosen.pop();
             bot.sendMessage(channel, "<" + m.sender + "> " + DramaStyle.ellipses.apply(m.text));
+
+            bot.sendMessage(channel, "Tonight's episode: \"" + episodeNames[rand.nextInt(episodeNames.length)] + "\"");
         }
     }
 
@@ -73,7 +75,36 @@ public class Catchup extends MainFunction {
             "TSD High",
             "TSDU",
             "TSD: Miami",
-            "Survivor: TSDIRC"
+            "Survivor: TSDIRC",
+            "TSD: The College Years",
+            "Fast Times at TSD High",
+            "Slappy Days",
+            "T.S.D.I.R.C."
+    };
+
+    private static final String[] episodeNames = new String[] {
+            "GV's Wild Ride",
+            "Crash! The Server's Down for Maintenance?!",
+            "The Mystery of DeeJ",
+            "Schooly Joins the Army",
+            "Hickory Dickory... Dead",
+            "Paddy's Big Secret",
+            "Little kanbo, Big Adventure!",
+            "KP DOA",
+            "ZackDark in America",
+            "The Red Menace",
+            "The Downward Spiral",
+            "The Argument",
+            "tarehart Goes to College",
+            "The Graduation",
+            "Video Games",
+            "Tex and the Five Magics",
+            "The Bonkening",
+            "Dr. GV, PhD, although I guess if he was a medical doctor he wouldn't have a PhD? Or maybe they can, " +
+                    "I don't know. I know he'd be called \"Dr.\" though. I think they should make that clearer, like " +
+                    "in the dictionary or wherever they spell things out like that. But I guess it wouldn't be an English " +
+                    "thing it'd be a medical licensing and terminology thing? Uuuuuuugggggghhhh it's already so late " +
+                    "and I was supposed to go to bed 23 minutes ago but then this came up and uuuggggghhhhh >_>"
     };
 
     private static enum DramaStyle {
@@ -81,9 +112,7 @@ public class Catchup extends MainFunction {
             @Override
             public String apply(String s) {
                 //hackish way to get rid of periods/ellipses, too lazy for regex
-                if(s.endsWith(".")) s = s.substring(0, s.length()-1);
-                else if(s.endsWith("...")) s = s.substring(0,s.length()-3);
-
+                s = stripPeriods(s);
                 s = s + "!!";
                 return s;
             }
@@ -92,9 +121,7 @@ public class Catchup extends MainFunction {
             @Override
             public String apply(String s) {
                 //hackish way to get rid of periods/ellipses, too lazy for regex
-                if(s.endsWith(".")) s = s.substring(0, s.length()-1);
-                else if(s.endsWith("...")) s = s.substring(0,s.length()-3);
-
+                s = stripPeriods(s);
                 s = s + "??";
                 return s;
             }
@@ -116,7 +143,6 @@ public class Catchup extends MainFunction {
             public String apply(String s) {
                 if(!s.endsWith("...")) {
                     if(s.endsWith("?") || s.endsWith("!")) s = s.substring(0, s.length()-1);
-
                     return s + "...";
                 }
                 return s; // already ends with ellipses...
@@ -129,6 +155,13 @@ public class Catchup extends MainFunction {
             Random rand = new Random();
             DramaStyle[] dramas = new DramaStyle[]{exclamation, question, bold, caps}; // no ellipses
             return dramas[rand.nextInt(dramas.length)].apply(s);
+        }
+
+        private static String stripPeriods(String s) {
+            if(s.endsWith("...")) s = s.substring(0,s.length()-3);
+            else if(s.endsWith("..")) s = s.substring(0, s.length()-2);
+            else if(s.endsWith(".")) s = s.substring(0, s.length()-1);
+            return s;
         }
     }
 }
