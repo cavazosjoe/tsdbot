@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.TSDDatabase;
 import org.tsd.tsdbot.runnable.TSDTVStream;
+import org.tsd.tsdbot.scheduled.SchedulerConstants;
 import org.tsd.tsdbot.tsdtv.TSDTVBlockJob;
 import org.tsd.tsdbot.tsdtv.TSDTVConstants;
 import org.tsd.tsdbot.tsdtv.TSDTVProgram;
@@ -46,7 +47,6 @@ public class TSDTV extends MainFunction {
     private String scheduleLoc;
     private String ffmpegExec;
 
-    private Scheduler scheduler;
     private LinkedList<TSDTVProgram> queue = new LinkedList<>(); // file paths
 
     private ThreadStream runningStream;
@@ -136,7 +136,7 @@ public class TSDTV extends MainFunction {
                 bot.sendMessage(channel, "Only ops can use that");
                 return;
             }
-            buildSchedule();
+            buildSchedule(TSDBot.getInstance().getScheduler());
             bot.sendMessage(channel, "The schedule has been reloaded");
 
         } else if(subCmd.equals("schedule")) {
@@ -388,11 +388,12 @@ public class TSDTV extends MainFunction {
         }
 
         try {
-            Set<JobKey> keys = scheduler.getJobKeys(GroupMatcher.<JobKey>anyGroup());
+            Scheduler scheduler = TSDBot.getInstance().getScheduler();
+            Set<JobKey> keys = scheduler.getJobKeys(GroupMatcher.<JobKey>groupEquals(SchedulerConstants.TSDTV_GROUP_ID));
             LinkedList<JobDetail> matchedJobs = new LinkedList<>();
             for(JobKey key : keys) {
                 JobDetail jobDetail = scheduler.getJobDetail(key);
-                String name = jobDetail.getJobDataMap().getString(TSDTVConstants.BLOCK_FIELD_NAME);
+                String name = jobDetail.getJobDataMap().getString(SchedulerConstants.TSDTV_BLOCK_NAME_FIELD);
                 if(IRCUtil.fuzzyMatches(blockQuery, name))
                     matchedJobs.add(jobDetail);
             }
@@ -404,7 +405,7 @@ public class TSDTV extends MainFunction {
                 boolean first = true;
                 for(JobDetail job : matchedJobs) {
                     if(!first) sb.append(", ");
-                    sb.append(job.getJobDataMap().getString(TSDTVConstants.BLOCK_FIELD_NAME));
+                    sb.append(job.getJobDataMap().getString(SchedulerConstants.TSDTV_BLOCK_NAME_FIELD));
                     first = false;
                 }
                 TSDBot.getInstance().sendMessage(channel, "Found multiple blocks matching \"" + blockQuery + "\": " + sb.toString());
@@ -462,7 +463,8 @@ public class TSDTV extends MainFunction {
             if(endOfToday.get(Calendar.HOUR_OF_DAY) >= dayBoundaryHour)
                 endOfToday.add(Calendar.DATE, 1);
 
-            Set<JobKey> keys = scheduler.getJobKeys(GroupMatcher.<JobKey>anyGroup());
+            Scheduler scheduler = TSDBot.getInstance().getScheduler();
+            Set<JobKey> keys = scheduler.getJobKeys(GroupMatcher.<JobKey>groupEquals(SchedulerConstants.TSDTV_GROUP_ID));
             TreeMap<Date, JobDetail> jobMap = new TreeMap<>();
             for(JobKey key : keys) {
                 List<Trigger> triggers = (List<Trigger>) scheduler.getTriggersOfJob(key);
@@ -485,12 +487,10 @@ public class TSDTV extends MainFunction {
                     sb = new StringBuilder();
                     sb.append(sdf.format(d)).append(" -- ");
                     JobDetail job = jobMap.get(d);
-                    String name = job.getJobDataMap().getString(TSDTVConstants.BLOCK_FIELD_NAME);
-                    String schedule = job.getJobDataMap().getString(TSDTVConstants.BLOCK_FIELD_SCHEDULE);
-                    sb.append(name).append(": ");
-                    String[] scheduleParts = schedule.split(TSDTVConstants.BLOCK_SCHEDULE_DELIMITER);
+                    TSDTVBlock blockInfo = new TSDTVBlock(job.getJobDataMap());
+                    sb.append(blockInfo.name).append(": ");
                     boolean first = true;
-                    for(String s : scheduleParts) {
+                    for(String s : blockInfo.scheduleParts) {
                         if(s.startsWith(".")) continue;
                         if(sb.toString().contains(s)) continue;
                         if(!first) sb.append(", ");
@@ -507,16 +507,12 @@ public class TSDTV extends MainFunction {
         }
     }
 
-    public void buildSchedule() {
+    public void buildSchedule(Scheduler scheduler) {
         try {
             logger.info("Building TSDTV schedule...");
-            if(scheduler == null) {
-                logger.info("No schedule found, creating new one...");
-                SchedulerFactory schedulerFactory = new StdSchedulerFactory();
-                scheduler = schedulerFactory.getScheduler();
-            } else {
-                scheduler.clear();
-            }
+            scheduler.pauseAll();
+            Set<JobKey> keys = scheduler.getJobKeys(GroupMatcher.<JobKey>groupEquals(SchedulerConstants.TSDTV_GROUP_ID));
+            scheduler.deleteJobs(new LinkedList<>(keys));
 
             JobDetail job;
             CronTrigger cronTrigger;
@@ -541,16 +537,16 @@ public class TSDTV extends MainFunction {
                         StringBuilder scheduleBuilder = new StringBuilder();
                         boolean first = true;
                         for(String show : shows) {
-                            if(!first) scheduleBuilder.append(TSDTVConstants.BLOCK_SCHEDULE_DELIMITER);
+                            if(!first) scheduleBuilder.append(SchedulerConstants.TSDTV_BLOCK_SCHEDULE_DELIMITER);
                             scheduleBuilder.append(show);
                             first = false;
                         }
 
                         job = newJob(TSDTVBlockJob.class)
-                                .withIdentity(blockName)
-                                .usingJobData(TSDTVConstants.BLOCK_FIELD_SCHEDULE, scheduleBuilder.toString())
-                                .usingJobData(TSDTVConstants.BLOCK_FIELD_NAME, blockName)
-                                .usingJobData(TSDTVConstants.BLOCK_FIELD_ID, blockId)
+                                .withIdentity(blockName, SchedulerConstants.TSDTV_GROUP_ID)
+                                .usingJobData(SchedulerConstants.TSDTV_BLOCK_SCHEDULE_FIELD, scheduleBuilder.toString())
+                                .usingJobData(SchedulerConstants.TSDTV_BLOCK_NAME_FIELD, blockName)
+                                .usingJobData(SchedulerConstants.TSDTV_BLOCK_ID_FIELD, blockId)
                                 .build();
 
                         cronTrigger = newTrigger()
@@ -564,7 +560,7 @@ public class TSDTV extends MainFunction {
                 logger.error("Error reading TSDTV schedule", e);
             }
 
-            scheduler.start();
+            scheduler.resumeAll();
 
         } catch (Exception e) {
             logger.error("Error building TSDTV schedule", e);
@@ -821,10 +817,10 @@ public class TSDTV extends MainFunction {
         private TSDTVBlock() {}
 
         public TSDTVBlock(JobDataMap jobDataMap) {
-            this.name = jobDataMap.getString(TSDTVConstants.BLOCK_FIELD_NAME);
-            this.id = jobDataMap.getString(TSDTVConstants.BLOCK_FIELD_ID);
-            this.scheduleParts = jobDataMap.getString(TSDTVConstants.BLOCK_FIELD_SCHEDULE)
-                    .split(TSDTVConstants.BLOCK_SCHEDULE_DELIMITER);
+            this.name = jobDataMap.getString(SchedulerConstants.TSDTV_BLOCK_NAME_FIELD);
+            this.id = jobDataMap.getString(SchedulerConstants.TSDTV_BLOCK_ID_FIELD);
+            this.scheduleParts = jobDataMap.getString(SchedulerConstants.TSDTV_BLOCK_SCHEDULE_FIELD)
+                    .split(SchedulerConstants.TSDTV_BLOCK_SCHEDULE_DELIMITER);
         }
     }
 

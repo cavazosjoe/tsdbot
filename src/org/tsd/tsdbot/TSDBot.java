@@ -10,12 +10,20 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.protocol.HttpContext;
 import org.jibble.pircbot.PircBot;
 import org.jibble.pircbot.User;
+import org.quartz.CronTrigger;
+import org.quartz.JobDetail;
+import org.quartz.Scheduler;
+import org.quartz.SchedulerFactory;
+import org.quartz.impl.StdSchedulerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.functions.*;
 import org.tsd.tsdbot.notifications.*;
 import org.tsd.tsdbot.runnable.IRCListenerThread;
 import org.tsd.tsdbot.runnable.ThreadManager;
+import org.tsd.tsdbot.scheduled.LogCleanerJob;
+import org.tsd.tsdbot.scheduled.RecapCleanerJob;
+import org.tsd.tsdbot.scheduled.SchedulerConstants;
 import org.tsd.tsdbot.util.ArchivistUtil;
 import twitter4j.Twitter;
 import twitter4j.TwitterFactory;
@@ -26,6 +34,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+
+import static org.quartz.CronScheduleBuilder.cronSchedule;
+import static org.quartz.JobBuilder.newJob;
+import static org.quartz.TriggerBuilder.newTrigger;
 
 /**
  * Created by Joe on 2/18/14.
@@ -43,6 +55,7 @@ public class TSDBot extends PircBot implements Runnable {
     private Archivist archivist = null;
     private String name;
     private Properties properties;
+    private Scheduler scheduler;
 
     private PoolingHttpClientConnectionManager poolingManager;
     private CloseableHttpClient httpClient;
@@ -118,6 +131,34 @@ public class TSDBot extends PircBot implements Runnable {
             logger.error("ERROR INITIALIZING NOTIFICATION MANAGERS", e);
         }
 
+        try {
+            SchedulerFactory schedulerFactory = new StdSchedulerFactory();
+            scheduler = schedulerFactory.getScheduler();
+
+            JobDetail logCleanerJob = newJob(LogCleanerJob.class)
+                    .withIdentity(SchedulerConstants.LOG_JOB_KEY)
+                    .usingJobData(SchedulerConstants.LOGS_DIR_FIELD, properties.getProperty("archivist.logs"))
+                    .build();
+
+            JobDetail recapCleanerJob = newJob(RecapCleanerJob.class)
+                    .withIdentity(SchedulerConstants.RECAP_JOB_KEY)
+                    .usingJobData(SchedulerConstants.RECAP_DIR_FIELD, properties.getProperty("archivist.recaps"))
+                    .build();
+
+            CronTrigger logCleanerTrigger = newTrigger()
+                    .withSchedule(cronSchedule("0 0 4 ? * MON")) //4AM every monday
+                    .build();
+
+            CronTrigger recapCleanerTrigger = newTrigger()
+                    .withSchedule(cronSchedule("0 0 3 * * ?")) //3AM every day
+                    .build();
+
+            scheduler.scheduleJob(logCleanerJob, logCleanerTrigger);
+            scheduler.scheduleJob(recapCleanerJob, recapCleanerTrigger);
+        } catch (Exception e) {
+            logger.error("ERROR INITIALIZING SCHEDULED SERVICES", e);
+        }
+
         /*
          * register functions
          */
@@ -147,7 +188,7 @@ public class TSDBot extends PircBot implements Runnable {
 
         if(!debug) {
             TSDTV tsdtv = TSDTV.getInstance();
-            tsdtv.buildSchedule();
+            tsdtv.buildSchedule(scheduler);
             functions.put(Command.TSDTV, tsdtv);
             logger.info("TSDTV initialized successfully");
         }
@@ -155,6 +196,10 @@ public class TSDBot extends PircBot implements Runnable {
         mainThread = new java.lang.Thread(this);
         mainThread.start();
 
+    }
+
+    public Scheduler getScheduler() {
+        return scheduler;
     }
 
     public CloseableHttpClient getHttpClient() {
