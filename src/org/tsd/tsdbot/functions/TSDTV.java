@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.TSDDatabase;
 import org.tsd.tsdbot.runnable.TSDTVStream;
-import org.tsd.tsdbot.tsdtv.TSDTVBlock;
+import org.tsd.tsdbot.tsdtv.TSDTVBlockJob;
 import org.tsd.tsdbot.tsdtv.TSDTVConstants;
 import org.tsd.tsdbot.tsdtv.TSDTVProgram;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -281,9 +281,9 @@ public class TSDTV extends MainFunction {
 
     }
 
-    public void prepareScheduledBlock(String blockId, String blockName, LinkedList<String> programs, int offset) throws SQLException {
+    public void prepareScheduledBlock(TSDTVBlock blockInfo, int offset) throws SQLException {
 
-        logger.info("Preparing TSDTV block: {} with offset {}", blockName, offset);
+        logger.info("Preparing TSDTV block: {} with offset {}", blockInfo.name, offset);
 
         if(runningStream != null) {
             runningStream.kill(); // end running stream
@@ -293,17 +293,14 @@ public class TSDTV extends MainFunction {
         queue.clear();
 
         // prepare the block intro if it exists
-        String blockIntro = null;
-        if(blockId != null) {
-            blockIntro = getBlockIntro(blockId);
-            if(blockIntro != null)
-                queue.addLast(new TSDTVProgram(blockIntro, TSDTVConstants.INTRO_DIR_NAME));
-        }
+        String blockIntro = getBlockIntro(blockInfo.id);
+        if(blockIntro != null)
+            queue.addLast(new TSDTVProgram(blockIntro, TSDTVConstants.INTRO_DIR_NAME));
 
         // use dynamic map to get correct episode numbers for repeating shows
         // use offset to handle replays/reruns
         HashMap<String, Integer> episodeNums = new HashMap<>(); // show -> episode num
-        for(String show : programs) {
+        for(String show : blockInfo.scheduleParts) {
 
             if(show.startsWith(".")) { // commercial or bump, grab random
 
@@ -323,10 +320,11 @@ public class TSDTV extends MainFunction {
                     queue.addLast(new TSDTVProgram(introPath, TSDTVConstants.INTRO_DIR_NAME));
                 }
 
+                int occurrences = Collections.frequency(Arrays.asList(blockInfo.scheduleParts), show);
                 int episodeNum = 0;
                 if(!episodeNums.containsKey(show)) {
                     // this show hasn't appeared in the block yet -- get current episode num from DB
-                    episodeNum = getCurrentEpisode(show) + offset;
+                    episodeNum = getCurrentEpisode(show) + (occurrences * offset);
                     if(episodeNum > 0)
                         episodeNums.put(show, episodeNum);
                     else
@@ -354,11 +352,11 @@ public class TSDTV extends MainFunction {
         }
 
         StringBuilder broadcastBuilder = new StringBuilder();
-        broadcastBuilder.append("[TSDTV] \"").append(blockName).append("\" block now starting. Lined up: ");
+        broadcastBuilder.append("[TSDTV] \"").append(blockInfo.name).append("\" block now starting. Lined up: ");
 
         String lastProgram = "";
         boolean first = true;
-        for(String program : programs) {
+        for(String program : blockInfo.scheduleParts) {
             if(program.startsWith(".")) continue;
             if(!lastProgram.equals(program)) {
                 if(!first) broadcastBuilder.append(", ");
@@ -379,9 +377,9 @@ public class TSDTV extends MainFunction {
         else logger.error("Could not find any shows for block...");
     }
 
-    public void prepareBlockReplay(String channel, String block) {
+    public void prepareBlockReplay(String channel, String blockQuery) {
 
-        logger.info("Preparing TSDTV block rerun: {}", block);
+        logger.info("Preparing TSDTV block rerun: {}", blockQuery);
 
         if(runningStream != null) {
             TSDBot.getInstance().sendMessage(channel, "There is already a stream running, please wait for it to" +
@@ -395,12 +393,12 @@ public class TSDTV extends MainFunction {
             for(JobKey key : keys) {
                 JobDetail jobDetail = scheduler.getJobDetail(key);
                 String name = jobDetail.getJobDataMap().getString(TSDTVConstants.BLOCK_FIELD_NAME);
-                if(IRCUtil.fuzzyMatches(block, name))
+                if(IRCUtil.fuzzyMatches(blockQuery, name))
                     matchedJobs.add(jobDetail);
             }
 
             if(matchedJobs.size() == 0) {
-                TSDBot.getInstance().sendMessage(channel, "Could not find any blocks matching " + block);
+                TSDBot.getInstance().sendMessage(channel, "Could not find any blocks matching " + blockQuery);
             } else if(matchedJobs.size() > 1) {
                 StringBuilder sb = new StringBuilder();
                 boolean first = true;
@@ -409,19 +407,13 @@ public class TSDTV extends MainFunction {
                     sb.append(job.getJobDataMap().getString(TSDTVConstants.BLOCK_FIELD_NAME));
                     first = false;
                 }
-                TSDBot.getInstance().sendMessage(channel, "Found multiple blocks matching \"" + block + "\": " + sb.toString());
+                TSDBot.getInstance().sendMessage(channel, "Found multiple blocks matching \"" + blockQuery + "\": " + sb.toString());
             } else {
                 JobDetail job = matchedJobs.get(0);
-                String name = job.getJobDataMap().getString(TSDTVConstants.BLOCK_FIELD_NAME);
-                String schedule = job.getJobDataMap().getString(TSDTVConstants.BLOCK_FIELD_SCHEDULE);
-                String blockId = job.getJobDataMap().getString(TSDTVConstants.BLOCK_FIELD_ID);
-                String[] scheduleParts = schedule.split(TSDTVConstants.BLOCK_SCHEDULE_DELIMITER);
-
-                LinkedList<String> blockSchedule = new LinkedList<>();
-                Collections.addAll(blockSchedule, scheduleParts);
+                TSDTVBlock blockInfo = new TSDTVBlock(job.getJobDataMap());
 
                 try {
-                    prepareScheduledBlock(blockId, name, blockSchedule, -1);
+                    prepareScheduledBlock(blockInfo, -1);
                 } catch (SQLException e) {
                     logger.error("Error preparing scheduled block", e);
                 }
@@ -554,7 +546,7 @@ public class TSDTV extends MainFunction {
                             first = false;
                         }
 
-                        job = newJob(TSDTVBlock.class)
+                        job = newJob(TSDTVBlockJob.class)
                                 .withIdentity(blockName)
                                 .usingJobData(TSDTVConstants.BLOCK_FIELD_SCHEDULE, scheduleBuilder.toString())
                                 .usingJobData(TSDTVConstants.BLOCK_FIELD_NAME, blockName)
@@ -818,6 +810,21 @@ public class TSDTV extends MainFunction {
 
         public void kill() {
             thread.interrupt();
+        }
+    }
+
+    public static class TSDTVBlock {
+        public String id;
+        public String name;
+        public String[] scheduleParts;
+
+        private TSDTVBlock() {}
+
+        public TSDTVBlock(JobDataMap jobDataMap) {
+            this.name = jobDataMap.getString(TSDTVConstants.BLOCK_FIELD_NAME);
+            this.id = jobDataMap.getString(TSDTVConstants.BLOCK_FIELD_ID);
+            this.scheduleParts = jobDataMap.getString(TSDTVConstants.BLOCK_FIELD_SCHEDULE)
+                    .split(TSDTVConstants.BLOCK_SCHEDULE_DELIMITER);
         }
     }
 
