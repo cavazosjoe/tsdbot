@@ -47,19 +47,26 @@ public class IRCUtil {
     }
 
     public static boolean fuzzyMatches(String query, String element) {
-        return element.toLowerCase().contains(query.toLowerCase());
+        if(query == null && element == null) return true;
+        else if(query == null || element == null) return false;
+        else return element.toLowerCase().contains(query.toLowerCase());
     }
 
-    public static List<String> fuzzyMatcher(String query, List<String> elements) {
-        LinkedList<String> matches = new LinkedList<>();
-        for(String e : elements) {
-            if(fuzzyMatches(query, e)) matches.add(e);
+    public static <T> LinkedList<T> fuzzySubset(String query, Iterable<T> choices, FuzzyVisitor<T> visitor) {
+        LinkedList<T> ret = new LinkedList<>();
+        for(T choice : choices) {
+            if(fuzzyMatches(query, visitor.visit(choice)))
+                ret.add(choice);
         }
-        return matches;
+        return ret;
     }
 
     public static String getRandomString() {
         return RandomStringUtils.randomAlphanumeric(10);
+    }
+
+    public static interface FuzzyVisitor<T> {
+        public String visit(T o1);
     }
 
 }

@@ -25,6 +25,7 @@ import org.tsd.tsdbot.scheduled.LogCleanerJob;
 import org.tsd.tsdbot.scheduled.RecapCleanerJob;
 import org.tsd.tsdbot.scheduled.SchedulerConstants;
 import org.tsd.tsdbot.util.ArchivistUtil;
+import org.tsd.tsdbot.util.IRCUtil;
 import twitter4j.Twitter;
 import twitter4j.TwitterFactory;
 
@@ -374,7 +375,7 @@ public class TSDBot extends PircBot implements Runnable {
     public LinkedList<User> getNonBotUsers(String channel) {
         LinkedList<User> ret = new LinkedList<>();
         for(User u : getUsers(channel)) {
-            if( (!u.getNick().toLowerCase().contains("bot")) && (!u.getNick().equalsIgnoreCase("tipsfedora")) )
+            if( (!IRCUtil.fuzzyMatches("bot", u.getNick())) && (!u.getNick().equalsIgnoreCase("tipsfedora")) )
                 ret.add(u);
         }
         return ret;

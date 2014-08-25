@@ -55,14 +55,12 @@ public class HistoryBuff {
             return possibilities;
         }
 
-        CircularFifoBuffer messages = channelHistory.get(channel);
-
-        for (Object o: messages) {
-            Message m = (Message) o;
-            if (targetUser == null || IRCUtil.fuzzyMatches(targetUser, m.sender)) {
-                possibilities.addFirst(m);
+        possibilities = IRCUtil.fuzzySubset(targetUser, channelHistory.get(channel), new IRCUtil.FuzzyVisitor<Message>() {
+            @Override
+            public String visit(Message o1) {
+                return o1.sender;
             }
-        }
+        });
 
         return possibilities;
     }

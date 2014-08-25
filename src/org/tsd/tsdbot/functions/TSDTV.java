@@ -257,10 +257,12 @@ public class TSDTV extends MainFunction {
         if(TSDTVConstants.RANDOM_QUERY.equals(query)) {
             matchedFiles.add(getRandomFileFromDirectory(searchingDir));
         } else {
-            for(File f : searchingDir.listFiles()) {
-                if(f.getName().toLowerCase().contains(query.toLowerCase()))
-                    matchedFiles.add(f);
-            }
+            matchedFiles = IRCUtil.fuzzySubset(query, Arrays.asList(searchingDir.listFiles()), new IRCUtil.FuzzyVisitor<File>() {
+                @Override
+                public String visit(File o1) {
+                    return o1.getName();
+                }
+            });
         }
 
         if(matchedFiles.size() == 0) {
@@ -388,29 +390,35 @@ public class TSDTV extends MainFunction {
         }
 
         try {
-            Scheduler scheduler = TSDBot.getInstance().getScheduler();
+            final Scheduler scheduler = TSDBot.getInstance().getScheduler();
             Set<JobKey> keys = scheduler.getJobKeys(GroupMatcher.<JobKey>groupEquals(SchedulerConstants.TSDTV_GROUP_ID));
-            LinkedList<JobDetail> matchedJobs = new LinkedList<>();
-            for(JobKey key : keys) {
-                JobDetail jobDetail = scheduler.getJobDetail(key);
-                String name = jobDetail.getJobDataMap().getString(SchedulerConstants.TSDTV_BLOCK_NAME_FIELD);
-                if(IRCUtil.fuzzyMatches(blockQuery, name))
-                    matchedJobs.add(jobDetail);
-            }
+            LinkedList<JobKey> matchedJobs = IRCUtil.fuzzySubset(blockQuery, new LinkedList<>(keys), new IRCUtil.FuzzyVisitor<JobKey>() {
+                @Override
+                public String visit(JobKey o1) {
+                    try {
+                        JobDetail job = scheduler.getJobDetail(o1);
+                        return job.getJobDataMap().getString(SchedulerConstants.TSDTV_BLOCK_NAME_FIELD);
+                    } catch (SchedulerException e) {
+                        logger.error("Error getting job for key {}", o1.getName());
+                    }
+                    return null;
+                }
+            });
 
             if(matchedJobs.size() == 0) {
                 TSDBot.getInstance().sendMessage(channel, "Could not find any blocks matching " + blockQuery);
             } else if(matchedJobs.size() > 1) {
                 StringBuilder sb = new StringBuilder();
                 boolean first = true;
-                for(JobDetail job : matchedJobs) {
+                for(JobKey jobKey : matchedJobs) {
+                    JobDetail job = scheduler.getJobDetail(jobKey);
                     if(!first) sb.append(", ");
                     sb.append(job.getJobDataMap().getString(SchedulerConstants.TSDTV_BLOCK_NAME_FIELD));
                     first = false;
                 }
                 TSDBot.getInstance().sendMessage(channel, "Found multiple blocks matching \"" + blockQuery + "\": " + sb.toString());
             } else {
-                JobDetail job = matchedJobs.get(0);
+                JobDetail job = scheduler.getJobDetail(matchedJobs.get(0));
                 TSDTVBlock blockInfo = new TSDTVBlock(job.getJobDataMap());
 
                 try {
@@ -586,11 +594,15 @@ public class TSDTV extends MainFunction {
     private File getFuzzyShow(String query) throws Exception {
 
         // return the File object, use it to getName or getPath
-        List<File> matchingDirs = new LinkedList<>();
-        for(File f : (new File(catalogDir)).listFiles()) {
-            if(f.isDirectory() && f.getName().toLowerCase().contains(query.toLowerCase()))
-                matchingDirs.add(f);
-        }
+        List<File> matchingDirs = IRCUtil.fuzzySubset(
+                query,
+                Arrays.asList(new File(catalogDir).listFiles()),
+                new IRCUtil.FuzzyVisitor<File>() {
+                    @Override
+                    public String visit(File o1) {
+                        return o1.getName();
+                    }
+        });
 
         if(matchingDirs.size() == 0)
             throw new Exception("Could not find directory matching \"" + query + "\"");
