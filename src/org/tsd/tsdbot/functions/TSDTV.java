@@ -648,7 +648,9 @@ public class TSDTV extends MainFunction {
     }
 
     private String getRandomFilePathFromDirectory(File dir) {
-        return getRandomFileFromDirectory(dir).getAbsolutePath();
+        File f = getRandomFileFromDirectory(dir);
+        if(f == null) return null;
+        else return f.getAbsolutePath();
     }
 
     private int getCurrentEpisode(String show) throws SQLException {
