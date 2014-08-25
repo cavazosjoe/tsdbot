@@ -56,7 +56,7 @@ public class IRCUtil {
         LinkedList<T> ret = new LinkedList<>();
         for(T choice : choices) {
             if(fuzzyMatches(query, visitor.visit(choice)))
-                ret.add(choice);
+                ret.addFirst(choice);
         }
         return ret;
     }
