@@ -155,6 +155,8 @@ public class TSDBot extends PircBot implements Runnable {
 
             scheduler.scheduleJob(logCleanerJob, logCleanerTrigger);
             scheduler.scheduleJob(recapCleanerJob, recapCleanerTrigger);
+
+            scheduler.start();
         } catch (Exception e) {
             logger.error("ERROR INITIALIZING SCHEDULED SERVICES", e);
         }
