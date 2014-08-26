@@ -37,8 +37,10 @@ public class LogCleanerJob implements Job {
                             Long messageTime;
                             while ((line = br.readLine()) != null) {
                                 messageTime = Long.valueOf(line.split("\\s")[1]);
-                                if (messageTime > cutoffMillis)
+                                if (messageTime > cutoffMillis) {
                                     bw.write(line);
+                                    bw.newLine();
+                                }
                             }
                             if(!tempFile.renameTo(f))
                                 throw new IOException("Could not rename temp file to existing log");
