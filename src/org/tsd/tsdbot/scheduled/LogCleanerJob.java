@@ -31,15 +31,15 @@ public class LogCleanerJob implements Job {
                 for (File f : logsDir.listFiles()) {
                     if(f.isFile() && f.getName().endsWith(".log")) {
                         File tempFile = File.createTempFile("logg",".log");
-                        try(BufferedReader br = new BufferedReader(new FileReader(f));
-                            BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile))) {
+                        try(BufferedReader reader = new BufferedReader(new FileReader(f));
+                            BufferedWriter writer = new BufferedWriter(new FileWriter(tempFile))) {
                             String line;
                             Long messageTime;
-                            while ((line = br.readLine()) != null) {
+                            while ((line = reader.readLine()) != null) {
                                 messageTime = Long.valueOf(line.split("\\s")[1]);
                                 if (messageTime > cutoffMillis) {
-                                    bw.write(line);
-                                    bw.newLine();
+                                    writer.write(line);
+                                    writer.newLine();
                                 }
                             }
                             if(!tempFile.renameTo(f))
@@ -47,6 +47,8 @@ public class LogCleanerJob implements Job {
                         } catch (Exception e) {
                             logger.error("An error occurred while trimming {}", f.getAbsolutePath());
                             throw e;
+                        } finally {
+                            tempFile.delete();
                         }
                     }
                 }
