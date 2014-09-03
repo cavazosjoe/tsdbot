@@ -177,6 +177,7 @@ public class TSDBot extends PircBot implements Runnable {
         functions.put(Command.STRAWPOLL, new StrawPoll());
         functions.put(Command.WORKBOT, new Wod());
         functions.put(Command.CATCHUP, new Catchup());
+        functions.put(Command.SCAREQUOTE, new ScareQuote());
 
         functions.put(Command.RECAP, archivist);
 
@@ -561,6 +562,13 @@ public class TSDBot extends PircBot implements Runnable {
                 "^\\.catchup",
                 "Catchup function. Get a dramatic summary of recent chat history",
                 "USAGE: .catchup",
+                null
+        ),
+
+        SCAREQUOTE(
+                "^\\.quote",
+                "Scare quote \"function\"",
+                "USAGE: .quote",
                 null
         );
 

@@ -4,6 +4,7 @@ import org.tsd.tsdbot.HistoryBuff;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.IRCUtil;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -38,21 +39,30 @@ public class Catchup extends MainFunction {
 
         if(!chosen.isEmpty()) {
 
+            // use a dictionary to keep fudged nicks consistent through the catchup
+            HashMap<String, String> scrambleDict = new HashMap<>();
+
             bot.sendMessage(channel,
                     String.format(formats[rand.nextInt(formats.length)], showNames[rand.nextInt(showNames.length)]));
 
             HistoryBuff.Message m;
             while(chosen.size() > 1) {
                 m = chosen.pop();
-                bot.sendMessage(channel, "<" + m.sender + "> " + DramaStyle.getRandomDrama(m.text));
+                bot.sendMessage(channel, "<" + getScrambledNick(m.sender, scrambleDict) + "> " + DramaStyle.getRandomDrama(m.text));
             }
 
             // end on an ominous note
             m = chosen.pop();
-            bot.sendMessage(channel, "<" + m.sender + "> " + DramaStyle.ellipses.apply(m.text));
+            bot.sendMessage(channel, "<" + getScrambledNick(m.sender, scrambleDict) + "> " + DramaStyle.ellipses.apply(m.text));
 
             bot.sendMessage(channel, "Tonight's episode: \"" + episodeNames[rand.nextInt(episodeNames.length)] + "\"");
         }
+    }
+
+    private String getScrambledNick(String nick, HashMap<String, String> dict) {
+        if(!dict.containsKey(nick))
+            dict.put(nick, IRCUtil.scrambleNick(nick));
+        return dict.get(nick);
     }
 
     private static final String[] formats = new String[] {
@@ -100,6 +110,16 @@ public class Catchup extends MainFunction {
             "Video Games",
             "Tex and the Five Magics",
             "The Bonkening",
+            "Paddy's Big Goodbye",
+            "The KP Caper",
+            "Planes, Banes, and Batmobiles",
+            "The Laird Problem",
+            "Corgidome",
+            "Nart Goes to Bed",
+            "TDSpiral and the Intervention That Saved Christmas",
+            "The Double DorJ",
+            "The Splash Bash",
+            "A Day without a ZackDark",
             "Dr. GV, PhD, although I guess if he was a medical doctor he wouldn't have a PhD? Or maybe they can, " +
                     "I don't know. I know he'd be called \"Dr.\" though. I think they should make that clearer, like " +
                     "in the dictionary or wherever they spell things out like that. But I guess it wouldn't be an English " +

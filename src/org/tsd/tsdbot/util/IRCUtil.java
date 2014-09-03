@@ -3,8 +3,7 @@ package org.tsd.tsdbot.util;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 import static com.rosaloves.bitlyj.Bitly.as;
 import static com.rosaloves.bitlyj.Bitly.shorten;
@@ -67,6 +66,50 @@ public class IRCUtil {
 
     public static interface FuzzyVisitor<T> {
         public String visit(T o1);
+    }
+
+    public static String scrambleNick(String nick) {
+        return HandleScramble.applyRandom(nick);
+    }
+
+    public static enum HandleScramble {
+        vowel_flip { // flip one random vowel if available
+            @Override
+            public String apply(String input) {
+                Random rand = new Random();
+                LinkedList<Character> vowels = new LinkedList<>(Arrays.asList('a','e','i','o','u'));
+                Collections.shuffle(vowels);
+
+                LinkedList<Integer> vowelIdxs = new LinkedList<>();
+                for(int i=0 ; i < input.length() ; i++) {
+                    if(vowels.contains(input.charAt(i)))
+                        vowelIdxs.addLast(i);
+                }
+
+                if(!vowelIdxs.isEmpty()) {
+                    int c_idx = vowelIdxs.get(rand.nextInt(vowelIdxs.size()));
+                    char c = input.charAt(c_idx);
+
+                    for(Character v : vowels) {
+                        if(c != v) {
+                            String newString = input.substring(0, c_idx);
+                            newString += v;
+                            newString += input.substring(c_idx+1, input.length());
+                            return newString;
+                        }
+                    }
+                }
+
+                return input;
+            }
+        };
+
+        public abstract String apply(String input);
+
+        public static String applyRandom(String input) {
+            Random rand = new Random();
+            return values()[rand.nextInt(values().length)].apply(input);
+        }
     }
 
 }
