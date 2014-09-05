@@ -39,7 +39,7 @@ public class ScareQuote extends MainFunction {
                             public boolean apply(HistoryBuff.Message m) {
                                 String[] words = m.text.split("\\s+");
                                 for (String word : words) {
-                                    if (word.length() > 1)
+                                    if (word.length() > 1 && (!isThrowaway(word)))
                                         return true;
                                 }
                                 return false;
@@ -60,7 +60,7 @@ public class ScareQuote extends MainFunction {
 
             String scary = null;        // this is the word we want to quote-ify
             Integer scary_idx = null;   // this is the index of the word in the original sentence
-            while(scary == null) {
+            while(scary == null && (!wordMap.isEmpty())) {
                 int idxToCheck = rand.nextInt(wordMap.size()); // check a random item in the hashmap
                 Iterator it = wordMap.keySet().iterator();
                 Integer idx;
@@ -78,6 +78,9 @@ public class ScareQuote extends MainFunction {
                     }
                 }
             }
+
+            if(scary == null)
+                return;
 
             scary = scary.replaceAll("\"",""); //sanitize any quotes
             scary = "\"" + scary + "\"";
