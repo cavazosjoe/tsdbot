@@ -1,12 +1,12 @@
 package org.tsd.tsdbot.functions;
 
-import org.tsd.tsdbot.HistoryBuff;
+import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.history.MessageFilter;
+import org.tsd.tsdbot.history.MessageFilterStrategy;
 import org.tsd.tsdbot.util.IRCUtil;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * Created by Joe on 5/24/14.
@@ -21,32 +21,72 @@ public class ScareQuote extends MainFunction {
         Random rand = new Random();
         TSDBot bot = TSDBot.getInstance();
         HistoryBuff historyBuff = HistoryBuff.getInstance();
-        List<HistoryBuff.Message> history = historyBuff.getMessagesByChannel(channel, null);
-
-        // keep sampling random messages, discarding ones that are commands
-        HistoryBuff.Message chosen = null;
-        while(chosen == null && (!history.isEmpty())) {
-            HistoryBuff.Message msg = history.get(rand.nextInt(history.size()));
-            String[] w = msg.text.split("\\s+");
-            if(TSDBot.Command.fromString(msg.text).size() == 0 && msg.text.length() < 100 && w.length > 2)
-                chosen = msg;
-            history.remove(msg);
-        }
+        HistoryBuff.Message chosen = historyBuff.getRandomFilteredMessage(
+                channel,
+                null,
+                MessageFilter.create()
+                        .addFilter(new MessageFilterStrategy.NoCommandsStrategy())
+                        .addFilter(new MessageFilterStrategy.LengthStrategy(null, 100))
+                        .addFilter(new MessageFilterStrategy() {
+                            @Override
+                            public boolean apply(HistoryBuff.Message m) {
+                                String[] w = m.text.split("\\s+");
+                                return w.length > 2;
+                            }
+                        })
+                        .addFilter(new MessageFilterStrategy() { // make sure at least one word is longer than 1 char
+                            @Override
+                            public boolean apply(HistoryBuff.Message m) {
+                                String[] words = m.text.split("\\s+");
+                                for (String word : words) {
+                                    if (word.length() > 1)
+                                        return true;
+                                }
+                                return false;
+                            }
+                        })
+        );
 
         if(chosen != null) {
-            String[] words = chosen.text.split("\\s+");
-            int r = rand.nextInt(words.length);
-            String scary = words[r];
-            if(!scary.startsWith("\""))
-                scary = "\""+scary;
-            if(!scary.endsWith("\""))
-                scary = scary+"\"";
+
+            LinkedList<String> words = new LinkedList<>(Arrays.asList(chosen.text.split("\\s+")));
+
+            // used so we can keep track of where a word is in a sentence even when it appears twice
+            HashMap<Integer, String> wordMap = new HashMap<>();
+
+            for(int i=0 ; i < words.size() ; i++) {
+                wordMap.put(i, words.get(i));
+            }
+
+            String scary = null;        // this is the word we want to quote-ify
+            Integer scary_idx = null;   // this is the index of the word in the original sentence
+            while(scary == null) {
+                int idxToCheck = rand.nextInt(wordMap.size()); // check a random item in the hashmap
+                Iterator it = wordMap.keySet().iterator();
+                Integer idx;
+                String word;
+                for(int i=0 ; it.hasNext() ; i++) {
+                    idx = (Integer) it.next();      // advance the cursor
+                    if(i == idxToCheck) {           // check this word
+                        word = wordMap.get(idx);
+                        if (word.length() < 2 || isThrowaway(word)) {
+                            it.remove();            // remove this word from the map if it's no good
+                        } else {
+                            scary = word;           // this random word is 2 characters or more, choose it
+                            scary_idx = idx;
+                        }
+                    }
+                }
+            }
+
+            scary = scary.replaceAll("\"",""); //sanitize any quotes
+            scary = "\"" + scary + "\"";
 
             StringBuilder result = new StringBuilder();
             int i = 0;
             for(String w : words) {
                 if(i > 0) result.append(" ");
-                if(i == r) result.append(scary);
+                if(i == scary_idx) result.append(scary);
                 else result.append(w);
                 i++;
             }
@@ -54,5 +94,19 @@ public class ScareQuote extends MainFunction {
             bot.sendMessage(channel, "<" + IRCUtil.scrambleNick(chosen.sender) + "> " + result.toString());
         }
     }
+
+    private boolean isThrowaway(String word) {
+        for(String ta : throwawayWords) {
+            if(ta.equalsIgnoreCase(word))
+                return true;
+        }
+        return false;
+    }
+
+    // TODO: replace with a dictionary lib
+    private static String[] throwawayWords = new String[]{
+            "i",    "a",    "an",
+            "to",   "and"
+    };
 
 }

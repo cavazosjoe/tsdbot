@@ -1,5 +1,6 @@
 package org.tsd.tsdbot.functions;
 
+import org.apache.commons.lang3.StringUtils;
 import org.jibble.pircbot.User;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
@@ -13,6 +14,7 @@ import org.tsd.tsdbot.scheduled.SchedulerConstants;
 import org.tsd.tsdbot.tsdtv.TSDTVBlockJob;
 import org.tsd.tsdbot.tsdtv.TSDTVConstants;
 import org.tsd.tsdbot.tsdtv.TSDTVProgram;
+import org.tsd.tsdbot.util.FuzzyLogic;
 import org.tsd.tsdbot.util.IRCUtil;
 
 import java.io.*;
@@ -257,7 +259,7 @@ public class TSDTV extends MainFunction {
         if(TSDTVConstants.RANDOM_QUERY.equals(query)) {
             matchedFiles.add(getRandomFileFromDirectory(searchingDir));
         } else {
-            matchedFiles = IRCUtil.fuzzySubset(query, Arrays.asList(searchingDir.listFiles()), new IRCUtil.FuzzyVisitor<File>() {
+            matchedFiles = FuzzyLogic.fuzzySubset(query, Arrays.asList(searchingDir.listFiles()), new FuzzyLogic.FuzzyVisitor<File>() {
                 @Override
                 public String visit(File o1) {
                     return o1.getName();
@@ -392,7 +394,7 @@ public class TSDTV extends MainFunction {
         try {
             final Scheduler scheduler = TSDBot.getInstance().getScheduler();
             Set<JobKey> keys = scheduler.getJobKeys(GroupMatcher.<JobKey>groupEquals(SchedulerConstants.TSDTV_GROUP_ID));
-            LinkedList<JobKey> matchedJobs = IRCUtil.fuzzySubset(blockQuery, new LinkedList<>(keys), new IRCUtil.FuzzyVisitor<JobKey>() {
+            LinkedList<JobKey> matchedJobs = FuzzyLogic.fuzzySubset(blockQuery, new LinkedList<>(keys), new FuzzyLogic.FuzzyVisitor<JobKey>() {
                 @Override
                 public String visit(JobKey o1) {
                     try {
@@ -542,17 +544,11 @@ public class TSDTV extends MainFunction {
                             shows.add(line);
                         }
 
-                        StringBuilder scheduleBuilder = new StringBuilder();
-                        boolean first = true;
-                        for(String show : shows) {
-                            if(!first) scheduleBuilder.append(SchedulerConstants.TSDTV_BLOCK_SCHEDULE_DELIMITER);
-                            scheduleBuilder.append(show);
-                            first = false;
-                        }
+                        String prettySchedule = StringUtils.join(shows, SchedulerConstants.TSDTV_BLOCK_SCHEDULE_DELIMITER);
 
                         job = newJob(TSDTVBlockJob.class)
                                 .withIdentity(blockName, SchedulerConstants.TSDTV_GROUP_ID)
-                                .usingJobData(SchedulerConstants.TSDTV_BLOCK_SCHEDULE_FIELD, scheduleBuilder.toString())
+                                .usingJobData(SchedulerConstants.TSDTV_BLOCK_SCHEDULE_FIELD, prettySchedule)
                                 .usingJobData(SchedulerConstants.TSDTV_BLOCK_NAME_FIELD, blockName)
                                 .usingJobData(SchedulerConstants.TSDTV_BLOCK_ID_FIELD, blockId)
                                 .build();
@@ -594,10 +590,10 @@ public class TSDTV extends MainFunction {
     private File getFuzzyShow(String query) throws Exception {
 
         // return the File object, use it to getName or getPath
-        List<File> matchingDirs = IRCUtil.fuzzySubset(
+        List<File> matchingDirs = FuzzyLogic.fuzzySubset(
                 query,
                 Arrays.asList(new File(catalogDir).listFiles()),
-                new IRCUtil.FuzzyVisitor<File>() {
+                new FuzzyLogic.FuzzyVisitor<File>() {
                     @Override
                     public String visit(File o1) {
                         return o1.getName();

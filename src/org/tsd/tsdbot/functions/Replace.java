@@ -1,8 +1,8 @@
 package org.tsd.tsdbot.functions;
 
-import org.tsd.tsdbot.HistoryBuff;
+import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.TSDBot;
-import org.tsd.tsdbot.util.IRCUtil;
+import org.tsd.tsdbot.util.FuzzyLogic;
 
 import java.util.List;
 import java.util.regex.Matcher;
@@ -52,7 +52,7 @@ public class Replace extends MainFunction {
                 }
             }
 
-            if (myName != null && IRCUtil.fuzzyMatches(user, myName)) {
+            if (myName != null && FuzzyLogic.fuzzyMatches(user, myName)) {
                 return "I said what I meant.";
             }
 

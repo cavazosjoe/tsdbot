@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.tsd.tsdbot.functions.Replace;
+import org.tsd.tsdbot.history.HistoryBuff;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;

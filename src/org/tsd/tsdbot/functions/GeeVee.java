@@ -2,9 +2,10 @@ package org.tsd.tsdbot.functions;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.HistoryBuff;
+import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.TSDBot;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
@@ -21,19 +22,27 @@ public class GeeVee extends MainFunction {
         TSDBot bot = TSDBot.getInstance();
         HistoryBuff historyBuff = HistoryBuff.getInstance();
         String[] cmdParts = text.split("\\s+");
+
         if(cmdParts.length == 1) {
-            List<HistoryBuff.Message> history = historyBuff.getMessagesByChannel(channel, null);
-            if(history.size() == 0) return;
-            HistoryBuff.Message randomMsg = history.get(rand.nextInt(history.size()));
-            bot.sendMessage(channel, "<" + randomMsg.sender + "> " + randomMsg.text);
-            bot.sendMessage(channel, GeeVee.getRandomGvResponse());
+
+            HistoryBuff.Message randomMsg = historyBuff.getRandomFilteredMessage(channel, null, null);
+            if(randomMsg != null) {
+                bot.sendMessage(channel, "<" + randomMsg.sender + "> " + randomMsg.text);
+                bot.sendMessage(channel, GeeVee.getRandomGvResponse());
+            }
+
         } else if(cmdParts.length == 2) {
 
             if(!cmdParts[1].equals("pls")) {
                 bot.sendMessage(channel, TSDBot.Command.GV.getUsage());
             } else {
-                List<HistoryBuff.Message> gvLines = historyBuff.getMessagesByChannel(channel, "general");
-                if(gvLines.size() == 0) gvLines = historyBuff.getMessagesByChannel(channel,"gv");
+                String[] gvAliases = {"general","gv"};
+                List<HistoryBuff.Message> gvLines = new LinkedList<>();
+                for(String alias : gvAliases) {
+                    if(!gvLines.isEmpty()) break;
+                    gvLines.addAll(historyBuff.getMessagesByChannel(channel, alias));
+                }
+
                 if(gvLines.size() == 0) return;
 
                 String runOnSentence = null;

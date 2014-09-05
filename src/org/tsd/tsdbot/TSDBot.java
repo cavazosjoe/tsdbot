@@ -18,6 +18,7 @@ import org.quartz.impl.StdSchedulerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.functions.*;
+import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.notifications.*;
 import org.tsd.tsdbot.runnable.IRCListenerThread;
 import org.tsd.tsdbot.runnable.ThreadManager;
@@ -25,7 +26,7 @@ import org.tsd.tsdbot.scheduled.LogCleanerJob;
 import org.tsd.tsdbot.scheduled.RecapCleanerJob;
 import org.tsd.tsdbot.scheduled.SchedulerConstants;
 import org.tsd.tsdbot.util.ArchivistUtil;
-import org.tsd.tsdbot.util.IRCUtil;
+import org.tsd.tsdbot.util.FuzzyLogic;
 import twitter4j.Twitter;
 import twitter4j.TwitterFactory;
 
@@ -176,10 +177,10 @@ public class TSDBot extends PircBot implements Runnable {
         functions.put(Command.DEEJ, new Deej());
         functions.put(Command.STRAWPOLL, new StrawPoll());
         functions.put(Command.WORKBOT, new Wod());
-        functions.put(Command.CATCHUP, new Catchup());
+        functions.put(Command.RECAP, new Recap());
         functions.put(Command.SCAREQUOTE, new ScareQuote());
 
-        functions.put(Command.RECAP, archivist);
+        functions.put(Command.CATCHUP, archivist);
 
         OmniPost omniPost = new OmniPost();
         functions.put(Command.DBO_FORUM, omniPost);
@@ -376,7 +377,7 @@ public class TSDBot extends PircBot implements Runnable {
     public LinkedList<User> getNonBotUsers(String channel) {
         LinkedList<User> ret = new LinkedList<>();
         for(User u : getUsers(channel)) {
-            if( (!IRCUtil.fuzzyMatches("bot", u.getNick())) && (!u.getNick().equalsIgnoreCase("tipsfedora")) )
+            if( (!FuzzyLogic.fuzzyMatches("bot", u.getNick())) && (!u.getNick().equalsIgnoreCase("tipsfedora")) )
                 ret.add(u);
         }
         return ret;
@@ -545,8 +546,8 @@ public class TSDBot extends PircBot implements Runnable {
         ),
 
         RECAP(
-                "^\\.recap.*",
-                "Recap function. Get a personalized review of what you missed",
+                "^\\.recap",
+                "Recap function. Get a dramatic recap of recent chat history",
                 "USAGE: .recap [ minutes (integer) ]",
                 null
         ),
@@ -559,8 +560,8 @@ public class TSDBot extends PircBot implements Runnable {
         ),
 
         CATCHUP(
-                "^\\.catchup",
-                "Catchup function. Get a dramatic summary of recent chat history",
+                "^\\.catchup.*",
+                "Catchup function. Get a personalized review of what you missed",
                 "USAGE: .catchup",
                 null
         ),

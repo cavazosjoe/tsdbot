@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.ArchivistUtil;
 import org.tsd.tsdbot.util.IRCUtil;
+import org.tsd.tsdbot.util.MiscUtils;
 
 import java.io.*;
 import java.text.SimpleDateFormat;
@@ -175,7 +176,7 @@ public class Archivist /*Exedol*/ extends MainFunction {
                     if(capturedText.isEmpty())
                         bot.sendMessage(channel, "I don't think you've missed anything. I'll recap the last five minutes");
 
-                    String fileName = IRCUtil.getRandomString() + ".txt";
+                    String fileName = MiscUtils.getRandomString() + ".txt";
                     File recapFile = new File(recapDir + fileName);
                     try(BufferedWriter writer = new BufferedWriter(new FileWriter(recapFile))) {
                         writer.write(output.toString());
@@ -213,7 +214,7 @@ public class Archivist /*Exedol*/ extends MainFunction {
                         output.append(EventType.getFromRaw(s).getPrettyFormatted(s)).append(IRCUtil.LINE_SEPARATOR);
                     }
 
-                    String fileName = IRCUtil.getRandomString() + ".txt";
+                    String fileName = MiscUtils.getRandomString() + ".txt";
                     File recapFile = new File(recapDir + fileName);
                     try(BufferedWriter writer = new BufferedWriter(new FileWriter(recapFile))) {
                         writer.write(output.toString());

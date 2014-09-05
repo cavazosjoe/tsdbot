@@ -1,8 +1,11 @@
 package org.tsd.tsdbot.functions;
 
-import org.tsd.tsdbot.HistoryBuff;
+import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.history.MessageFilter;
+import org.tsd.tsdbot.history.MessageFilterStrategy;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
@@ -16,15 +19,11 @@ public class Deej extends MainFunction {
         Random rand = new Random();
         TSDBot bot = TSDBot.getInstance();
         HistoryBuff historyBuff = HistoryBuff.getInstance();
-        List<HistoryBuff.Message> history = historyBuff.getMessagesByChannel(channel, null);
-
-        // keep sampling random messages, discarding ones that are commands
-        String chosen = null;
-        while(history.size() > 0 && chosen == null) {
-            HistoryBuff.Message msg = history.get(rand.nextInt(history.size()));
-            if(TSDBot.Command.fromString(msg.text).size() == 0) chosen = msg.text;
-            history.remove(msg);
-        }
+        HistoryBuff.Message chosen = historyBuff.getRandomFilteredMessage(
+                channel,
+                null,
+                MessageFilter.create().addFilter(new MessageFilterStrategy.NoCommandsStrategy())
+        );
 
         if(chosen != null) {
             // return the deej-formatted selected message

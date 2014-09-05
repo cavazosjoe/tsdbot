@@ -1,5 +1,6 @@
 package org.tsd.tsdbot.util;
 
+import org.apache.commons.lang3.StringUtils;
 import org.tsd.tsdbot.functions.Archivist;
 
 /**
@@ -59,13 +60,6 @@ public class ArchivistUtil {
     }
 
     private static String concatParts(String... args) {
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for(String arg : args) {
-            if(!first) sb.append(" ");
-            sb.append(arg);
-            first = false;
-        }
-        return sb.toString();
+        return StringUtils.join(args, " ");
     }
 }

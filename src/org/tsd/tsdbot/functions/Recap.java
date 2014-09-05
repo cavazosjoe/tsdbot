@@ -1,7 +1,9 @@
 package org.tsd.tsdbot.functions;
 
-import org.tsd.tsdbot.HistoryBuff;
+import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.history.MessageFilter;
+import org.tsd.tsdbot.history.MessageFilterStrategy;
 import org.tsd.tsdbot.util.IRCUtil;
 
 import java.util.HashMap;
@@ -12,11 +14,11 @@ import java.util.Random;
 /**
  * Created by Joe on 5/24/14.
  */
-public class Catchup extends MainFunction {
+public class Recap extends MainFunction {
 
     private static final int dramaCount = 4;
 
-    public Catchup() {
+    public Recap() {
         super(10);
     }
 
@@ -26,16 +28,14 @@ public class Catchup extends MainFunction {
         Random rand = new Random();
         TSDBot bot = TSDBot.getInstance();
         HistoryBuff historyBuff = HistoryBuff.getInstance();
-        List<HistoryBuff.Message> history = historyBuff.getMessagesByChannel(channel, null);
-
-        // keep sampling random messages, discarding ones that are commands
-        LinkedList<HistoryBuff.Message> chosen = new LinkedList<>();
-        while(history.size() > 0 && chosen.size() < dramaCount) {
-            HistoryBuff.Message msg = history.get(rand.nextInt(history.size()));
-            if(TSDBot.Command.fromString(msg.text).size() == 0 && msg.text.length() < 80)
-                chosen.add(msg);
-            history.remove(msg);
-        }
+        LinkedList<HistoryBuff.Message> chosen = historyBuff.getRandomFilteredMessages(
+                channel,
+                null,
+                dramaCount,
+                MessageFilter.create()
+                        .addFilter(new MessageFilterStrategy.NoCommandsStrategy())
+                        .addFilter(new MessageFilterStrategy.LengthStrategy(0, 80))
+        );
 
         if(!chosen.isEmpty()) {
 
@@ -75,21 +75,15 @@ public class Catchup extends MainFunction {
     };
 
     private static final String[] showNames = new String[] {
-            "#tsd",
-            "Team Schooly D",
-            "Team Schooly D IRC",
-            "TSD: IRC",
-            "Team Schooly D: Internet Relay Chat",
-            "Schooly and the Funky Bunch",
-            "Fiasco & Blunder: Halo Cops",
-            "TSD High",
-            "TSDU",
-            "TSD: Miami",
-            "Survivor: TSDIRC",
-            "TSD: The College Years",
-            "Fast Times at TSD High",
-            "Slappy Days",
-            "T.S.D.I.R.C."
+            "#tsd",                                 "Team Schooly D",
+            "Team Schooly D IRC",                   "TSD: IRC",
+            "Team Schooly D: Internet Relay Chat",  "Schooly and the Funky Bunch",
+            "Fiasco & Blunder: Halo Cops",          "TSD High",
+            "TSDU",                                 "TSD: Miami",
+            "Survivor: TSDIRC",                     "TSD: The College Years",
+            "Fast Times at TSD High",               "Slappy Days",
+            "T.S.D.I.R.C.",                         "Hajime no Kanbo",
+            "Tips & Tricks: Professional Rusemen",  "Real Housewives of Bellevue"
     };
 
     private static final String[] episodeNames = new String[] {
@@ -105,7 +99,7 @@ public class Catchup extends MainFunction {
             "The Red Menace",
             "The Downward Spiral",
             "The Argument",
-            "tarehart Goes to College",
+            "Tarehart Goes to College",
             "The Graduation",
             "Video Games",
             "Tex and the Five Magics",
@@ -120,6 +114,14 @@ public class Catchup extends MainFunction {
             "The Double DorJ",
             "The Splash Bash",
             "A Day without a ZackDark",
+            "A Fistful of Clonkers",
+            "For a Few Bonks More",
+            "BaneKin's Ruse",
+            "Paddy's Gambit",
+            "Dr. DeeJ and Mr. DorJ",
+            "Nart-kun, I'm Sorry",
+            "The Swole Toll",
+            "If Ever a Whiff There Was",
             "Dr. GV, PhD, although I guess if he was a medical doctor he wouldn't have a PhD? Or maybe they can, " +
                     "I don't know. I know he'd be called \"Dr.\" though. I think they should make that clearer, like " +
                     "in the dictionary or wherever they spell things out like that. But I guess it wouldn't be an English " +
