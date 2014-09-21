@@ -36,9 +36,8 @@ public class NotificationSweeperJob implements Job {
         try {
             for(NotificationManager<NotificationEntity> sweeper : notificationManagers) {
                 for(NotificationEntity notification : sweeper.sweep()) {
-                    if(bot.showNotifications) for(String chan : bot.getChannels()) {
-                        bot.sendMessage(chan, notification.getInline());
-                    }
+                    if(bot.showNotifications)
+                        bot.broadcast(notification.getInline());
                 }
             }
 
