@@ -1,7 +1,9 @@
 package org.tsd.tsdbot.functions;
 
-import org.tsd.tsdbot.history.HistoryBuff;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.history.MessageFilter;
 import org.tsd.tsdbot.history.MessageFilterStrategy;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -11,16 +13,23 @@ import java.util.*;
 /**
  * Created by Joe on 5/24/14.
  */
+@Singleton
 public class ScareQuote extends MainFunction {
 
     //TODO: put more than 5 minutes of effort into this and stop trying to "fix" it while drunk
+
+    private HistoryBuff historyBuff;
+
+    @Inject
+    public ScareQuote(TSDBot bot, HistoryBuff historyBuff) {
+        super(bot);
+        this.historyBuff = historyBuff;
+    }
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
 
         Random rand = new Random();
-        TSDBot bot = TSDBot.getInstance();
-        HistoryBuff historyBuff = HistoryBuff.getInstance();
         HistoryBuff.Message chosen = historyBuff.getRandomFilteredMessage(
                 channel,
                 null,
@@ -108,8 +117,10 @@ public class ScareQuote extends MainFunction {
 
     // TODO: replace with a dictionary lib
     private static String[] throwawayWords = new String[]{
-            "i",    "a",    "an",
-            "to",   "and"
+            "i",    "a",        "an",
+            "to",   "and",      "the",
+            "l'll", "can't",    "for",
+            "too"
     };
 
 }

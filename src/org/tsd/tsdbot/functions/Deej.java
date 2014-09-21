@@ -1,24 +1,31 @@
 package org.tsd.tsdbot.functions;
 
-import org.tsd.tsdbot.history.HistoryBuff;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.history.MessageFilter;
 import org.tsd.tsdbot.history.MessageFilterStrategy;
 
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Random;
 
 /**
  * Created by Joe on 5/24/14.
  */
+@Singleton
 public class Deej extends MainFunction {
+
+    private HistoryBuff historyBuff;
+
+    @Inject
+    public Deej(TSDBot bot, HistoryBuff historyBuff) {
+        super(bot);
+        this.historyBuff = historyBuff;
+    }
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
         Random rand = new Random();
-        TSDBot bot = TSDBot.getInstance();
-        HistoryBuff historyBuff = HistoryBuff.getInstance();
         HistoryBuff.Message chosen = historyBuff.getRandomFilteredMessage(
                 channel,
                 null,
@@ -27,7 +34,7 @@ public class Deej extends MainFunction {
 
         if(chosen != null) {
             // return the deej-formatted selected message
-            bot.sendMessage(channel, String.format(formats[rand.nextInt(formats.length)], chosen));
+            bot.sendMessage(channel, String.format(formats[rand.nextInt(formats.length)], chosen.text));
         }
     }
 

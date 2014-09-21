@@ -1,14 +1,15 @@
 package org.tsd.tsdbot.functions;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.jibble.pircbot.User;
 import org.quartz.*;
-import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.impl.matchers.GroupMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
-import org.tsd.tsdbot.database.TSDDatabase;
+import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.runnable.TSDTVStream;
 import org.tsd.tsdbot.scheduled.SchedulerConstants;
 import org.tsd.tsdbot.tsdtv.TSDTVBlockJob;
@@ -35,16 +36,17 @@ import static org.quartz.TriggerBuilder.newTrigger;
 /**
  * Created by Joe on 3/9/14.
  */
+@Singleton
 public class TSDTV extends MainFunction {
 
     private static Logger logger = LoggerFactory.getLogger(TSDTV.class);
-
-    private static final TSDTV instance = new TSDTV();
 
     private static final Pattern episodeNumberPattern = Pattern.compile("^(\\d+).*",Pattern.DOTALL);
     private static final int dayBoundaryHour = 4; // 4:00 AM
     private static final TimeZone timeZone = TimeZone.getTimeZone("America/New_York");
 
+    private DBConnectionProvider connectionProvider;
+    private Scheduler scheduler;
     private String catalogDir;
     private String scheduleLoc;
     private String ffmpegExec;
@@ -53,26 +55,20 @@ public class TSDTV extends MainFunction {
 
     private ThreadStream runningStream;
 
-    private TSDTV() {
-        Properties prop = new Properties();
-        try(InputStream fis = TSDTV.class.getResourceAsStream("/tsdbot.properties")) {
-            prop.load(fis);
-            catalogDir = prop.getProperty("tsdtv.catalog");
-            scheduleLoc = prop.getProperty("tsdtv.schedule");
-            ffmpegExec = prop.getProperty("tsdtv.ffmpeg");
-        } catch (IOException e) {
-            logger.error("Error initializing TSDTV", e);
-        }
-    }
-
-    public static TSDTV getInstance() {
-        return instance;
+    @Inject
+    public TSDTV(TSDBot bot, Properties prop, Scheduler scheduler, DBConnectionProvider connectionProvider) {
+        super(bot);
+        this.catalogDir = prop.getProperty("tsdtv.catalog");
+        this.scheduleLoc = prop.getProperty("tsdtv.schedule");
+        this.ffmpegExec = prop.getProperty("tsdtv.ffmpeg");
+        this.scheduler = scheduler;
+        this.connectionProvider = connectionProvider;
+        buildSchedule();
     }
     
     @Override
     public void run(String channel, String sender, String ident, String text) {
 
-        TSDBot bot = TSDBot.getInstance();
         String[] cmdParts = text.split("\\s+");
         TSDBot.Command cmd = TSDBot.Command.TSDTV;
         
@@ -138,7 +134,7 @@ public class TSDTV extends MainFunction {
                 bot.sendMessage(channel, "Only ops can use that");
                 return;
             }
-            buildSchedule(TSDBot.getInstance().getScheduler());
+            buildSchedule();
             bot.sendMessage(channel, "The schedule has been reloaded");
 
         } else if(subCmd.equals("schedule")) {
@@ -212,7 +208,7 @@ public class TSDTV extends MainFunction {
             first = false;
         }
 
-        TSDBot.getInstance().sendMessages(requester, IRCUtil.splitLongString(catalogBuilder.toString()));
+        bot.sendMessages(requester, IRCUtil.splitLongString(catalogBuilder.toString()));
 
     }
 
@@ -224,7 +220,7 @@ public class TSDTV extends MainFunction {
 
         if(program.show != null && program.episodeNum > 0) {
             try {
-                Connection dbConn = TSDDatabase.getInstance().getConnection();
+                Connection dbConn = connectionProvider.get();
                 String update = "update TSDTV_SHOW set currentEpisode = ? where name = ?";
                 try(PreparedStatement ps = dbConn.prepareStatement(update)) {
                     // loop to episode 1 if we're playing the last episode of the show
@@ -246,7 +242,7 @@ public class TSDTV extends MainFunction {
             if(title == null) title = program.filePath.substring(program.filePath.lastIndexOf("/")+1);
 
             String msg = "[TSDTV] NOW PLAYING: " + artist + ": " + title + " -- " + getLinks(false);
-            TSDBot.getInstance().broadcast(msg.replaceAll("_"," "));
+            bot.broadcast(msg.replaceAll("_"," "));
         }
     }
 
@@ -280,7 +276,7 @@ public class TSDTV extends MainFunction {
         TSDTVProgram program = new TSDTVProgram(matchedFiles.get(0).getAbsolutePath(), show);
         if(runningStream != null) {
             queue.addLast(program);
-            TSDBot.getInstance().sendMessage(channel, "There is already a stream running. Your show has been enqueued");
+            bot.sendMessage(channel, "There is already a stream running. Your show has been enqueued");
         } else play(program);
 
     }
@@ -370,11 +366,11 @@ public class TSDTV extends MainFunction {
             }
         }
 
-        TSDBot.getInstance().broadcast(broadcastBuilder.toString());
+        bot.broadcast(broadcastBuilder.toString());
 
         if(blockIntro != null) {
             // there's a block intro playing, link people to the stream while it plays
-            TSDBot.getInstance().broadcast(getLinks(false));
+            bot.broadcast(getLinks(false));
         }
 
         if(!queue.isEmpty()) play(queue.pop());
@@ -386,13 +382,12 @@ public class TSDTV extends MainFunction {
         logger.info("Preparing TSDTV block rerun: {}", blockQuery);
 
         if(runningStream != null) {
-            TSDBot.getInstance().sendMessage(channel, "There is already a stream running, please wait for it to" +
+            bot.sendMessage(channel, "There is already a stream running, please wait for it to" +
                     " finish  before starting a block rerun");
             return;
         }
 
         try {
-            final Scheduler scheduler = TSDBot.getInstance().getScheduler();
             Set<JobKey> keys = scheduler.getJobKeys(GroupMatcher.<JobKey>groupEquals(SchedulerConstants.TSDTV_GROUP_ID));
             LinkedList<JobKey> matchedJobs = FuzzyLogic.fuzzySubset(blockQuery, new LinkedList<>(keys), new FuzzyLogic.FuzzyVisitor<JobKey>() {
                 @Override
@@ -408,7 +403,7 @@ public class TSDTV extends MainFunction {
             });
 
             if(matchedJobs.size() == 0) {
-                TSDBot.getInstance().sendMessage(channel, "Could not find any blocks matching " + blockQuery);
+                bot.sendMessage(channel, "Could not find any blocks matching " + blockQuery);
             } else if(matchedJobs.size() > 1) {
                 StringBuilder sb = new StringBuilder();
                 boolean first = true;
@@ -418,7 +413,7 @@ public class TSDTV extends MainFunction {
                     sb.append(job.getJobDataMap().getString(SchedulerConstants.TSDTV_BLOCK_NAME_FIELD));
                     first = false;
                 }
-                TSDBot.getInstance().sendMessage(channel, "Found multiple blocks matching \"" + blockQuery + "\": " + sb.toString());
+                bot.sendMessage(channel, "Found multiple blocks matching \"" + blockQuery + "\": " + sb.toString());
             } else {
                 JobDetail job = scheduler.getJobDetail(matchedJobs.get(0));
                 TSDTVBlock blockInfo = new TSDTVBlock(job.getJobDataMap());
@@ -431,7 +426,7 @@ public class TSDTV extends MainFunction {
             }
 
         } catch (SchedulerException e) {
-            TSDBot.getInstance().sendMessage(channel, "(Error retrieving scheduled info)");
+            bot.sendMessage(channel, "(Error retrieving scheduled info)");
             logger.error("Error getting scheduled info", e);
         }
     }
@@ -449,7 +444,7 @@ public class TSDTV extends MainFunction {
             if(artist == null || title == null) np = runningStream.stream.getMovieName();
             else np = artist + " - " + title;
 
-            TSDBot.getInstance().sendMessage(channel, "NOW PLAYING: " + np);
+            bot.sendMessage(channel, "NOW PLAYING: " + np);
         }
 
         if(!queue.isEmpty()) {
@@ -462,7 +457,7 @@ public class TSDTV extends MainFunction {
                 sb.append(program.show);
                 first = false;
             }
-            TSDBot.getInstance().sendMessage(channel, sb.toString());
+            bot.sendMessage(channel, sb.toString());
         }
 
         try {
@@ -473,7 +468,6 @@ public class TSDTV extends MainFunction {
             if(endOfToday.get(Calendar.HOUR_OF_DAY) >= dayBoundaryHour)
                 endOfToday.add(Calendar.DATE, 1);
 
-            Scheduler scheduler = TSDBot.getInstance().getScheduler();
             Set<JobKey> keys = scheduler.getJobKeys(GroupMatcher.<JobKey>groupEquals(SchedulerConstants.TSDTV_GROUP_ID));
             TreeMap<Date, JobDetail> jobMap = new TreeMap<>();
             for(JobKey key : keys) {
@@ -507,17 +501,17 @@ public class TSDTV extends MainFunction {
                         sb.append(s);
                         first = false;
                     }
-                    TSDBot.getInstance().sendMessage(channel, sb.toString());
+                    bot.sendMessage(channel, sb.toString());
                 }
             }
 
         } catch (SchedulerException e) {
-            TSDBot.getInstance().sendMessage(channel, "(Error retrieving scheduled info)");
+            bot.sendMessage(channel, "(Error retrieving scheduled info)");
             logger.error("Error getting scheduled info", e);
         }
     }
 
-    public void buildSchedule(Scheduler scheduler) {
+    public void buildSchedule() {
         try {
             logger.info("Building TSDTV schedule...");
             scheduler.pauseAll();
@@ -662,7 +656,7 @@ public class TSDTV extends MainFunction {
     }
 
     private int getCurrentEpisode(String show) throws SQLException {
-        Connection dbConn = TSDDatabase.getInstance().getConnection();
+        Connection dbConn = connectionProvider.get();
         String q = String.format("select currentEpisode from TSDTV_SHOW where name = '%s'", show);
         try(PreparedStatement ps = dbConn.prepareStatement(q) ; ResultSet result = ps.executeQuery()) {
             if(result.next()) {

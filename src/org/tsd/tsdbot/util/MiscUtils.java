@@ -2,8 +2,6 @@ package org.tsd.tsdbot.util;
 
 import org.apache.commons.lang3.RandomStringUtils;
 
-import java.util.regex.Pattern;
-
 /**
  * Created by Joe on 9/3/2014.
  */

@@ -1,7 +1,9 @@
 package org.tsd.tsdbot.functions;
 
-import org.tsd.tsdbot.history.HistoryBuff;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.util.FuzzyLogic;
 
 import java.util.List;
@@ -11,17 +13,22 @@ import java.util.regex.Pattern;
 /**
  * Created by Joe on 5/24/14.
  */
+@Singleton
 public class Replace extends MainFunction {
+
+    private HistoryBuff historyBuff;
 
     // Detects commands which look like s/find/replace/ username
     private Pattern commandFormat = Pattern.compile("^s/([^/]+)/([^/]*)(.*)$");
 
+    @Inject
+    public Replace(TSDBot bot, HistoryBuff historyBuff) {
+        super(bot);
+        this.historyBuff = historyBuff;
+    }
+
     @Override
     public void run(String channel, String sender, String ident, String text) {
-
-        HistoryBuff historyBuff = HistoryBuff.getInstance();
-        TSDBot bot = TSDBot.getInstance();
-
         String replaceResult = tryStringReplace(channel, text, historyBuff);
         if(replaceResult != null)
             bot.sendMessage(channel, replaceResult);

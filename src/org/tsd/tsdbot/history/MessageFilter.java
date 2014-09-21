@@ -1,8 +1,6 @@
 package org.tsd.tsdbot.history;
 
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * Created by Joe on 9/4/2014.

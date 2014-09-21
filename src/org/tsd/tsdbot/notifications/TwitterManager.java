@@ -1,5 +1,7 @@
 package org.tsd.tsdbot.notifications;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,34 +24,32 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by Joe on 2/20/14.
  */
+@Singleton
 public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
 
-    private static Logger logger = LoggerFactory.getLogger("TwitterManager");
+    private static Logger logger = LoggerFactory.getLogger(TwitterManager.class);
 
-    private static final String SCHOOLY = "Schooly_D";
-    private static final String USER_HANDLE = "TSD_IRC";
     private static final long USER_ID = 2349834990l;
     private static final long EXCEPTION_COOLDOWN = 1000 * 60 * 2; // 2 minutes
-    private static final long COOLDOWN_PERIOD = 1000 * 60 * 60; // 1 hour
+    private static final long COOLDOWN_PERIOD = 1000 * 60 * 60 * 2; // 2 hours
 
     private TSDBot bot;
     private Twitter twitter;
     private TwitterStream stream;
-    private HashMap<Long,User> following;
+    private HashMap<Long, User> following;
     private HashMap<Long, Long> cooldown; // userId -> timestamp of last tweet
 
-    public TwitterManager(final TSDBot bot, Twitter twitter) throws IOException {
+    @Inject
+    public TwitterManager(final TSDBot bot, final Twitter twitter, Properties prop) throws IOException {
         super(5);
         try {
 
             this.bot = bot;
 
-            Properties prop = bot.getProperties();
-
-            String CONSUMER_KEY = prop.getProperty("twitter.consumer_key");
-            String CONSUMER_KEY_SECRET = prop.getProperty("twitter.consumer_key_secret");
-            String ACCESS_TOKEN = prop.getProperty("twitter.access_token");
-            String ACCESS_TOKEN_SECRET = prop.getProperty("twitter.access_token_secret");
+            String CONSUMER_KEY =           prop.getProperty("twitter.consumer_key");
+            String CONSUMER_KEY_SECRET =    prop.getProperty("twitter.consumer_key_secret");
+            String ACCESS_TOKEN =           prop.getProperty("twitter.access_token");
+            String ACCESS_TOKEN_SECRET =    prop.getProperty("twitter.access_token_secret");
 
             this.twitter = twitter;
             this.twitter.setOAuthConsumer(CONSUMER_KEY, CONSUMER_KEY_SECRET);
@@ -88,7 +88,21 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
                         if(!following.containsKey(status.getUser().getId())) return;
 
                         // don't display replies to tweets from people we don't follow
-                        if(status.getInReplyToUserId() > 0 && (!following.containsKey(status.getInReplyToUserId()))) return;
+                        if(status.getText() != null && status.getText().startsWith("@")) {
+                            boolean foundUser = false;
+                            String replyTo = status.getText().split("\\s+")[0]; // @DARKSNIPER99
+                            if(replyTo.length() > 1) {
+                                replyTo = replyTo.substring(1); // DARKSNIPER99
+                                for(User u : following.values()) {
+                                    if(u.getScreenName().equals(replyTo)) {
+                                        foundUser = true;
+                                        break;
+                                    }
+                                }
+
+                            }
+                            if(!foundUser) return; // we're not following whomever this is a reply to
+                        }
 
                         // don't display the tweet if the tweeter has tweeted < 1 hour ago
                         if(System.currentTimeMillis() - cooldown.get(status.getUser().getId()) < COOLDOWN_PERIOD) return;

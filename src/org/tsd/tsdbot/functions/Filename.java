@@ -1,9 +1,11 @@
 package org.tsd.tsdbot.functions;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
@@ -16,14 +18,21 @@ import java.util.regex.Pattern;
 /**
  * Created by Joe on 5/24/14.
  */
+@Singleton
 public class Filename extends MainFunction {
 
     private static final Logger logger = LoggerFactory.getLogger(Filename.class);
 
+    private HttpClient httpClient;
+
+    @Inject
+    public Filename(TSDBot bot, HttpClient httpClient) {
+        super(bot);
+        this.httpClient = httpClient;
+    }
+
     @Override
     public void run(String channel, String sender, String ident, String text) {
-        TSDBot bot = TSDBot.getInstance();
-        CloseableHttpClient httpClient = bot.getHttpClient();
         HttpGet fnamesGet = null;
         try {
 

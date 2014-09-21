@@ -1,5 +1,6 @@
 package org.tsd.tsdbot.notifications;
 
+import com.google.inject.Singleton;
 import it.sauronsoftware.feed4j.FeedParser;
 import it.sauronsoftware.feed4j.bean.Feed;
 import it.sauronsoftware.feed4j.bean.FeedItem;
@@ -17,6 +18,7 @@ import java.util.regex.Pattern;
 /**
  * Created by Joe on 2/18/14.
  */
+@Singleton
 public class DboNewsManager extends NotificationManager<DboNewsManager.DboNewsPost> {
 
     private static Logger logger = LoggerFactory.getLogger(DboNewsManager.class);

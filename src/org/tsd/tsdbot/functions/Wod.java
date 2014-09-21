@@ -1,5 +1,7 @@
 package org.tsd.tsdbot.functions;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.tsd.tsdbot.TSDBot;
 
 import java.util.LinkedList;
@@ -9,12 +11,16 @@ import java.util.Random;
 /**
  * Created by Joe on 7/9/2014.
  */
+@Singleton
 public class Wod extends MainFunction {
+
+    @Inject
+    public Wod(TSDBot bot) {
+        super(bot);
+    }
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
-
-        TSDBot bot = TSDBot.getInstance();
 
         LinkedList<ExerciseImpl> exercises = new LinkedList<>();
 

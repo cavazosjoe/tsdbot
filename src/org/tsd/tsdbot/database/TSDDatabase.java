@@ -1,5 +1,7 @@
 package org.tsd.tsdbot.database;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
@@ -8,61 +10,30 @@ import org.tsd.tsdbot.functions.TomCruise;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Properties;
 
+@Singleton
 public class TSDDatabase {
 
     private static Logger logger = LoggerFactory.getLogger(TSDDatabase.class);
-    private static String testQ = "select 1";
-    private static String connectionPrefix = "jdbc:h2:tcp://localhost";
-    private static String connectionString = null;
-    private Connection conn;
 
-    private static TSDDatabase instance = null;
+    private DBConnectionProvider connectionProvider;
 
-    public static TSDDatabase getInstance() {
-        if(instance == null) {
-            instance = new TSDDatabase();
-            instance.initialize();
-        }
-        return instance;
-    }
+    @Inject
+    public TSDDatabase(DBConnectionProvider connectionProvider, TSDBot bot) {
+        this.connectionProvider = connectionProvider;
 
-    public Connection getConnection() {
-
-        // create or find database at <current directory>/db/tsdbot
-        // use tcp mode to allow concurrent admin connection
         try {
-            if(conn == null || conn.isClosed())
-                conn = DriverManager.getConnection(connectionString);
-            try(PreparedStatement ps = conn.prepareStatement(testQ);ResultSet result = ps.executeQuery()) {}
-        } catch (SQLException sqle) {
-            System.err.println("db test query failed: " + sqle.getMessage());
-            System.err.println("TRIED USING " + connectionString);
-            return null;
-        }
-
-        return conn;
-
-    }
-
-    public void initialize() {
-        try {
-
-            try(InputStream fis = TSDDatabase.class.getResourceAsStream("/tsdbot.properties")) {
-                Properties prop = new Properties();
-                prop.load(fis);
-                String dbDir = prop.getProperty("dbDir");
-                connectionString = connectionPrefix + dbDir;
-            }
-
             initTomCruiseDb();
-            if(!TSDBot.getInstance().isDebug()) {
+            if(!bot.isDebug())
                 initTSDTVDB();
-            }
         } catch (SQLException | IOException e) {
-            logger.error("TSDDB init error",e);
+            logger.error("TSDDB init error", e);
+            bot.broadcast("Error initializing database, please check logs");
         }
     }
 
@@ -70,13 +41,15 @@ public class TSDDatabase {
         String tomCruiseTable = "TOMCRUISE";
         if(!tableExists(tomCruiseTable)) {
 
+            Connection connection = connectionProvider.get();
+
             String create = String.format("create table if not exists %s (" +
                     "id int auto_increment," +
                     "type varchar," +
                     "data clob," +
                     "primary key (id))",tomCruiseTable);
 
-            try(PreparedStatement ps = getConnection().prepareStatement(create)) {
+            try(PreparedStatement ps = connection.prepareStatement(create)) {
                 ps.executeUpdate();
             }
 
@@ -94,15 +67,17 @@ public class TSDDatabase {
                 first = false;
             }
 
-            try(PreparedStatement ps = getConnection().prepareCall(insertBuilder.toString())) {
+            try(PreparedStatement ps = connection.prepareCall(insertBuilder.toString())) {
                 ps.executeUpdate();
             }
 
-            conn.commit();
+            connection.commit();
         }
     }
 
     private void initTSDTVDB() throws SQLException, IOException {
+
+        Connection connection = connectionProvider.get();
 
         // load new shows
         String showsTable = "TSDTV_SHOW";
@@ -111,7 +86,7 @@ public class TSDDatabase {
                 "name varchar," +
                 "currentEpisode int," +
                 "primary key (id))", showsTable);
-        try(PreparedStatement ps = getConnection().prepareStatement(createShows)) {
+        try(PreparedStatement ps = connection.prepareStatement(createShows)) {
             ps.executeUpdate();
         }
 
@@ -123,14 +98,14 @@ public class TSDDatabase {
             for(File f : catalogDir.listFiles()) {
                 if(f.isDirectory()) {
                     String q = String.format("select count(*) from %s where name = '%s'", showsTable, f.getName());
-                    try(PreparedStatement ps = getConnection().prepareStatement(q) ; ResultSet result = ps.executeQuery()) {
+                    try(PreparedStatement ps = connection.prepareStatement(q) ; ResultSet result = ps.executeQuery()) {
                         result.next();
                         if(result.getInt(1) == 0) { // show does not exist in db, add it
                             String insertShow = String.format(
                                     "insert into %s (name, currentEpisode) values ('%s',1)",
                                     showsTable,
                                     f.getName());
-                            try(PreparedStatement ps1 = getConnection().prepareCall(insertShow)) {
+                            try(PreparedStatement ps1 = connection.prepareCall(insertShow)) {
                                 ps1.executeUpdate();
                             }
                         }
@@ -141,8 +116,9 @@ public class TSDDatabase {
     }
 
     public boolean tableExists(String tableName) throws SQLException {
+        Connection connection = connectionProvider.get();
         String q = String.format("select count(*) from information_schema.tables where table_name = '%s'",tableName);
-        try(PreparedStatement ps = getConnection().prepareStatement(q) ; ResultSet result = ps.executeQuery()) {
+        try(PreparedStatement ps = connection.prepareStatement(q) ; ResultSet result = ps.executeQuery()) {
             result.next();
             return result.getInt(1) > 0;
         }

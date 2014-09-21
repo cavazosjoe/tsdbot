@@ -11,6 +11,7 @@ public class SchedulerConstants {
 
     public static final JobKey LOG_JOB_KEY = new JobKey("log-job");
     public static final JobKey RECAP_JOB_KEY = new JobKey("recap-job");
+    public static final JobKey NOTIFICATION_JOB_KEY = new JobKey("notify-job");
 
     //TSDTVBlockJob
     public static final String TSDTV_BLOCK_ID_FIELD = "id";

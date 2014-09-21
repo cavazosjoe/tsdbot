@@ -1,32 +1,27 @@
 package org.tsd.tsdbot.history;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.apache.commons.collections.buffer.CircularFifoBuffer;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.FuzzyLogic;
-import org.tsd.tsdbot.util.MiscUtils;
 
 import java.util.*;
 
 /**
  * Created by Joe on 2/26/14.
  */
+@Singleton
 public class HistoryBuff {
 
-    private static HistoryBuff instance = null;
-    private static final int CHANNEL_HISTORY_SIZE = 750; // 500 message history per channel
+    private static final int CHANNEL_HISTORY_SIZE = 750;
     private Map<String, CircularFifoBuffer> channelHistory = new HashMap<>();
 
-    private HistoryBuff(String[] channels) {
-        for(String channel : channels)
+    @Inject
+    public HistoryBuff(TSDBot bot) {
+        for(String channel : bot.getChannels())
             channelHistory.put(channel, new CircularFifoBuffer(CHANNEL_HISTORY_SIZE));
     }
-
-    public static HistoryBuff build(String [] channels) {
-        if(instance == null) instance = new HistoryBuff(channels);
-        return instance;
-    }
-
-    public static HistoryBuff getInstance() { return instance; }
 
     public synchronized void updateHistory(String channel, String message, String sender) {
 

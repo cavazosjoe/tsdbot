@@ -1,5 +1,7 @@
 package org.tsd.tsdbot.functions;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,20 +17,22 @@ import java.util.LinkedList;
 /**
  * Created by Joe on 5/24/14.
  */
+@Singleton
 public class Twitter extends MainFunction {
 
     private static final Logger logger = LoggerFactory.getLogger(Twitter.class);
 
     private TwitterManager twitterManager;
 
-    public Twitter(TwitterManager mgr) {
+    @Inject
+    public Twitter(TSDBot bot, TwitterManager mgr) {
+        super(bot);
         this.twitterManager = mgr;
     }
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
 
-        TSDBot bot = TSDBot.getInstance();
         TSDBot.Command cmd = TSDBot.Command.TWITTER;
 
         User user = bot.getUserFromNick(channel, sender);

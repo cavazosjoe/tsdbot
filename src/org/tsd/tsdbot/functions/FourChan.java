@@ -1,12 +1,14 @@
 package org.tsd.tsdbot.functions;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.maxsvett.fourchan.board.Board;
 import com.maxsvett.fourchan.page.Page;
 import com.maxsvett.fourchan.post.Post;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
@@ -21,15 +23,23 @@ import java.util.regex.Pattern;
 /**
  * Created by Joe on 5/24/14.
  */
+@Singleton
 public class FourChan extends MainFunction {
 
     private static final Logger logger = LoggerFactory.getLogger(FourChan.class);
+
+    private HttpClient httpClient;
+
+    @Inject
+    public FourChan(TSDBot bot, HttpClient httpClient) {
+        super(bot);
+        this.httpClient = httpClient;
+    }
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
 
         String[] cmdParts = text.split("\\s+");
-        TSDBot bot = TSDBot.getInstance();
 
         if(cmdParts.length != 2) {
             bot.sendMessage(channel, TSDBot.Command.FOURCHAN.getUsage());
@@ -41,8 +51,6 @@ public class FourChan extends MainFunction {
             bot.sendMessage(channel, "Could not understand which board you want. Ex: .4chan /v/");
             return;
         }
-
-        CloseableHttpClient httpClient = bot.getHttpClient();
 
         Pattern boardPattern = Pattern.compile(boardRegex);
         Matcher boardMatcher = boardPattern.matcher(cmdParts[1]);

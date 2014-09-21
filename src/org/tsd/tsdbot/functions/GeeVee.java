@@ -1,9 +1,11 @@
 package org.tsd.tsdbot.functions;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.history.HistoryBuff;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -12,15 +14,21 @@ import java.util.Random;
 /**
  * Created by Joe on 4/5/14.
  */
+@Singleton
 public class GeeVee extends MainFunction {
 
     private static Logger logger = LoggerFactory.getLogger(GeeVee.class);
 
+    private HistoryBuff historyBuff;
+
+    @Inject
+    public GeeVee(TSDBot bot, HistoryBuff historyBuff) {
+        super(bot);
+        this.historyBuff = historyBuff;
+    }
+
     @Override
     public void run(String channel, String sender, String ident, String text) {
-        Random rand = new Random();
-        TSDBot bot = TSDBot.getInstance();
-        HistoryBuff historyBuff = HistoryBuff.getInstance();
         String[] cmdParts = text.split("\\s+");
 
         if(cmdParts.length == 1) {

@@ -1,5 +1,6 @@
 package org.tsd.tsdbot.scheduled;
 
+import com.google.inject.Inject;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -16,6 +17,9 @@ import java.util.Calendar;
 public class LogCleanerJob implements Job {
 
     private static final Logger logger = LoggerFactory.getLogger(LogCleanerJob.class);
+
+    @Inject
+    protected TSDBot bot;
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
@@ -58,7 +62,7 @@ public class LogCleanerJob implements Job {
             }
         } catch(Exception e) {
             logger.error("An error occurred while cleaning logs", e);
-            TSDBot.getInstance().broadcast("An error occurred while cleaning logs");
+            bot.broadcast("An error occurred while cleaning logs");
         }
     }
 }

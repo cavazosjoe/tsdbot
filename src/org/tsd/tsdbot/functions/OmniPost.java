@@ -1,5 +1,7 @@
 package org.tsd.tsdbot.functions;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.notifications.NotificationEntity;
 import org.tsd.tsdbot.notifications.NotificationManager;
@@ -10,12 +12,17 @@ import java.util.List;
 /**
  * Created by Joe on 5/24/14.
  */
+@Singleton
 public class OmniPost extends MainFunction {
-    
+
+    @Inject
+    public OmniPost(TSDBot bot) {
+        super(bot);
+    }
+
     @Override
     public void run(String channel, String sender, String ident, String text) {
         
-        TSDBot bot = TSDBot.getInstance();
         String[] cmdParts = text.split("\\s+");
         List<TSDBot.Command> matchingCommands = TSDBot.Command.fromString(cmdParts[0]);
         if(matchingCommands.size() != 1) return;

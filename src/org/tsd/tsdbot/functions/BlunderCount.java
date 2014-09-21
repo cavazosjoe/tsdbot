@@ -1,5 +1,7 @@
 package org.tsd.tsdbot.functions;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.jibble.pircbot.User;
 import org.tsd.tsdbot.TSDBot;
 
@@ -8,25 +10,18 @@ import java.util.Random;
 /**
  * Created by Joe on 5/24/14.
  */
+@Singleton
 public class BlunderCount extends MainFunction {
 
-    private static String[] responses = new String[]{
-            "",                                     "I saw that too. ",
-            "kek. ",                                "My sides are moving on their own. ",
-            "My sides. ",                           "M-muh sides. ",
-            "Wow. ",                                "No argument here. ",
-            "*tip* ",                               "Shit I missed it. Ah well. ",
-            "BLOWN. THE. FUCK. OUT. ",              "B - T - F - O. ",
-            "Shrekt. ",                             "Rekt. ",
-            "[blunders intensify] ",                "What a blunder. ",
-            "Zim-zam status: flim-flammed. "
-    };
+    @Inject
+    public BlunderCount(TSDBot bot) {
+        super(bot);
+    }
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
 
         String[] cmdParts = text.split("\\s+");
-        TSDBot bot = TSDBot.getInstance();
 
         if(cmdParts.length == 1) {
             bot.sendMessage(channel, TSDBot.Command.BLUNDER_COUNT.getUsage());
@@ -51,4 +46,16 @@ public class BlunderCount extends MainFunction {
             }
         }
     }
+
+    private static String[] responses = new String[]{
+            "",                                     "I saw that too. ",
+            "kek. ",                                "My sides are moving on their own. ",
+            "My sides. ",                           "M-muh sides. ",
+            "Wow. ",                                "No argument here. ",
+            "*tip* ",                               "Shit I missed it. Ah well. ",
+            "BLOWN. THE. FUCK. OUT. ",              "B - T - F - O. ",
+            "Shrekt. ",                             "Rekt. ",
+            "[blunders intensify] ",                "What a blunder. ",
+            "Zim-zam status: flim-flammed. "
+    };
 }

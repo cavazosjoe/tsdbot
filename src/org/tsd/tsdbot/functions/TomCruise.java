@@ -1,7 +1,10 @@
 package org.tsd.tsdbot.functions;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.tsd.tsdbot.TSDBot;
-import org.tsd.tsdbot.database.TSDDatabase;
+import org.tsd.tsdbot.database.DBConnectionProvider;
+import org.tsd.tsdbot.util.IRCUtil;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -12,56 +15,48 @@ import java.util.Random;
 /**
  * Created by Joe on 5/24/14.
  */
+@Singleton
 public class TomCruise extends MainFunction {
+
+    private DBConnectionProvider connectionProvider;
+
+    @Inject
+    public TomCruise(TSDBot bot, DBConnectionProvider connectionProvider) {
+        super(bot);
+        this.connectionProvider = connectionProvider;
+    }
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
 
         String[] cmdParts = text.split("\\s+");
-        TSDBot bot = TSDBot.getInstance();
-        TSDDatabase database = TSDDatabase.getInstance();
+        TomCruiseItemType itemType = null;
 
         if(cmdParts.length == 1) {
-            bot.sendMessage(channel, getRandom(database.getConnection()));
+            itemType = null;
         } else if(cmdParts[1].equals("quote")) {
-            bot. sendMessage(channel, getRandomQuote(database.getConnection()));
+            itemType = TomCruiseItemType.quote;
         } else if(cmdParts[1].equals("clip")) {
-            bot.sendMessage(channel, getRandomClip(database.getConnection()));
+            itemType = TomCruiseItemType.clip;
         } else {
             bot.sendMessage(channel, TSDBot.Command.TOM_CRUISE.getUsage());
-        }
-    }
-
-    public String getRandom(Connection conn) {
-
-        Random rand = new Random();
-
-        if (rand.nextBoolean()) { // flip a coin
-            return getRandomClip(conn);
+            return;
         }
 
-        return getRandomQuote(conn);
+        bot.sendMessages(channel, IRCUtil.splitLongString(getRandom(itemType)));
     }
 
-    public String getRandomClip(Connection conn) {
+    public String getRandom(TomCruiseItemType itemType) {
 
-        String sql = "select data from TOMCRUISE where type = 'clip' order by rand() limit 1";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getString(1);
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
+        if(itemType == null) {
+            Random rand = new Random();
+            itemType = (rand.nextBoolean()) ? TomCruiseItemType.clip : TomCruiseItemType.quote;
         }
 
-        return null; // Maybe return something from an emergency collection defined in this class
-    }
+        Connection conn = connectionProvider.get();
 
-    public String getRandomQuote(Connection conn) {
-
-        String sql = "select data from TOMCRUISE where type = 'quote' order by rand() limit 1";
+        String sql = "select data from TOMCRUISE where type = '%s' order by rand() limit 1";
+        sql = String.format(sql, itemType.dbEnum);
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -155,4 +150,15 @@ public class TomCruise extends MainFunction {
             "https://www.youtube.com/watch?v=nf7_eayBkxA",
             "https://www.youtube.com/watch?v=XO4f-JqXG7g"
     };
+
+    private static enum TomCruiseItemType {
+        clip    ("clip"),
+        quote   ("quote");
+
+        public String dbEnum;
+
+        TomCruiseItemType(String dbEnum) {
+            this.dbEnum = dbEnum;
+        }
+    }
 }

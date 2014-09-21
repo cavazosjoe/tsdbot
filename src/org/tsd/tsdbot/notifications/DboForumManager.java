@@ -2,6 +2,8 @@ package org.tsd.tsdbot.notifications;
 
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.xml.XmlPage;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
@@ -21,6 +23,7 @@ import java.util.regex.Pattern;
 /**
  * Created by Joe on 2/18/14.
  */
+@Singleton
 public class DboForumManager extends NotificationManager<DboForumManager.DboForumPost> {
 
     private static Logger logger = LoggerFactory.getLogger(DboForumManager.class);
@@ -37,6 +40,7 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
                 + "sub|sup|pre|del|code|blockquote|strike|kbd|br|hr|area|map|object|embed|param|link|form|small|big|script|object|embed|link|style|form|input)$");
     }
 
+    @Inject
     public DboForumManager(WebClient webClient) {
         super(5);
         dboSdf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z");

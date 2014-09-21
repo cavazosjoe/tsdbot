@@ -1,5 +1,6 @@
 package org.tsd.tsdbot.scheduled;
 
+import com.google.inject.Inject;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -19,8 +20,10 @@ public class RecapCleanerJob implements Job {
 
     private static final Logger logger = LoggerFactory.getLogger(RecapCleanerJob.class);
 
-    ///usr/local/nginx/html/recaps
+    @Inject
+    protected TSDBot bot;
 
+    ///usr/local/nginx/html/recaps
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
@@ -42,7 +45,7 @@ public class RecapCleanerJob implements Job {
             }
         } catch(Exception e) {
             logger.error("An error occurred while cleaning recaps", e);
-            TSDBot.getInstance().broadcast("An error occurred while cleaning recaps");
+            bot.broadcast("An error occurred while cleaning recaps");
         }
     }
 }

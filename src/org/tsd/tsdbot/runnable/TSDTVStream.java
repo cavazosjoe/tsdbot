@@ -1,5 +1,6 @@
 package org.tsd.tsdbot.runnable;
 
+import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.functions.TSDTV;
@@ -12,6 +13,9 @@ import java.io.IOException;
 public class TSDTVStream implements Runnable {
 
     private static Logger logger = LoggerFactory.getLogger(TSDTVStream.class);
+
+    @Inject
+    protected TSDTV tsdtv;
 
     private String[] ffmpegParts;
     private String pathToMovie;
@@ -35,7 +39,7 @@ public class TSDTVStream implements Runnable {
             Thread.sleep(500); // wait for half a second
         } catch (InterruptedException e) {
             logger.error("Interrupted during stream delay");
-            TSDTV.getInstance().finishStream(false);
+            tsdtv.finishStream(false);
             return;
         }
         logger.info("[TSDTV] preparing movie " + pathToMovie);
@@ -59,7 +63,7 @@ public class TSDTVStream implements Runnable {
             logger.error("IOException", e);
         }
 
-        TSDTV.getInstance().finishStream(playNext);
+        tsdtv.finishStream(playNext);
     }
 
 }

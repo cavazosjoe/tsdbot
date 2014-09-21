@@ -1,5 +1,7 @@
 package org.tsd.tsdbot.notifications;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -25,6 +27,7 @@ import java.util.regex.Pattern;
 /**
  * Created by Joe on 2/18/14.
  */
+@Singleton
 public class HboForumManager extends NotificationManager<HboForumManager.HboForumPost> {
 
     private static Logger logger = LoggerFactory.getLogger(HboForumManager.class);
@@ -45,6 +48,7 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
                 + "sub|sup|pre|del|code|blockquote|strike|kbd|br|hr|area|map|object|embed|param|link|form|small|big|script|object|embed|link|style|form|input)$");
     }
 
+    @Inject
     public HboForumManager(HttpClient client) {
         super(5);
         hboSdf = new SimpleDateFormat("MM/dd/yy HH:mm a");

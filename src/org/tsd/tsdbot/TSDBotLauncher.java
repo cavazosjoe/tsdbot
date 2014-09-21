@@ -1,53 +1,114 @@
 package org.tsd.tsdbot;
 
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import org.quartz.CronTrigger;
+import org.quartz.JobDetail;
+import org.quartz.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.scheduled.*;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Properties;
+
+import static org.quartz.CronScheduleBuilder.cronSchedule;
+import static org.quartz.JobBuilder.newJob;
+import static org.quartz.TriggerBuilder.newTrigger;
 
 /**
  * Created by Joe on 2/18/14.
  */
 public class TSDBotLauncher {
 
-    // TSDBot.jar tsd-test irc.teamschoolyd.org TSDBot [debug]
+    private static Logger log = LoggerFactory.getLogger(TSDBotLauncher.class);
+
+    // TSDBot.jar tsd-test irc.teamschoolyd.org TSDBot /path/to/tsdbot.properties [debug]
     public static void main(String[] args) throws Exception {
 
-        Logger log = LoggerFactory.getLogger(TSDBotLauncher.class);
+        if(args.length < 4) {
+            throw new Exception("USAGE: TSDBot.jar [channel] [server] [nick] [properties location] debug (optional)");
+        }
 
-        String name = "TSDBot";
-        String server = "localhost";
-        String channel = args[0];
-        if(!channel.startsWith("#")) channel = "#"+channel;
+        String server;
+        String botName;
+        String[] channels;
+        String propertiesLocation;
         boolean debug = false;
 
-        if (args.length >= 3) {
-            server = args[1];
-            name = args[2];
+        String channel = args[0];
+        if(!channel.startsWith("#")) channel = "#"+channel;
+        channels = new String[]{channel};
+
+        server = args[1];
+        botName = args[2];
+        propertiesLocation = args[3];
+
+        if(args.length >= 5) {
+            debug = args[4].equalsIgnoreCase("debug");
         }
 
-        if(args.length >= 4) {
-            debug = args[3].equalsIgnoreCase("debug");
+        log.info("channel={}, server={} , name={} , propLoc={}, debug={}", channel, server, botName, propertiesLocation, debug);
+
+        Properties properties = new Properties();
+        try(InputStream fis = new FileInputStream(new File(propertiesLocation))) {
+            properties.load(fis);
         }
 
-        log.info("channel={}, server={} , name={} , debug={}", channel, server, name, debug);
+        String nickservPass = properties.getProperty("nickserv.pass");
+        TSDBot bot = new TSDBot(botName, nickservPass, server, channels, debug);
 
-        Properties prop = new Properties();
-        String nickservPass = null;
-        try(InputStream fis = TSDBotLauncher.class.getResourceAsStream("/tsdbot.properties")) {
-            prop.load(fis);
-            nickservPass = prop.getProperty("nickserv.pass");
-        }
+        TSDBotConfigModule module = new TSDBotConfigModule(bot, properties);
 
-        TSDBot bot = TSDBot.build(name,new String[]{channel},debug, prop);
-        bot.setVerbose(false);
-        bot.setMessageDelay(10); //10 ms
-        bot.connect(server);
-        if(nickservPass != null && (!nickservPass.isEmpty()))
-            bot.identify(nickservPass);
-        bot.joinChannel(channel);
+        Injector injector = Guice.createInjector(module);
+        configureScheduler(injector);
+        injector.injectMembers(TSDBot.class);
 
         log.info("TSDBot loaded successfully. Beginning conquest...");
+    }
+
+    private static void configureScheduler(Injector injector) {
+        try {
+            Properties properties = injector.getInstance(Properties.class);
+            Scheduler scheduler = injector.getInstance(Scheduler.class);
+            scheduler.setJobFactory(injector.getInstance(InjectableJobFactory.class));
+
+            JobDetail logCleanerJob = newJob(LogCleanerJob.class)
+                    .withIdentity(SchedulerConstants.LOG_JOB_KEY)
+                    .usingJobData(SchedulerConstants.LOGS_DIR_FIELD, properties.getProperty("archivist.logs"))
+                    .build();
+
+            JobDetail recapCleanerJob = newJob(RecapCleanerJob.class)
+                    .withIdentity(SchedulerConstants.RECAP_JOB_KEY)
+                    .usingJobData(SchedulerConstants.RECAP_DIR_FIELD, properties.getProperty("archivist.recaps"))
+                    .build();
+
+            JobDetail notificationJob = newJob(NotificationSweeperJob.class)
+                    .withIdentity(SchedulerConstants.NOTIFICATION_JOB_KEY)
+                    .build();
+
+            CronTrigger logCleanerTrigger = newTrigger()
+                    .withSchedule(cronSchedule("0 0 4 ? * MON")) //4AM every monday
+                    .build();
+
+            CronTrigger recapCleanerTrigger = newTrigger()
+                    .withSchedule(cronSchedule("0 0 3 * * ?")) //3AM every day
+                    .build();
+
+            CronTrigger notifyTrigger = newTrigger()
+                    .withSchedule(cronSchedule("0 0/5 * * * ?")) //every 5 minutes
+                    .build();
+
+            scheduler.scheduleJob(logCleanerJob, logCleanerTrigger);
+            scheduler.scheduleJob(recapCleanerJob, recapCleanerTrigger);
+            scheduler.scheduleJob(notificationJob, notifyTrigger);
+
+            scheduler.start();
+
+        } catch (Exception e) {
+            log.error("ERROR INITIALIZING SCHEDULED SERVICES", e);
+        }
     }
 }

@@ -1,33 +1,38 @@
 package org.tsd.tsdbot.functions;
 
-import org.tsd.tsdbot.history.HistoryBuff;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.history.MessageFilter;
 import org.tsd.tsdbot.history.MessageFilterStrategy;
 import org.tsd.tsdbot.util.IRCUtil;
 
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Random;
 
 /**
  * Created by Joe on 5/24/14.
  */
+@Singleton
 public class Recap extends MainFunction {
 
     private static final int dramaCount = 4;
 
-    public Recap() {
+    private HistoryBuff historyBuff;
+
+    @Inject
+    public Recap(TSDBot bot, HistoryBuff historyBuff) {
         super(10);
+        this.bot = bot;
+        this.historyBuff = historyBuff;
     }
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
 
         Random rand = new Random();
-        TSDBot bot = TSDBot.getInstance();
-        HistoryBuff historyBuff = HistoryBuff.getInstance();
         LinkedList<HistoryBuff.Message> chosen = historyBuff.getRandomFilteredMessages(
                 channel,
                 null,
