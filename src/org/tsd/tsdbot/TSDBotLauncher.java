@@ -25,32 +25,27 @@ public class TSDBotLauncher {
 
     private static Logger log = LoggerFactory.getLogger(TSDBotLauncher.class);
 
-    // TSDBot.jar tsd-test irc.teamschoolyd.org TSDBot /path/to/tsdbot.properties [debug]
+    // TSDBot.jar tsd-test irc.teamschoolyd.org TSDBot /path/to/tsdbot.properties dev
     public static void main(String[] args) throws Exception {
 
-        if(args.length < 4) {
-            throw new Exception("USAGE: TSDBot.jar [channel] [server] [nick] [properties location] debug (optional)");
+        if(args.length < 5) {
+            throw new Exception("USAGE: TSDBot.jar [channel] [server] [nick] [properties location] [stage=dev,production]");
         }
 
-        String server;
-        String botName;
         String[] channels;
-        String propertiesLocation;
-        boolean debug = false;
-
         String channel = args[0];
         if(!channel.startsWith("#")) channel = "#"+channel;
         channels = new String[]{channel};
 
-        server = args[1];
-        botName = args[2];
-        propertiesLocation = args[3];
-
-        if(args.length >= 5) {
-            debug = args[4].equalsIgnoreCase("debug");
+        String server = args[1];
+        String botName = args[2];
+        String propertiesLocation = args[3];
+        Stage stage = Stage.fromString(args[4]);
+        if(stage == null) {
+            throw new Exception("STAGE must be one of [dev, production]");
         }
 
-        log.info("channel={}, server={} , name={} , propLoc={}, debug={}", channel, server, botName, propertiesLocation, debug);
+        log.info("channel={}, server={} , name={} , propLoc={}, stage={}", channel, server, botName, propertiesLocation, stage);
 
         Properties properties = new Properties();
         try(InputStream fis = new FileInputStream(new File(propertiesLocation))) {
@@ -58,9 +53,9 @@ public class TSDBotLauncher {
         }
 
         String nickservPass = properties.getProperty("nickserv.pass");
-        TSDBot bot = new TSDBot(botName, nickservPass, server, channels, debug);
+        TSDBot bot = new TSDBot(botName, nickservPass, server, channels);
 
-        TSDBotConfigModule module = new TSDBotConfigModule(bot, properties);
+        TSDBotConfigModule module = new TSDBotConfigModule(bot, properties, stage);
 
         Injector injector = Guice.createInjector(module);
         configureScheduler(injector);

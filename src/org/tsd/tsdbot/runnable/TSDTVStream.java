@@ -1,6 +1,7 @@
 package org.tsd.tsdbot.runnable;
 
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.functions.TSDTV;
@@ -17,12 +18,16 @@ public class TSDTVStream implements Runnable {
     @Inject
     protected TSDTV tsdtv;
 
-    private String[] ffmpegParts;
-    private String pathToMovie;
+    @Inject @Named(value = "ffmpeg")
+    private String ffmpegFormat;
 
-    public TSDTVStream(String[] ffmpegParts, String pathToMovie) {
-        this.ffmpegParts = ffmpegParts;
-        this.pathToMovie = pathToMovie;
+    private String pathToMovie = null;
+
+    @Deprecated
+    public TSDTVStream() {}
+
+    public void init(String pathToMovie) {
+        ffmpegFormat = String.format(ffmpegFormat, pathToMovie);
     }
 
     public String getPathToMovie() {
@@ -31,6 +36,10 @@ public class TSDTVStream implements Runnable {
 
     public String getMovieName() {
         return pathToMovie.substring(pathToMovie.lastIndexOf("/")+1);
+    }
+
+    public boolean isInitialized() {
+        return pathToMovie != null;
     }
 
     @Override
@@ -43,7 +52,8 @@ public class TSDTVStream implements Runnable {
             return;
         }
         logger.info("[TSDTV] preparing movie " + pathToMovie);
-        ProcessBuilder pb = new ProcessBuilder(ffmpegParts);
+        logger.info("[TSDTV] using command: {}", ffmpegFormat);
+        ProcessBuilder pb = new ProcessBuilder(ffmpegFormat.split("\\s+"));
         pb.redirectError(ProcessBuilder.Redirect.INHERIT);
         boolean playNext = true;
         try {

@@ -2,8 +2,12 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.DBConnectionProvider;
+import org.tsd.tsdbot.database.Persistable;
+import org.tsd.tsdbot.util.DatabaseLogic;
 import org.tsd.tsdbot.util.IRCUtil;
 
 import java.sql.Connection;
@@ -16,14 +20,17 @@ import java.util.Random;
  * Created by Joe on 5/24/14.
  */
 @Singleton
-public class TomCruise extends MainFunction {
+public class TomCruise extends MainFunction implements Persistable {
+
+    private static Logger logger = LoggerFactory.getLogger(TomCruise.class);
 
     private DBConnectionProvider connectionProvider;
 
     @Inject
-    public TomCruise(TSDBot bot, DBConnectionProvider connectionProvider) {
+    public TomCruise(TSDBot bot, DBConnectionProvider connectionProvider) throws SQLException {
         super(bot);
         this.connectionProvider = connectionProvider;
+        initDB();
     }
 
     @Override
@@ -70,9 +77,52 @@ public class TomCruise extends MainFunction {
         return null; // Maybe return something from an emergency collection defined in this class
     }
 
+    @Override
+    public void initDB() throws SQLException {
+        logger.info("Initializing Tom Cruise database");
+        String tomCruiseTable = "TOMCRUISE";
+        Connection connection = connectionProvider.get();
+
+        if(!DatabaseLogic.tableExists(connection, tomCruiseTable)) {
+
+            logger.info("Table {} does NOT exist, creating...", tomCruiseTable);
+
+            String create = String.format("create table if not exists %s (" +
+                    "id int auto_increment," +
+                    "type varchar," +
+                    "data clob," +
+                    "primary key (id))", tomCruiseTable);
+
+            try(PreparedStatement ps = connection.prepareStatement(create)) {
+                logger.info("TOMCRUISE: {}", create);
+                ps.executeUpdate();
+            }
+
+            StringBuilder insertBuilder = new StringBuilder();
+            insertBuilder.append(String.format("insert into %s (type, data) values ",tomCruiseTable));
+            boolean first = true;
+            for(String quote : quotes) {
+                if(!first) insertBuilder.append(",");
+                insertBuilder.append(String.format("('quote','%s')",quote));
+                first = false;
+            }
+            for(String quote : clips) {
+                if(!first) insertBuilder.append(",");
+                insertBuilder.append(String.format("('clip','%s')",quote));
+                first = false;
+            }
+
+            try(PreparedStatement ps = connection.prepareCall(insertBuilder.toString())) {
+                ps.executeUpdate();
+            }
+
+            connection.commit();
+        }
+    }
+
     // stuff below is used for database seeding
 
-    public static final String[] quotes = new String[] {
+    private static final String[] quotes = new String[] {
             "Get with it. Millions of galaxies of hundreds of millions of stars, in a speck on one in a blink. That’s " +
                     "us, lost in space. The cop, you, me… Who notices?  ",
             "You want me to kill Jappos, I''ll kill Jappos. You want me to kill THE ENEMIES of Jappos, I''ll kill " +
@@ -138,7 +188,7 @@ public class TomCruise extends MainFunction {
                     "can''t even call that girl. What the fuck are you still doing driving a cab?  "
     };
 
-    public static final String[] clips = new String[] {
+    private static final String[] clips = new String[] {
             "https://www.youtube.com/watch?v=7yP9MmzyTIg",
             "https://www.youtube.com/watch?v=LMT1r9IpIf0",
             "https://www.youtube.com/watch?v=B9XyCwmh-5Q",

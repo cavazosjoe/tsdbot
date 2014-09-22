@@ -42,12 +42,7 @@ public class TSDBot extends PircBot {
     @Inject
     protected Archivist archivist;
 
-    public boolean debug = false;
-
-    public TSDBot(String name, String nickservPass, String server, String[] channels, boolean debug) throws IrcException, IOException {
-        
-        this.debug = debug;
-
+    public TSDBot(String name, String nickservPass, String server, String[] channels) throws IrcException, IOException {
         setName(name);
         setAutoNickChange(true);
         setLogin("tsdbot");
@@ -61,7 +56,6 @@ public class TSDBot extends PircBot {
             joinChannel(channel);
             logger.info("Joined channel {}", channel);
         }
-
     }
 
     @Inject
@@ -88,10 +82,6 @@ public class TSDBot extends PircBot {
 
     public ThreadManager getThreadManager() {
         return threadManager;
-    }
-
-    public boolean isDebug() {
-        return debug;
     }
 
     @Override

@@ -10,8 +10,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.DBConnectionProvider;
+import org.tsd.tsdbot.database.Persistable;
 import org.tsd.tsdbot.runnable.TSDTVStream;
 import org.tsd.tsdbot.scheduled.SchedulerConstants;
+import org.tsd.tsdbot.tsdtv.InjectableStreamFactory;
 import org.tsd.tsdbot.tsdtv.TSDTVBlockJob;
 import org.tsd.tsdbot.tsdtv.TSDTVConstants;
 import org.tsd.tsdbot.tsdtv.TSDTVProgram;
@@ -37,7 +39,7 @@ import static org.quartz.TriggerBuilder.newTrigger;
  * Created by Joe on 3/9/14.
  */
 @Singleton
-public class TSDTV extends MainFunction {
+public class TSDTV extends MainFunction implements Persistable {
 
     private static Logger logger = LoggerFactory.getLogger(TSDTV.class);
 
@@ -46,23 +48,25 @@ public class TSDTV extends MainFunction {
     private static final TimeZone timeZone = TimeZone.getTimeZone("America/New_York");
 
     private DBConnectionProvider connectionProvider;
+    private InjectableStreamFactory streamFactory;
     private Scheduler scheduler;
-    private String catalogDir;
+    private String catalogPath;
     private String scheduleLoc;
-    private String ffmpegExec;
 
     private LinkedList<TSDTVProgram> queue = new LinkedList<>(); // file paths
 
     private ThreadStream runningStream;
 
     @Inject
-    public TSDTV(TSDBot bot, Properties prop, Scheduler scheduler, DBConnectionProvider connectionProvider) {
+    public TSDTV(TSDBot bot, Properties prop, Scheduler scheduler,
+                 DBConnectionProvider connectionProvider, InjectableStreamFactory streamFactory) throws SQLException {
         super(bot);
-        this.catalogDir = prop.getProperty("tsdtv.catalog");
+        this.catalogPath = prop.getProperty("tsdtv.catalog");
         this.scheduleLoc = prop.getProperty("tsdtv.schedule");
-        this.ffmpegExec = prop.getProperty("tsdtv.ffmpeg");
         this.scheduler = scheduler;
         this.connectionProvider = connectionProvider;
+        this.streamFactory = streamFactory;
+        initDB();
         buildSchedule();
     }
     
@@ -134,6 +138,14 @@ public class TSDTV extends MainFunction {
                 bot.sendMessage(channel, "Only ops can use that");
                 return;
             }
+
+            try{
+                initDB();
+                logger.info("");
+            } catch (SQLException e) {
+                logger.error("Error re-initializing TSDTV DB", e);
+                bot.sendMessage(channel, "Error re-initializing TSDTV DB");
+            }
             buildSchedule();
             bot.sendMessage(channel, "The schedule has been reloaded");
 
@@ -192,10 +204,52 @@ public class TSDTV extends MainFunction {
         }
     }
 
+    @Override
+    public void initDB() throws SQLException {
+        logger.info("Initializing TSDTV database");
+
+        Connection connection = connectionProvider.get();
+
+        // load new shows
+        String showsTable = "TSDTV_SHOW";
+        String createShows = String.format("create table if not exists %s (" +
+                "id int auto_increment," +
+                "name varchar," +
+                "currentEpisode int," +
+                "primary key (id))", showsTable);
+        try(PreparedStatement ps = connection.prepareStatement(createShows)) {
+            logger.info("TSDTV_SHOW: {}", createShows);
+            ps.executeUpdate();
+        }
+
+        File catalogDir = new File(catalogPath);
+        logger.info("Building TSDTV_SHOW table from directory {}", catalogDir.getAbsolutePath());
+        for(File f : catalogDir.listFiles()) {
+            if(f.isDirectory()) {
+                String q = String.format("select count(*) from %s where name = '%s'", showsTable, f.getName());
+                try(PreparedStatement ps = connection.prepareStatement(q) ; ResultSet result = ps.executeQuery()) {
+                    result.next();
+                    if(result.getInt(1) == 0) { // show does not exist in db, add it
+                        logger.info("Could not find show {} in DB, adding...", f.getName());
+                        String insertShow = String.format(
+                                "insert into %s (name, currentEpisode) values ('%s',1)",
+                                showsTable,
+                                f.getName());
+                        try(PreparedStatement ps1 = connection.prepareCall(insertShow)) {
+                            ps1.executeUpdate();
+                        }
+                    } else {
+                        logger.info("Show {} already exists in DB, skipping...", f.getName());
+                    }
+                }
+            }
+        }
+    }
+
     public void catalog(String requester, String subdir) throws Exception {
         File printingDir;
         if(subdir == null)
-            printingDir = new File(catalogDir);
+            printingDir = new File(catalogPath);
         else
             printingDir = getFuzzyShow(subdir);
 
@@ -213,7 +267,7 @@ public class TSDTV extends MainFunction {
     }
 
     private void play(TSDTVProgram program) {
-        TSDTVStream stream = new TSDTVStream(ffmpegCommand(program.filePath), program.filePath);
+        TSDTVStream stream = streamFactory.newStream(program.filePath);
         Thread thread = new Thread(stream);
         runningStream = new ThreadStream(thread, stream);
         runningStream.begin();
@@ -304,7 +358,7 @@ public class TSDTV extends MainFunction {
 
             if(show.startsWith(".")) { // commercial or bump, grab random
 
-                File showDir = new File(catalogDir + "/" + show);
+                File showDir = new File(catalogPath + "/" + show);
                 String showPath = getRandomFilePathFromDirectory(showDir);
                 if(showPath != null) {
                     queue.addLast(new TSDTVProgram(showPath, show));
@@ -511,6 +565,10 @@ public class TSDTV extends MainFunction {
         }
     }
 
+    public void refreshDatabase() {
+
+    }
+
     public void buildSchedule() {
         try {
             logger.info("Building TSDTV schedule...");
@@ -586,7 +644,7 @@ public class TSDTV extends MainFunction {
         // return the File object, use it to getName or getPath
         List<File> matchingDirs = FuzzyLogic.fuzzySubset(
                 query,
-                Arrays.asList(new File(catalogDir).listFiles()),
+                Arrays.asList(new File(catalogPath).listFiles()),
                 new FuzzyLogic.FuzzyVisitor<File>() {
                     @Override
                     public String visit(File o1) {
@@ -608,7 +666,7 @@ public class TSDTV extends MainFunction {
     }
 
     private String getEpisode(String show, int episodeNumber) {
-        File showDir = new File(catalogDir + "/" + show);
+        File showDir = new File(catalogPath + "/" + show);
         java.util.regex.Matcher epNumMatcher;
         if(showDir.exists()) {
             for(File f : showDir.listFiles()) {
@@ -621,19 +679,19 @@ public class TSDTV extends MainFunction {
                 }
             }
         } else {
-            logger.error("Could not find show directory: {}", catalogDir + "/" + show);
+            logger.error("Could not find show directory: {}", catalogPath + "/" + show);
         }
 
         return null;
     }
 
     private String getShowIntro(String show) {
-        File introDir = new File(catalogDir + "/" + show + "/" + TSDTVConstants.INTRO_DIR_NAME);
+        File introDir = new File(catalogPath + "/" + show + "/" + TSDTVConstants.INTRO_DIR_NAME);
         return getRandomFilePathFromDirectory(introDir);
     }
 
     private String getBlockIntro(String blockId) {
-        File introDir = new File(catalogDir + "/"
+        File introDir = new File(catalogPath + "/"
                 + TSDTVConstants.BLOCKS_DIR_NAME + "/" + blockId + "/" + TSDTVConstants.INTRO_DIR_NAME);
         return getRandomFilePathFromDirectory(introDir);
     }
@@ -772,27 +830,16 @@ public class TSDTV extends MainFunction {
 
     private int getNumberOfEpisodes(String show) {
         int count = 0;
-        File showDir = new File(catalogDir + "/" + show);
+        File showDir = new File(catalogPath + "/" + show);
         if(showDir.exists()) {
             for(File f : showDir.listFiles()) {
                 if(f.isFile()) count++;
             }
         } else {
-            logger.error("Could not find show directory: {}", catalogDir + "/" + show);
+            logger.error("Could not find show directory: {}", catalogPath + "/" + show);
         }
 
         return count;
-    }
-
-    private String[] ffmpegCommand(String targetFile) {
-        return new String[]{
-                "nice",     "-n","8",
-                ffmpegExec,
-                "-re",
-                "-y",
-                "-i",       targetFile,
-                "http://localhost:8090/feed1.ffm"
-        };
     }
 
     static class ThreadStream {

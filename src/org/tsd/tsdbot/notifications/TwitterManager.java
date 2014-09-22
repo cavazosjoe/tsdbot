@@ -5,6 +5,7 @@ import com.google.inject.Singleton;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.Stage;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.IRCUtil;
 import org.tsd.tsdbot.util.RelativeDate;
@@ -33,18 +34,20 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     private static final long EXCEPTION_COOLDOWN = 1000 * 60 * 2; // 2 minutes
     private static final long COOLDOWN_PERIOD = 1000 * 60 * 60 * 2; // 2 hours
 
-    private TSDBot bot;
+    private TSDBot bot; //TODO: remove this dependency with better exception handling in Twitter(MainFunction)
+    private Stage stage;
     private Twitter twitter;
     private TwitterStream stream;
     private HashMap<Long, User> following;
     private HashMap<Long, Long> cooldown; // userId -> timestamp of last tweet
 
     @Inject
-    public TwitterManager(final TSDBot bot, final Twitter twitter, Properties prop) throws IOException {
+    public TwitterManager(final TSDBot bot, final Twitter twitter, Properties prop, Stage stage) throws IOException {
         super(5);
         try {
 
             this.bot = bot;
+            this.stage = stage;
 
             String CONSUMER_KEY =           prop.getProperty("twitter.consumer_key");
             String CONSUMER_KEY_SECRET =    prop.getProperty("twitter.consumer_key_secret");
@@ -65,7 +68,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
                 cooldown.put(id, 0L);
             }
 
-            if(!bot.debug) { // disable streaming if in debug mode
+            if(stage.equals(Stage.production)) { // disable streaming if in dev mode
 
                 final DelayQueue<DelayedImpl> throttle = new DelayQueue<>();
                 throttle.put(new DelayedImpl(EXCEPTION_COOLDOWN)); // delay for two minutes
@@ -237,7 +240,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     }
 
     private void refreshFollowersFilter() throws TwitterException {
-        if(!bot.debug)
+        if(stage.equals(Stage.production))
             stream.filter(new FilterQuery(ArrayUtils.toPrimitive(following.keySet().toArray(new Long[]{}))));
     }
 

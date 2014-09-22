@@ -4,6 +4,8 @@ import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.name.Names;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpRequestRetryHandler;
@@ -20,11 +22,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.DBConnectionString;
-import org.tsd.tsdbot.database.TSDDatabase;
 import org.tsd.tsdbot.functions.*;
 import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.notifications.*;
 import org.tsd.tsdbot.scheduled.InjectableJobFactory;
+import org.tsd.tsdbot.tsdtv.InjectableStreamFactory;
 import twitter4j.Twitter;
 import twitter4j.TwitterFactory;
 
@@ -40,15 +42,19 @@ public class TSDBotConfigModule extends AbstractModule {
     Logger log = LoggerFactory.getLogger(TSDBotConfigModule.class);
 
     private TSDBot bot;
-    public Properties properties;
+    private Stage stage;
+    private Properties properties;
 
-    public TSDBotConfigModule(TSDBot bot, Properties properties) {
+    public TSDBotConfigModule(TSDBot bot, Properties properties, Stage stage) {
         this.bot = bot;
         this.properties = properties;
+        this.stage = stage;
     }
 
     @Override
     protected void configure() {
+
+        bind(Stage.class).toInstance(stage);
 
         bind(TSDBot.class).toInstance(bot);
 
@@ -93,7 +99,21 @@ public class TSDBotConfigModule extends AbstractModule {
                 .annotatedWith(DBConnectionString.class)
                 .toInstance(properties.getProperty("db.connstring"));
         bind(Connection.class).toProvider(DBConnectionProvider.class);
-        bind(TSDDatabase.class).asEagerSingleton();
+
+        requestInjection(new InjectableStreamFactory());
+        String ffmpegExec = properties.getProperty("tsdtv.ffmpeg");
+        String[] ffmpegParts = new String[]{
+                "nice",     "-n","8",
+                ffmpegExec,
+                "-re",
+                "-y",
+                "-i",       "%s", // %s -> path to file, to be formatted later
+                "http://localhost:8090/feed1.ffm"
+        };
+        String ffmpeg = StringUtils.join(ffmpegParts, " ");
+        bind(String.class)
+                .annotatedWith(Names.named("ffmpeg"))
+                .toInstance(ffmpeg);
 
         Multibinder<MainFunction> functionBinder = Multibinder.newSetBinder(binder(), MainFunction.class);
         functionBinder.addBinding().to(Archivist.class);
@@ -114,7 +134,7 @@ public class TSDBotConfigModule extends AbstractModule {
         functionBinder.addBinding().to(StrawPoll.class);
         functionBinder.addBinding().to(TomCruise.class);
         functionBinder.addBinding().to(Wod.class);
-        if(!bot.isDebug())
+        if(stage.equals(Stage.production))
             functionBinder.addBinding().to(TSDTV.class);
 
         Multibinder<NotificationManager> notificationBinder = Multibinder.newSetBinder(binder(), NotificationManager.class);
