@@ -32,15 +32,16 @@ public class Chooser extends MainFunction {
             String choice = null;
 
             if(sender.equalsIgnoreCase("GV") || sender.contains("Vague")) {
-                for(String c : choices) {
-                    if(c.length() > 15) {
-                        choice = fakeChoices[rand.nextInt(choices.length)];
-                        break;
-                    }
+                int i=0;
+                while(choice == null && i < choices.length) {
+                    if(choices[i].length() > 15)
+                        choice = fakeChoices[rand.nextInt(fakeChoices.length)];
+                    i++;
                 }
-            } else {
-                choice = choices[rand.nextInt(choices.length)];
             }
+
+            if(choice == null)
+                choice = choices[rand.nextInt(choices.length)];
 
             bot.sendMessage(channel, String.format(format, choice));
 
@@ -55,7 +56,6 @@ public class Chooser extends MainFunction {
             "Rejoice, Guardian! The holders of the ancient ways have chosen %s",
             "I don't always choose, but when I do, I choose %s",
             "Always bet on %s"
-
     };
 
     private static String[] fakeChoices = new String[] {
@@ -73,6 +73,8 @@ public class Chooser extends MainFunction {
             "Nart",                         "message her, what's the worst that could happen?",
             "believe it",                   "chocolate",
             "Homeward Bound",               "Homeward Bound 2",
-            "space magic! xD"
+            "space magic! xD",              "The TSD Limo",
+            "Macross",                      "Johnny Manziel",
+            "now now NOW NOW NOW GO GO GO NOW NOW NOW"
     };
 }

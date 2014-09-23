@@ -29,7 +29,6 @@ public class DBConnectionProvider implements Provider<Connection> {
 
     @Override
     public Connection get() {
-        // use tcp mode to allow concurrent admin connection
         try {
             if(connection == null || connection.isClosed()) {
                 logger.info("Connection is null or closed, retrying with connectionString={}", connectionString);

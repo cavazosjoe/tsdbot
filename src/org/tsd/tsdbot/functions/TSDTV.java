@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.Persistable;
-import org.tsd.tsdbot.runnable.TSDTVStream;
+import org.tsd.tsdbot.tsdtv.TSDTVStream;
 import org.tsd.tsdbot.scheduled.SchedulerConstants;
 import org.tsd.tsdbot.tsdtv.InjectableStreamFactory;
 import org.tsd.tsdbot.tsdtv.TSDTVBlockJob;

@@ -1,4 +1,4 @@
-package org.tsd.tsdbot.runnable;
+package org.tsd.tsdbot.tsdtv;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
