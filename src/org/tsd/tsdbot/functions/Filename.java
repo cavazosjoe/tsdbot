@@ -24,11 +24,13 @@ public class Filename extends MainFunction {
     private static final Logger logger = LoggerFactory.getLogger(Filename.class);
 
     private HttpClient httpClient;
+    private Random random;
 
     @Inject
-    public Filename(TSDBot bot, HttpClient httpClient) {
+    public Filename(TSDBot bot, HttpClient httpClient, Random random) {
         super(bot);
         this.httpClient = httpClient;
+        this.random = random;
     }
 
     @Override
@@ -41,15 +43,13 @@ public class Filename extends MainFunction {
             ResponseHandler<String> responseHandler = new BasicResponseHandler();
             String response = httpClient.execute(fnamesGet, responseHandler);
 
-            Random rand = new Random();
-
             Matcher m = Pattern.compile("a href=\"([\\w_]+?\\.\\w{3})\"", Pattern.DOTALL).matcher(response);
             String pfx = "http://www.teamschoolyd.org/filenames/";
             LinkedList<String> all = new LinkedList<>();
             while(m.find()) {
                 all.add(m.group(1));
             }
-            bot.sendMessage(channel, pfx + all.get(rand.nextInt(all.size())));
+            bot.sendMessage(channel, pfx + all.get(random.nextInt(all.size())));
 
         } catch (Exception e) {
             logger.error("filename() error",e);

@@ -25,11 +25,13 @@ public class TomCruise extends MainFunction implements Persistable {
     private static Logger logger = LoggerFactory.getLogger(TomCruise.class);
 
     private DBConnectionProvider connectionProvider;
+    private Random random;
 
     @Inject
-    public TomCruise(TSDBot bot, DBConnectionProvider connectionProvider) throws SQLException {
+    public TomCruise(TSDBot bot, DBConnectionProvider connectionProvider, Random random) throws SQLException {
         super(bot);
         this.connectionProvider = connectionProvider;
+        this.random = random;
         initDB();
     }
 
@@ -56,8 +58,7 @@ public class TomCruise extends MainFunction implements Persistable {
     public String getRandom(TomCruiseItemType itemType) {
 
         if(itemType == null) {
-            Random rand = new Random();
-            itemType = (rand.nextBoolean()) ? TomCruiseItemType.clip : TomCruiseItemType.quote;
+            itemType = (random.nextBoolean()) ? TomCruiseItemType.clip : TomCruiseItemType.quote;
         }
 
         Connection conn = connectionProvider.get();

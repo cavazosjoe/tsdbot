@@ -19,17 +19,18 @@ public class ScareQuote extends MainFunction {
     //TODO: put more than 5 minutes of effort into this and stop trying to "fix" it while drunk
 
     private HistoryBuff historyBuff;
+    private Random random;
 
     @Inject
-    public ScareQuote(TSDBot bot, HistoryBuff historyBuff) {
+    public ScareQuote(TSDBot bot, HistoryBuff historyBuff, Random random) {
         super(bot);
         this.historyBuff = historyBuff;
+        this.random = random;
     }
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
 
-        Random rand = new Random();
         HistoryBuff.Message chosen = historyBuff.getRandomFilteredMessage(
                 channel,
                 null,
@@ -70,7 +71,7 @@ public class ScareQuote extends MainFunction {
             String scary = null;        // this is the word we want to quote-ify
             Integer scary_idx = null;   // this is the index of the word in the original sentence
             while(scary == null && (!wordMap.isEmpty())) {
-                int idxToCheck = rand.nextInt(wordMap.size()); // check a random item in the hashmap
+                int idxToCheck = random.nextInt(wordMap.size()); // check a random item in the hashmap
                 Iterator it = wordMap.keySet().iterator();
                 Integer idx;
                 String word;

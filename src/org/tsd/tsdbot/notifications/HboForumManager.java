@@ -33,6 +33,7 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
     private static Logger logger = LoggerFactory.getLogger(HboForumManager.class);
 
     private HttpClient client;
+    private Random random;
 
     private static final Pattern newThreadPattern = Pattern.compile("<tr><td><a name='m_(\\d+)'");
     private static final Pattern postInfoPattern = Pattern.compile(
@@ -49,11 +50,12 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
     }
 
     @Inject
-    public HboForumManager(HttpClient client) {
+    public HboForumManager(HttpClient client, Random random) {
         super(5);
         hboSdf = new SimpleDateFormat("MM/dd/yy HH:mm a");
         hboSdf.setTimeZone(TimeZone.getTimeZone("America/New_York"));
         this.client = client;
+        this.random = random;
     }
 
     @Override

@@ -12,9 +12,12 @@ import java.util.Random;
 @Singleton
 public class Chooser extends MainFunction {
 
+    private Random random;
+
     @Inject
-    public Chooser(TSDBot bot) {
+    public Chooser(TSDBot bot, Random random) {
         super(bot);
+        this.random = random;
     }
 
     @Override
@@ -27,21 +30,20 @@ public class Chooser extends MainFunction {
                 return;
             }
 
-            Random rand = new Random();
-            String format = formats[rand.nextInt(formats.length)];
+            String format = formats[random.nextInt(formats.length)];
             String choice = null;
 
             if(sender.equalsIgnoreCase("GV") || sender.contains("Vague")) {
                 int i=0;
                 while(choice == null && i < choices.length) {
                     if(choices[i].length() > 15)
-                        choice = fakeChoices[rand.nextInt(fakeChoices.length)];
+                        choice = fakeChoices[random.nextInt(fakeChoices.length)];
                     i++;
                 }
             }
 
             if(choice == null)
-                choice = choices[rand.nextInt(choices.length)];
+                choice = choices[random.nextInt(choices.length)];
 
             bot.sendMessage(channel, String.format(format, choice));
 

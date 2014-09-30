@@ -1,5 +1,6 @@
 package org.tsd.tsdbot.functions;
 
+import com.google.inject.Inject;
 import org.jibble.pircbot.User;
 import org.tsd.tsdbot.TSDBot;
 
@@ -10,6 +11,7 @@ import java.util.Date;
  */
 public abstract class MainFunction {
 
+    @Inject
     protected TSDBot bot;
     private Long cooldownMillis;
     private Date lastUsed;

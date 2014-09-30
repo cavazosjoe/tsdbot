@@ -14,9 +14,12 @@ import java.util.Random;
 @Singleton
 public class Wod extends MainFunction {
 
+    private Random random;
+
     @Inject
-    public Wod(TSDBot bot) {
+    public Wod(TSDBot bot, Random random) {
         super(bot);
+        this.random = random;
     }
 
     @Override
@@ -46,26 +49,24 @@ public class Wod extends MainFunction {
          * Upper Push   Tertiary        Abs
          */
 
-        Random rand = new Random();
-
-        if(rand.nextBoolean()) {
+        if(random.nextBoolean()) {
             // template A
 
             if(!mods.contains(Modifier.noPower)) {
                 exercises.addLast(new ExerciseImpl(
-                        Exercise.getRandomExercise(Type.power, null, Level.power),
+                        Exercise.getRandomExercise(Type.power, null, Level.power, random),
                         8,
-                        Level.power.getRandomReps())
+                        Level.power.getRandomReps(random))
                 );
             }
 
             if(!mods.contains(Modifier.noLower)) {
-                Exercise ex = Exercise.getRandomExercise(Type.lower, null, Level.primary);
+                Exercise ex = Exercise.getRandomExercise(Type.lower, null, Level.primary, random);
                 int sets = (ex.equals(Exercise.Deadlift)) ? 1 : 3; // deadlifts are hard
                 exercises.addLast(new ExerciseImpl(
                         ex,
                         sets,
-                        Level.primary.getRandomReps()
+                        Level.primary.getRandomReps(random)
                 ));
             }
 
@@ -73,41 +74,41 @@ public class Wod extends MainFunction {
 
                 if(!mods.contains(Modifier.noPush)) {
                     exercises.addLast(new ExerciseImpl(
-                            Exercise.getRandomExercise(Type.upper, Direction.push, Level.primary),
+                            Exercise.getRandomExercise(Type.upper, Direction.push, Level.primary, random),
                             3,
-                            Level.primary.getRandomReps()
+                            Level.primary.getRandomReps(random)
                     ));
                 }
 
                 if(!mods.contains(Modifier.noPull)) {
                     exercises.addLast(new ExerciseImpl(
-                            Exercise.getRandomExercise(Type.upper, Direction.pull, Level.secondary),
+                            Exercise.getRandomExercise(Type.upper, Direction.pull, Level.secondary, random),
                             3,
-                            Level.secondary.getRandomReps()
+                            Level.secondary.getRandomReps(random)
                     ));
                 }
 
                 if(!mods.contains(Modifier.noPush)) {
                     exercises.addLast(new ExerciseImpl(
-                            Exercise.getRandomExercise(Type.upper, Direction.push, Level.secondary),
+                            Exercise.getRandomExercise(Type.upper, Direction.push, Level.secondary, random),
                             3,
-                            Level.secondary.getRandomReps()
+                            Level.secondary.getRandomReps(random)
                     ));
                 }
 
                 if(!mods.contains(Modifier.noPull)) {
                     exercises.addLast(new ExerciseImpl(
-                            Exercise.getRandomExercise(Type.upper, Direction.pull, Level.tertiary),
+                            Exercise.getRandomExercise(Type.upper, Direction.pull, Level.tertiary, random),
                             3,
-                            Level.tertiary.getRandomReps()
+                            Level.tertiary.getRandomReps(random)
                     ));
                 }
 
                 if(!mods.contains(Modifier.noPush)) {
                     exercises.addLast(new ExerciseImpl(
-                            Exercise.getRandomExercise(Type.upper, Direction.push, Level.tertiary),
+                            Exercise.getRandomExercise(Type.upper, Direction.push, Level.tertiary, random),
                             3,
-                            Level.tertiary.getRandomReps()
+                            Level.tertiary.getRandomReps(random)
                     ));
                 }
 
@@ -117,59 +118,59 @@ public class Wod extends MainFunction {
         } else {
             // template B
 
-            Direction firstDirection = (rand.nextBoolean()) ? Direction.push : Direction.pull;
+            Direction firstDirection = (random.nextBoolean()) ? Direction.push : Direction.pull;
             Direction secondDirection = (firstDirection.equals(Direction.push)) ? Direction.pull : Direction.push;
 
             if(!mods.contains(Modifier.noLower)) {
-                Exercise ex = Exercise.getRandomExercise(Type.lower, firstDirection, Level.primary);
+                Exercise ex = Exercise.getRandomExercise(Type.lower, firstDirection, Level.primary, random);
                 int sets = (ex.equals(Exercise.Deadlift)) ? 1 : 3; // deadlifts are hard
                 exercises.addLast(new ExerciseImpl(
                         ex,
                         sets,
-                        Level.primary.getRandomReps()
+                        Level.primary.getRandomReps(random)
                 ));
             }
 
             if(!mods.contains(Modifier.noUpper)) {
                 if (!mods.contains(Modifier.noPush)) {
                     exercises.addLast(new ExerciseImpl(
-                            Exercise.getRandomExercise(Type.upper, Direction.push, Level.primary),
+                            Exercise.getRandomExercise(Type.upper, Direction.push, Level.primary, random),
                             3,
-                            Level.primary.getRandomReps()
+                            Level.primary.getRandomReps(random)
                     ));
                 }
 
                 if (!mods.contains(Modifier.noPull)) {
                     exercises.addLast(new ExerciseImpl(
-                            Exercise.getRandomExercise(Type.upper, Direction.pull, Level.primary),
+                            Exercise.getRandomExercise(Type.upper, Direction.pull, Level.primary, random),
                             3,
-                            Level.primary.getRandomReps()
+                            Level.primary.getRandomReps(random)
                     ));
                 }
             }
 
             if(!mods.contains(Modifier.noLower)) {
                 exercises.addLast(new ExerciseImpl(
-                        Exercise.getRandomExercise(Type.lower, secondDirection, Level.secondary),
+                        Exercise.getRandomExercise(Type.lower, secondDirection, Level.secondary, random),
                         3,
-                        Level.secondary.getRandomReps()
+                        Level.secondary.getRandomReps(random)
                 ));
             }
 
             if(!mods.contains(Modifier.noUpper)) {
                 if (!mods.contains(Modifier.noPush)) {
                     exercises.addLast(new ExerciseImpl(
-                            Exercise.getRandomExercise(Type.upper, firstDirection, Level.secondary),
+                            Exercise.getRandomExercise(Type.upper, firstDirection, Level.secondary, random),
                             3,
-                            Level.secondary.getRandomReps()
+                            Level.secondary.getRandomReps(random)
                     ));
                 }
 
                 if (!mods.contains(Modifier.noPull)) {
                     exercises.addLast(new ExerciseImpl(
-                            Exercise.getRandomExercise(Type.upper, secondDirection, Level.tertiary),
+                            Exercise.getRandomExercise(Type.upper, secondDirection, Level.tertiary, random),
                             3,
-                            Level.tertiary.getRandomReps()
+                            Level.tertiary.getRandomReps(random)
                     ));
                 }
             }
@@ -242,9 +243,8 @@ public class Wod extends MainFunction {
             this.level = level;
         }
 
-        public static Exercise getRandomExercise(Type type, Direction direction, Level level) {
+        public static Exercise getRandomExercise(Type type, Direction direction, Level level, Random random) {
             LinkedList<Exercise> possibilities = new LinkedList<>();
-            Random rand = new Random();
             for(Exercise exercise : values()) {
                 if(type == null || type.equals(exercise.type)) {
                     if(direction == null || direction.equals(exercise.direction)) {
@@ -254,7 +254,7 @@ public class Wod extends MainFunction {
                     }
                 }
             }
-            return possibilities.get(rand.nextInt(possibilities.size()));
+            return possibilities.get(random.nextInt(possibilities.size()));
         }
 
     }
@@ -274,8 +274,7 @@ public class Wod extends MainFunction {
             this.reps_hi = reps_hi;
         }
 
-        public int getRandomReps() {
-            Random random = new Random();
+        public int getRandomReps(Random random) {
             return random.nextInt(reps_hi - reps_lo) + reps_lo;
         }
 

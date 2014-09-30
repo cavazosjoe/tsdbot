@@ -21,18 +21,19 @@ public class Recap extends MainFunction {
     private static final int dramaCount = 4;
 
     private HistoryBuff historyBuff;
+    private Random random;
 
     @Inject
-    public Recap(TSDBot bot, HistoryBuff historyBuff) {
+    public Recap(TSDBot bot, HistoryBuff historyBuff, Random random) {
         super(10);
         this.bot = bot;
         this.historyBuff = historyBuff;
+        this.random = random;
     }
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
 
-        Random rand = new Random();
         LinkedList<HistoryBuff.Message> chosen = historyBuff.getRandomFilteredMessages(
                 channel,
                 null,
@@ -48,19 +49,19 @@ public class Recap extends MainFunction {
             HashMap<String, String> scrambleDict = new HashMap<>();
 
             bot.sendMessage(channel,
-                    String.format(formats[rand.nextInt(formats.length)], showNames[rand.nextInt(showNames.length)]));
+                    String.format(formats[random.nextInt(formats.length)], showNames[random.nextInt(showNames.length)]));
 
             HistoryBuff.Message m;
             while(chosen.size() > 1) {
                 m = chosen.pop();
-                bot.sendMessage(channel, "<" + getScrambledNick(m.sender, scrambleDict) + "> " + DramaStyle.getRandomDrama(m.text));
+                bot.sendMessage(channel, "<" + getScrambledNick(m.sender, scrambleDict) + "> " + DramaStyle.getRandomDrama(m.text, random));
             }
 
             // end on an ominous note
             m = chosen.pop();
             bot.sendMessage(channel, "<" + getScrambledNick(m.sender, scrambleDict) + "> " + DramaStyle.ellipses.apply(m.text));
 
-            bot.sendMessage(channel, "Tonight's episode: \"" + episodeNames[rand.nextInt(episodeNames.length)] + "\"");
+            bot.sendMessage(channel, "Tonight's episode: \"" + episodeNames[random.nextInt(episodeNames.length)] + "\"");
         }
     }
 
@@ -178,10 +179,9 @@ public class Recap extends MainFunction {
 
         public abstract String apply(String s);
 
-        public static String getRandomDrama(String s) {
-            Random rand = new Random();
+        public static String getRandomDrama(String s, Random random) {
             DramaStyle[] dramas = new DramaStyle[]{exclamation, question, bold, caps}; // no ellipses
-            return dramas[rand.nextInt(dramas.length)].apply(s);
+            return dramas[random.nextInt(dramas.length)].apply(s);
         }
 
         private static String stripPeriods(String s) {

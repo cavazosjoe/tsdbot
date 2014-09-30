@@ -13,9 +13,12 @@ import java.util.Random;
 @Singleton
 public class BlunderCount extends MainFunction {
 
+    private Random random;
+
     @Inject
-    public BlunderCount(TSDBot bot) {
+    public BlunderCount(TSDBot bot, Random random) {
         super(bot);
+        this.random = random;
     }
 
     @Override
@@ -31,14 +34,13 @@ public class BlunderCount extends MainFunction {
                 bot.sendMessage(channel, "Current blunder count: " + TSDBot.blunderCount);
             } else if(subCmd.equals("+") // vv not correct but help em out anyway vv
                     || (cmdParts.length > 2 && cmdParts[1].equals("count") && cmdParts[2].equals("+"))) {
-                Random rand = new Random();
-                if( (!bot.getUserFromNick(channel, sender).hasPriv(User.Priv.SUPEROP)) && rand.nextDouble() < 0.05 ) {
+                if( (!bot.getUserFromNick(channel, sender).hasPriv(User.Priv.SUPEROP)) && random.nextDouble() < 0.05 ) {
                     // user is not a super op
                     bot.kick(channel, sender, "R-E-K-T, REKT REKT REKT!");
                     return;
                 }
 
-                String response = String.format(responses[rand.nextInt(responses.length)]
+                String response = String.format(responses[random.nextInt(responses.length)]
                         + "Blunder count incremented to %d",++TSDBot.blunderCount);
                 bot.sendMessage(channel, response);
             } else {

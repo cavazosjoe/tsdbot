@@ -20,11 +20,13 @@ public class GeeVee extends MainFunction {
     private static Logger logger = LoggerFactory.getLogger(GeeVee.class);
 
     private HistoryBuff historyBuff;
+    private Random random;
 
     @Inject
-    public GeeVee(TSDBot bot, HistoryBuff historyBuff) {
+    public GeeVee(TSDBot bot, HistoryBuff historyBuff, Random random) {
         super(bot);
         this.historyBuff = historyBuff;
+        this.random = random;
     }
 
     @Override
@@ -36,7 +38,7 @@ public class GeeVee extends MainFunction {
             HistoryBuff.Message randomMsg = historyBuff.getRandomFilteredMessage(channel, null, null);
             if(randomMsg != null) {
                 bot.sendMessage(channel, "<" + randomMsg.sender + "> " + randomMsg.text);
-                bot.sendMessage(channel, GeeVee.getRandomGvResponse());
+                bot.sendMessage(channel, getRandomGvResponse());
             }
 
         } else if(cmdParts.length == 2) {
@@ -68,9 +70,8 @@ public class GeeVee extends MainFunction {
         }
     }
 
-    public static String getRandomGvResponse() {
-        Random rand = new Random();
-        return gvResponses[rand.nextInt(gvResponses.length)];
+    public String getRandomGvResponse() {
+        return gvResponses[random.nextInt(gvResponses.length)];
     }
 
     // This is a long sentence, it could be longer, but this is just a, you know, sentence

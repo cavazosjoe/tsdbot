@@ -33,6 +33,7 @@ import twitter4j.TwitterFactory;
 import java.io.IOException;
 import java.sql.Connection;
 import java.util.Properties;
+import java.util.Random;
 
 /**
  * Created by Joe on 9/19/2014.
@@ -99,6 +100,8 @@ public class TSDBotConfigModule extends AbstractModule {
                 .annotatedWith(DBConnectionString.class)
                 .toInstance(properties.getProperty("db.connstring"));
         bind(Connection.class).toProvider(DBConnectionProvider.class);
+
+        bind(Random.class).toInstance(new Random());
 
         requestInjection(new InjectableStreamFactory());
         String ffmpegExec = properties.getProperty("tsdtv.ffmpeg");

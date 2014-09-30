@@ -29,11 +29,13 @@ public class FourChan extends MainFunction {
     private static final Logger logger = LoggerFactory.getLogger(FourChan.class);
 
     private HttpClient httpClient;
+    private Random random;
 
     @Inject
-    public FourChan(TSDBot bot, HttpClient httpClient) {
+    public FourChan(TSDBot bot, HttpClient httpClient, Random random) {
         super(bot);
         this.httpClient = httpClient;
+        this.random = random;
     }
 
     @Override
@@ -72,15 +74,14 @@ public class FourChan extends MainFunction {
                 String jsonResponse = httpClient.execute(indexGet, responseHandler);
 
                 Page page = com.maxsvett.fourchan.FourChan.parsePage(board, jsonResponse);
-                Random rand = new Random();
-                com.maxsvett.fourchan.thread.Thread randomThread = page.getThreads()[1 + rand.nextInt(page.getThreads().length-1)];
+                com.maxsvett.fourchan.thread.Thread randomThread = page.getThreads()[1 + random.nextInt(page.getThreads().length-1)];
                 LinkedList<Post> imagePosts = new LinkedList<>();
                 imagePosts.add(randomThread.getOP());
                 for(Post post : randomThread.getPosts()) {
                     if(post.hasImage()) imagePosts.add(post);
                 }
 
-                Post chosen = imagePosts.get(rand.nextInt(imagePosts.size()));
+                Post chosen = imagePosts.get(random.nextInt(imagePosts.size()));
                 String comment = IRCUtil.trimToSingleMsg(HtmlSanitizer.sanitize(chosen.getComment().replace("<br>", " ")));
                 if(comment != null && (!comment.isEmpty()) && comment.length() < 100)   // also send the comment if
                     bot.sendMessage(channel, comment);                                  // it's small enough

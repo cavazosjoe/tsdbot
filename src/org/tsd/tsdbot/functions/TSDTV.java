@@ -48,6 +48,7 @@ public class TSDTV extends MainFunction implements Persistable {
     private static final TimeZone timeZone = TimeZone.getTimeZone("America/New_York");
 
     private DBConnectionProvider connectionProvider;
+    private Random random;
     private InjectableStreamFactory streamFactory;
     private Scheduler scheduler;
     private String catalogPath;
@@ -59,8 +60,10 @@ public class TSDTV extends MainFunction implements Persistable {
 
     @Inject
     public TSDTV(TSDBot bot, Properties prop, Scheduler scheduler,
-                 DBConnectionProvider connectionProvider, InjectableStreamFactory streamFactory) throws SQLException {
+                 DBConnectionProvider connectionProvider, InjectableStreamFactory streamFactory,
+                 Random random) throws SQLException {
         super(bot);
+        this.random = random;
         this.catalogPath = prop.getProperty("tsdtv.catalog");
         this.scheduleLoc = prop.getProperty("tsdtv.schedule");
         this.scheduler = scheduler;
@@ -701,8 +704,7 @@ public class TSDTV extends MainFunction implements Persistable {
             File[] files = dir.listFiles();
             if(files == null || files.length == 0)
                 return null;
-            Random rand = new Random();
-            return files[rand.nextInt(files.length)];
+            return files[random.nextInt(files.length)];
         }
         return null;
     }

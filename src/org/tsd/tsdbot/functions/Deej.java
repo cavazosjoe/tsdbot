@@ -16,16 +16,17 @@ import java.util.Random;
 public class Deej extends MainFunction {
 
     private HistoryBuff historyBuff;
+    private Random random;
 
     @Inject
-    public Deej(TSDBot bot, HistoryBuff historyBuff) {
+    public Deej(TSDBot bot, HistoryBuff historyBuff, Random random) {
         super(bot);
         this.historyBuff = historyBuff;
+        this.random = random;
     }
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
-        Random rand = new Random();
         HistoryBuff.Message chosen = historyBuff.getRandomFilteredMessage(
                 channel,
                 null,
@@ -34,7 +35,7 @@ public class Deej extends MainFunction {
 
         if(chosen != null) {
             // return the deej-formatted selected message
-            bot.sendMessage(channel, String.format(formats[rand.nextInt(formats.length)], chosen.text));
+            bot.sendMessage(channel, String.format(formats[random.nextInt(formats.length)], chosen.text));
         }
     }
 
