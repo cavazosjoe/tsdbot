@@ -6,4 +6,5 @@ db/
 *.db
 *.properties
 dist/
+src/org/tsd/tsdbot/deploy/
 

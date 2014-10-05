@@ -304,7 +304,7 @@ public class TSDBot extends PircBot {
                 "View, manage, and update the blunder count",
                 "USAGE: .blunder [ count | + ]",
                 null,
-                null
+                BlunderCount.class
         ),
 
         TOM_CRUISE(
@@ -419,6 +419,14 @@ public class TSDBot extends PircBot {
                 "USAGE: .quote",
                 null,
                 ScareQuote.class
+        ),
+
+        ZACKDARK(
+                "^\\s*(o/|\\\\o)\\s*$",
+                ";)",
+                ";)",
+                null,
+                SillyZackDark.class
         );
 
         private String regex;

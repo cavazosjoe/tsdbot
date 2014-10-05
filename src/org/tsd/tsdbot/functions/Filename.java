@@ -37,9 +37,8 @@ public class Filename extends MainFunction {
     public void run(String channel, String sender, String ident, String text) {
         HttpGet fnamesGet = null;
         try {
-
             fnamesGet = new HttpGet("http://teamschoolyd.org/filenames/");
-            fnamesGet.setHeader("User-Agent", "Mozilla/4.0");
+//            fnamesGet.setHeader("User-Agent", "Mozilla/4.0");
             ResponseHandler<String> responseHandler = new BasicResponseHandler();
             String response = httpClient.execute(fnamesGet, responseHandler);
 

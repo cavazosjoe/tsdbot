@@ -137,6 +137,7 @@ public class TSDBotConfigModule extends AbstractModule {
         functionBinder.addBinding().to(StrawPoll.class);
         functionBinder.addBinding().to(TomCruise.class);
         functionBinder.addBinding().to(Wod.class);
+        functionBinder.addBinding().to(SillyZackDark.class);
         if(stage.equals(Stage.production))
             functionBinder.addBinding().to(TSDTV.class);
 
