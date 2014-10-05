@@ -13,4 +13,6 @@ public class TSDTVConstants {
     public static final String BLOCKS_DIR_NAME = ".blocks";
     public static final String INTRO_DIR_NAME = ".intros";
     public static final String OUTRO_DIR_NAME = ".outros";
+
+    public static final String SUBTITLES_LOCATION = "/tmp/subtitles.srt";
 }

@@ -270,7 +270,15 @@ public class TSDTV extends MainFunction implements Persistable {
     }
 
     private void play(TSDTVProgram program) {
-        TSDTVStream stream = streamFactory.newStream(program.filePath);
+
+        // determine if we have subtitles for this
+        StringBuilder videoFilter = new StringBuilder();
+        videoFilter.append("yadif");
+        File subs = generateSubtitlesFile(program.filePath);
+        if(subs != null && subs.exists())
+            videoFilter.append(", subtitles=").append(subs.getAbsolutePath());
+
+        TSDTVStream stream = streamFactory.newStream(videoFilter.toString(), program.filePath);
         Thread thread = new Thread(stream);
         runningStream = new ThreadStream(thread, stream);
         runningStream.begin();
@@ -842,6 +850,24 @@ public class TSDTV extends MainFunction implements Persistable {
         }
 
         return count;
+    }
+
+    private File generateSubtitlesFile(String pathToMovie) {
+        HashMap<Integer, StreamType> streams = getVideoStreams(pathToMovie);
+        for(Integer streamNum : streams.keySet()) {
+            if(streams.get(streamNum).equals(StreamType.SUBTITLES)) {
+                try{
+                    ProcessBuilder pb = new ProcessBuilder(
+                            "mkvextract", "tracks", pathToMovie, streamNum + ":" + TSDTVConstants.SUBTITLES_LOCATION);
+                    Process p = pb.start();
+                    p.waitFor();
+                    return new File(TSDTVConstants.SUBTITLES_LOCATION);
+                } catch (Exception e) {
+                    logger.error("Exception while generating subtitles for {}", pathToMovie, e);
+                }
+            }
+        }
+        return null;
     }
 
     static class ThreadStream {

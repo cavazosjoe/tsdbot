@@ -106,11 +106,26 @@ public class TSDBotConfigModule extends AbstractModule {
         requestInjection(new InjectableStreamFactory());
         String ffmpegExec = properties.getProperty("tsdtv.ffmpeg");
         String[] ffmpegParts = new String[]{
-                "nice",     "-n","8",
                 ffmpegExec,
                 "-re",
                 "-y",
-                "-i",       "%s", // %s -> path to file, to be formatted later
+
+                "-c:v",     "libx264",      // video codec
+                "-r",       "20",           // framerate
+                "-b:v",     "1200k",        // video bitrate
+                "-maxrate", "1700k",        // max bitrate
+                "-bufsize", "2560k",        // buffer size (used when averaging bitrate)
+                "-preset",  "ultrafast",
+                "-pix_fmt", "yuv420p",
+                "-flags:v", "+global_header",
+                "-vf",      "%s",           // %s -> video filter, to be formatted later (used for subs)
+
+                "-c:a",     "aac",
+                "-b:a",     "128k",
+                "-ar",      "44100",
+                "-strict",  "experimental",
+                "-flags:a", "+global_header",
+                "-i",       "%s",           // %s -> path to file, to be formatted later
                 "http://localhost:8090/feed1.ffm"
         };
         String ffmpeg = StringUtils.join(ffmpegParts, " ");

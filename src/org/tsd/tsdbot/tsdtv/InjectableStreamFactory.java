@@ -17,10 +17,10 @@ public class InjectableStreamFactory {
     @Inject
     protected Injector injector;
 
-    public TSDTVStream newStream(String pathToMovie) {
+    public TSDTVStream newStream(String videoFilter, String pathToMovie) {
         logger.info("Creating TSDTVStream with pathToMovie={}", pathToMovie);
         TSDTVStream stream = injector.getInstance(TSDTVStream.class);
-        stream.init(pathToMovie);
+        stream.init(videoFilter, pathToMovie);
         return stream;
     }
 }
