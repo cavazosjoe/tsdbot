@@ -118,6 +118,20 @@ public class Twitter extends MainFunction {
                     }
                     twitterManager.unfollow(channel, cmdParts[2]);
                     logger.info("[TWITTER] Unfollowed {}", cmdParts[2]);
+                } else if(subCmd.equals("unleash")) {
+                    if(!isOp) {
+                        bot.sendMessage(channel,"Only ops can use .tw unleash");
+                        return;
+                    }
+                    twitterManager.unleash(channel, cmdParts[2]);
+                    logger.info("[TWITTER] Unleashed {}", cmdParts[2]);
+                } else if(subCmd.equals("throttle")) {
+                    if(!isOp) {
+                        bot.sendMessage(channel,"Only ops can use .tw throttle");
+                        return;
+                    }
+                    twitterManager.throttle(channel, cmdParts[2]);
+                    logger.info("[TWITTER] Throttled {}", cmdParts[2]);
                 } else if(subCmd.equals("propose")) {
 
                     TweetPoll currentPoll = (TweetPoll) bot.getThreadManager().getIrcThread(TSDBot.ThreadType.TWEETPOLL, channel);

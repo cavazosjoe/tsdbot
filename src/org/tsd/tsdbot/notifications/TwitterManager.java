@@ -7,17 +7,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.Stage;
 import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.util.FuzzyLogic;
 import org.tsd.tsdbot.util.IRCUtil;
+import org.tsd.tsdbot.util.MiscUtils;
 import org.tsd.tsdbot.util.RelativeDate;
 import twitter4j.*;
 import twitter4j.auth.AccessToken;
 import twitter4j.conf.ConfigurationBuilder;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
@@ -107,9 +106,12 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
                             if(!foundUser) return; // we're not following whomever this is a reply to
                         }
 
-                        // don't display the tweet if the tweeter has tweeted < 1 hour ago
-                        if(System.currentTimeMillis() - cooldown.get(status.getUser().getId()) < COOLDOWN_PERIOD) return;
-                        else cooldown.put(status.getUser().getId(), System.currentTimeMillis());
+                        // don't display the tweet if the tweeter has tweeted < 2 hours ago
+                        if(cooldown.containsKey(status.getUser().getId())) {
+                            if (System.currentTimeMillis() - cooldown.get(status.getUser().getId()) < COOLDOWN_PERIOD)
+                                return;
+                            else cooldown.put(status.getUser().getId(), System.currentTimeMillis());
+                        }
 
                         Tweet newTweet = new Tweet(status);
                         recentNotifications.addFirst(newTweet);
@@ -228,6 +230,36 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
             bot.sendMessage(channel, "I could not unfollow @" + handle + ". Maybe they don't exist?");
             TSDBot.blunderCount++;
         }
+    }
+
+    public void unleash(String channel, String handle) {
+        handle = handle.replace("@","");
+        for(User followed : following.values()) {
+            if(followed.getScreenName().equalsIgnoreCase(handle)) {
+                cooldown.remove(followed.getId());
+                bot.sendMessage(channel, "@" + handle + " has been UNLEASHED!");
+                return;
+            }
+        }
+        bot.sendMessage(channel, "I could not unleash @" + handle + " because I'm not following xir");
+        TSDBot.blunderCount++;
+    }
+
+    public void throttle(String channel, String handle) {
+        handle = handle.replace("@","");
+        for(User followed : following.values()) {
+            if(followed.getScreenName().equalsIgnoreCase(handle)) {
+                if(cooldown.containsKey(followed.getId())) {
+                    bot.sendMessage(channel, "@" + handle + " is already being throttled");
+                } else {
+                    cooldown.put(followed.getId(), 0L);
+                    bot.sendMessage(channel, "@" + handle + " has been restrained");
+                }
+                return;
+            }
+        }
+        bot.sendMessage(channel, "I could not throttle @" + handle + " because I'm not following xir");
+        TSDBot.blunderCount++;
     }
 
     public LinkedList<String> getFollowing() throws TwitterException {
