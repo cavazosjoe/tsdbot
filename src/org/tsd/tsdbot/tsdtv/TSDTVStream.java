@@ -27,7 +27,7 @@ public class TSDTVStream implements Runnable {
     public TSDTVStream() {}
 
     public void init(String videoFilter, String pathToMovie) {
-        ffmpegFormat = String.format(ffmpegFormat, videoFilter, pathToMovie);
+        ffmpegFormat = String.format(ffmpegFormat, pathToMovie, videoFilter);
     }
 
     public String getPathToMovie() {

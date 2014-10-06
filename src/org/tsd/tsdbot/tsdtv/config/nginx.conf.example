@@ -1,0 +1,96 @@
+# NGINX CONFIGURATION FILE
+# Should be placed in /usr/local/nginx/conf/nginx.conf
+# To run nginx: sudo /usr/local/nginx/sbin/nginx
+
+# RTMP input:       rtmp://localhost/tsdtv/tsdtv
+# RTMP output:      rtmp://irc.teamschoolyd.org/tsdtv/tsdtv
+
+# HLS input:        rtmp://localhost/hls/tsdtv
+# HLS output:       rtmp://irc.teamschoolyd.org/hls/tsdtv.m3u8
+
+user  joe;
+worker_processes  1;
+
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    sendfile        on;
+
+    keepalive_timeout  65;
+
+    server {
+        listen       *:80;
+        listen       [::]:80;
+        server_name  irc.teamschoolyd.org localhost;
+        allow all;
+
+        location / {
+            root   html;
+            index  index.html index.htm;
+        }
+
+        location /control {
+                rtmp_control all;
+        }
+
+        location /hls {
+                # Serve HLS fragments
+                types {
+                        application/vnd.apple.mpegurl m3u8;
+                        video/mp2t ts;
+                }
+                root /tmp;
+                add_header Cache-Control no-cache;
+        }
+
+        location /dash {
+                # Serve DASH fragments
+                root /tmp;
+                add_header Cache-Control no-cache;
+        }
+
+        # redirect server error pages to the static page /50x.html
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+    }
+
+
+}
+
+rtmp {
+        server {
+                listen 1935;
+                allow play all;
+                chunk_size 1024;
+
+                application tsdtv {
+                        live on;
+                        allow play all;
+                        record off;
+                }
+
+                application hls {
+                        live on;
+                        allow play all;
+                        hls on;
+                        hls_path /tmp/hls;
+                        record off;
+                }
+
+                application dash {
+                        live on;
+                        allow play all;
+                        dash on;
+                        dash_path /tmp/dash;
+                }
+        }
+}

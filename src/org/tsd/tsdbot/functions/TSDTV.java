@@ -274,9 +274,8 @@ public class TSDTV extends MainFunction implements Persistable {
         // determine if we have subtitles for this
         StringBuilder videoFilter = new StringBuilder();
         videoFilter.append("yadif");
-        File subs = generateSubtitlesFile(program.filePath);
-        if(subs != null && subs.exists())
-            videoFilter.append(", subtitles=").append(subs.getAbsolutePath());
+        if(hasSubtitles(program.filePath))
+            videoFilter.append(",subtitles=").append(program.filePath);
 
         TSDTVStream stream = streamFactory.newStream(videoFilter.toString(), program.filePath);
         Thread thread = new Thread(stream);
@@ -766,7 +765,7 @@ public class TSDTV extends MainFunction implements Persistable {
         StringBuilder sb = new StringBuilder();
         sb.append("PREMIUM: http://irc.teamschoolyd.org/tsdtv.html -- POVERTY: http://irc.teamschoolyd.org/tsdtv-poverty.html");
         if(includeVlc)
-            sb.append(" -- VLC: http://irc.teamschoolyd.org:8090/premium.flv | http://irc.teamschoolyd.org:8090/poverty.flv");
+            sb.append(" -- VLC: http://irc.teamschoolyd.org/hls/tsdtv.m3u8 | http://irc.teamschoolyd.org:8090/poverty.m3u8");
         return sb.toString();
     }
 
@@ -852,22 +851,14 @@ public class TSDTV extends MainFunction implements Persistable {
         return count;
     }
 
-    private File generateSubtitlesFile(String pathToMovie) {
+    private boolean hasSubtitles(String pathToMovie) {
         HashMap<Integer, StreamType> streams = getVideoStreams(pathToMovie);
         for(Integer streamNum : streams.keySet()) {
             if(streams.get(streamNum).equals(StreamType.SUBTITLES)) {
-                try{
-                    ProcessBuilder pb = new ProcessBuilder(
-                            "mkvextract", "tracks", pathToMovie, streamNum + ":" + TSDTVConstants.SUBTITLES_LOCATION);
-                    Process p = pb.start();
-                    p.waitFor();
-                    return new File(TSDTVConstants.SUBTITLES_LOCATION);
-                } catch (Exception e) {
-                    logger.error("Exception while generating subtitles for {}", pathToMovie, e);
-                }
+                return true;
             }
         }
-        return null;
+        return false;
     }
 
     static class ThreadStream {

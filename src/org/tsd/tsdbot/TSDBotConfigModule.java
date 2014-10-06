@@ -109,23 +109,27 @@ public class TSDBotConfigModule extends AbstractModule {
                 ffmpegExec,
                 "-re",
                 "-y",
+                "-i",       "%s",           // %s -> path to file, to be formatted later
 
-                "-c:v",     "libx264",      // video codec
+                "-override_ffserver",       // passing stream parameters via this command, not in ffserver.conf
+                "-c:v",     "libx264",      // video codec (always use libx264)
                 "-r",       "20",           // framerate
                 "-b:v",     "1200k",        // video bitrate
                 "-maxrate", "1700k",        // max bitrate
                 "-bufsize", "2560k",        // buffer size (used when averaging bitrate)
-                "-preset",  "ultrafast",
-                "-pix_fmt", "yuv420p",
-                "-flags:v", "+global_header",
+                "-preset",  "superfast",    // processing speed (ultrafast = least CPU, worst vid quality)
+                "-profile:v","baseline",    // something for Apple devices or VLC or something
+                "-pix_fmt", "yuv420p",      // something for Apple devices or VLC or something
+                "-flags:v", "+global_header",//something that seems to work
                 "-vf",      "%s",           // %s -> video filter, to be formatted later (used for subs)
+                                            // see TSDTV.play()
 
-                "-c:a",     "aac",
+                "-c:a",     "aac",          // vv audio junk, who cares lol vv
                 "-b:a",     "128k",
                 "-ar",      "44100",
                 "-strict",  "experimental",
                 "-flags:a", "+global_header",
-                "-i",       "%s",           // %s -> path to file, to be formatted later
+
                 "http://localhost:8090/feed1.ffm"
         };
         String ffmpeg = StringUtils.join(ffmpegParts, " ");

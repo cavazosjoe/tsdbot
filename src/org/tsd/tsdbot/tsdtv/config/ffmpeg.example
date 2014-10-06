@@ -1,0 +1,24 @@
+######################
+#   FFMPEG EXAMPLE   #
+######################
+/home/joe/bin/ffmpeg
+    -re # streams in real-time
+    -y  # overwrites output file without prompt
+    -i /path/to/movie.mkv
+    -override_ffserver # ignore configs set in /etc/ffserver.conf
+    -c:v libx264    # video codec
+    -r 20           # framerate
+    -b:v 1200k      # average bitrate
+    -maxrate 1700k  # max bitrate
+    -bufsize 2560k  # buffer used to calculate average bitrate
+    -preset superfast   # time the CPU spends processing (ultrafast = least CPU cost, worst vid quality)
+    -profile:v baseline # something to do with Apple devices or VLC or something
+    -pix_fmt yuv420p    # something to do with Apple devices or VLC or something
+    -flags:v +global_header # something about synchronizing packets, seems to work
+    -vf yadif,subtitles=/path/to/movie.mkv  # video filter, passing subs if necessary
+    -c:a aac -b:a 128k -ar 44100 -strict experimental -flags:a +global_header # audio
+    -f flv # ONLY INCLUDE IF GOING TO AN RTMP STREAM
+    http://localhost:8090/feed1.ffm  # output if going to ffserver
+    rtmp://localhost/tsdtv/tsdtv     # output if going to rtmp nginx
+    rtmp://localhost/hls/tsdtv       # output if going to hls nginx
+
