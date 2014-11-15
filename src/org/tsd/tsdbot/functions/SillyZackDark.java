@@ -4,7 +4,6 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.tsd.tsdbot.TSDBot;
 
-import java.util.HashMap;
 import java.util.HashSet;
 
 /**

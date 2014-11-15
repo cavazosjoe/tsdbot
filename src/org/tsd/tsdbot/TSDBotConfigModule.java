@@ -157,6 +157,7 @@ public class TSDBotConfigModule extends AbstractModule {
         functionBinder.addBinding().to(TomCruise.class);
         functionBinder.addBinding().to(Wod.class);
         functionBinder.addBinding().to(SillyZackDark.class);
+        functionBinder.addBinding().to(Printout.class);
         if(stage.equals(Stage.production))
             functionBinder.addBinding().to(TSDTV.class);
 

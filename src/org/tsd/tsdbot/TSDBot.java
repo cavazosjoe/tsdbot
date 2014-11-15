@@ -241,6 +241,13 @@ public class TSDBot extends PircBot {
                 CommandList.class
         ),
 
+        PRINTOUT(
+                "^TSDBot.*?printout.*",
+                "Get a printout",
+                "USAGE: TSDBot can you get me a printout of [query]",
+                null, Printout.class
+        ),
+
         DEEJ(
                 "^\\.deej$",
                 "DeeJ utility. Picks a random line from the channel history and makes it all fancy and shit",

@@ -1,11 +1,26 @@
 package org.tsd.tsdbot;
 
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
+import java.awt.image.BufferedImage;
+
 /**
  * Created by Joe on 2/19/14.
  */
 public class TestDriver {
 
     public static void main(String[] args) throws Exception {
+
+        BufferedImage bufferedImage = new BufferedImage(200, 200,
+                BufferedImage.TYPE_BYTE_INDEXED);
+
+        AffineTransform tx = new AffineTransform();
+        tx.shear(2, 3);
+
+        AffineTransformOp op = new AffineTransformOp(tx,
+                AffineTransformOp.TYPE_BILINEAR);
+        bufferedImage = op.filter(bufferedImage, null);
+
 //        HtmlSanitizer.allowedTags = Pattern.compile("^()$");
 //        HtmlSanitizer.forbiddenTags = Pattern.compile("^(b|p|i|s|a|img|table|thead|tbody|tfoot|tr|th|td|dd|dl|dt|em|h1|h2|h3|h4|h5|h6|li|ul|ol|span|div|strike|strong|"
 //                + "sub|sup|pre|del|code|blockquote|strike|kbd|br|hr|area|map|object|embed|param|link|form|small|big|script|object|embed|link|style|form|input)$");

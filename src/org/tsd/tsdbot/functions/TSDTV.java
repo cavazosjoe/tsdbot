@@ -11,12 +11,8 @@ import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.Persistable;
-import org.tsd.tsdbot.tsdtv.TSDTVStream;
 import org.tsd.tsdbot.scheduled.SchedulerConstants;
-import org.tsd.tsdbot.tsdtv.InjectableStreamFactory;
-import org.tsd.tsdbot.tsdtv.TSDTVBlockJob;
-import org.tsd.tsdbot.tsdtv.TSDTVConstants;
-import org.tsd.tsdbot.tsdtv.TSDTVProgram;
+import org.tsd.tsdbot.tsdtv.*;
 import org.tsd.tsdbot.util.FuzzyLogic;
 import org.tsd.tsdbot.util.IRCUtil;
 
@@ -763,9 +759,9 @@ public class TSDTV extends MainFunction implements Persistable {
 
     private String getLinks(boolean includeVlc) {
         StringBuilder sb = new StringBuilder();
-        sb.append("PREMIUM: http://irc.teamschoolyd.org/tsdtv.html -- POVERTY: http://irc.teamschoolyd.org/tsdtv-poverty.html");
+        sb.append("http://irc.teamschoolyd.org/tsdtv.html");
         if(includeVlc)
-            sb.append(" -- VLC: http://irc.teamschoolyd.org/hls/tsdtv.m3u8 | http://irc.teamschoolyd.org:8090/poverty.m3u8");
+            sb.append(" -- VLC: http://irc.teamschoolyd.org:8090/tsdtv.flv");
         return sb.toString();
     }
 
