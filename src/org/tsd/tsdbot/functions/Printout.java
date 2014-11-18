@@ -42,7 +42,7 @@ public class Printout extends MainFunction {
 
     private static final String GIS_API_TARGET = "https://ajax.googleapis.com/ajax/services/search/images";
     private static final String GIS_API_VERSION = "1.0";
-    private static final int GIS_NUM_RESULTS = 8;
+    private static final int GIS_NUM_RESULTS = 5;
     private static final String TSDBOT_IP = "23.252.62.178";
     private static final String GIS_REFERRER = "http://www.teamschoolyd.org";
 
@@ -119,13 +119,13 @@ public class Printout extends MainFunction {
                 BufferedImage bg = ImageIO.read(Printout.class.getResourceAsStream("/resources/printout.png"));
                 BufferedImage img = ImageIO.read(new URL(imgUrl));
 
-                BufferedImage resizedImage = Scalr.resize(img, Scalr.Mode.FIT_EXACT, 625, 260);
+                BufferedImage resizedImage = Scalr.resize(img, Scalr.Mode.FIT_EXACT, 645, 345);
 
-                AffineTransform translate = AffineTransform.getTranslateInstance(200, 175);
+                AffineTransform translate = AffineTransform.getTranslateInstance(200, 125);
                 AffineTransformOp translateOp = new AffineTransformOp(translate , AffineTransformOp.TYPE_BILINEAR);
                 resizedImage = translateOp.filter(resizedImage, null);
 
-                AffineTransform rotateTransform = AffineTransform.getRotateInstance(-0.042);
+                AffineTransform rotateTransform = AffineTransform.getRotateInstance(-0.022);
                 AffineTransformOp rotateTransformOp = new AffineTransformOp(rotateTransform , AffineTransformOp.TYPE_BICUBIC);
                 resizedImage = rotateTransformOp.filter(resizedImage, null);
 

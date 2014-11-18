@@ -80,6 +80,11 @@ public class TSDBotLauncher {
                     .usingJobData(SchedulerConstants.RECAP_DIR_FIELD, properties.getProperty("archivist.recaps"))
                     .build();
 
+            JobDetail printoutCleanerJob = newJob(PrintoutCleanerJob.class)
+                    .withIdentity(SchedulerConstants.PRINTOUT_JOB_KEY)
+                    .usingJobData(SchedulerConstants.PRINTOUT_DIR_FIELD, properties.getProperty("printout.dir"))
+                    .build();
+
             JobDetail notificationJob = newJob(NotificationSweeperJob.class)
                     .withIdentity(SchedulerConstants.NOTIFICATION_JOB_KEY)
                     .build();
@@ -92,12 +97,17 @@ public class TSDBotLauncher {
                     .withSchedule(cronSchedule("0 0 3 * * ?")) //3AM every day
                     .build();
 
+            CronTrigger printoutCleanerTrigger = newTrigger()
+                    .withSchedule(cronSchedule("0 0 3 * * ?"))
+                    .build();
+
             CronTrigger notifyTrigger = newTrigger()
                     .withSchedule(cronSchedule("0 0/5 * * * ?")) //every 5 minutes
                     .build();
 
             scheduler.scheduleJob(logCleanerJob, logCleanerTrigger);
             scheduler.scheduleJob(recapCleanerJob, recapCleanerTrigger);
+            scheduler.scheduleJob(printoutCleanerJob, printoutCleanerTrigger);
             scheduler.scheduleJob(notificationJob, notifyTrigger);
 
             scheduler.start();
