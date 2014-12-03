@@ -23,8 +23,6 @@ public class RecapCleanerJob implements Job {
     @Inject
     protected TSDBot bot;
 
-    ///usr/local/nginx/html/recaps
-
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         String recapDirPath = jobExecutionContext.getJobDetail().getJobDataMap().getString(SchedulerConstants.RECAP_DIR_FIELD);

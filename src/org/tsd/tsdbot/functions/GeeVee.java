@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.history.HistoryBuff;
 
@@ -44,7 +45,7 @@ public class GeeVee extends MainFunction {
         } else if(cmdParts.length == 2) {
 
             if(!cmdParts[1].equals("pls")) {
-                bot.sendMessage(channel, TSDBot.Command.GV.getUsage());
+                bot.sendMessage(channel, Command.GV.getUsage());
             } else {
                 String[] gvAliases = {"general","gv"};
                 List<HistoryBuff.Message> gvLines = new LinkedList<>();

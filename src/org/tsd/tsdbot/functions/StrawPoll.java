@@ -2,7 +2,9 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.ThreadType;
 
 /**
  * Created by Joe on 5/24/14.
@@ -19,13 +21,13 @@ public class StrawPoll extends MainFunction {
     public void run(String channel, String sender, String ident, String text) {
 
         String[] cmdParts = text.split(";");
-        TSDBot.Command cmd = TSDBot.Command.STRAWPOLL;
+        Command cmd = Command.STRAWPOLL;
 
         String[] splitOnWhitespace = cmdParts[0].split("\\s+");
         if(splitOnWhitespace.length > 1 && cmd.threadCmd(splitOnWhitespace[1])) return;
 
         org.tsd.tsdbot.runnable.StrawPoll currentPoll =
-                (org.tsd.tsdbot.runnable.StrawPoll) bot.getThreadManager().getIrcThread(TSDBot.ThreadType.STRAWPOLL, channel);
+                (org.tsd.tsdbot.runnable.StrawPoll) bot.getThreadManager().getIrcThread(ThreadType.STRAWPOLL, channel);
 
         if(currentPoll != null) {
             bot.sendMessage(channel, "There is already a poll running. It will end in " + (currentPoll.getRemainingTime() / (60 * 1000)) + " minute(s)");

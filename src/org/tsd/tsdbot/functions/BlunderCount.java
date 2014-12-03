@@ -3,6 +3,7 @@ package org.tsd.tsdbot.functions;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.jibble.pircbot.User;
+import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
 
 import java.util.Random;
@@ -27,7 +28,7 @@ public class BlunderCount extends MainFunction {
         String[] cmdParts = text.split("\\s+");
 
         if(cmdParts.length == 1) {
-            bot.sendMessage(channel, TSDBot.Command.BLUNDER_COUNT.getUsage());
+            bot.sendMessage(channel, Command.BLUNDER_COUNT.getUsage());
         } else {
             String subCmd = cmdParts[1];
             if(subCmd.equals("count")) { // display the current blunder count
@@ -44,7 +45,7 @@ public class BlunderCount extends MainFunction {
                         + "Blunder count incremented to %d",++TSDBot.blunderCount);
                 bot.sendMessage(channel, response);
             } else {
-                bot.sendMessage(channel, TSDBot.Command.BLUNDER_COUNT.getUsage());
+                bot.sendMessage(channel, Command.BLUNDER_COUNT.getUsage());
             }
         }
     }

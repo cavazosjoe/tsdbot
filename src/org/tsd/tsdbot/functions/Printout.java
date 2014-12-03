@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Properties;
 import java.util.Random;
@@ -36,7 +37,8 @@ public class Printout extends MainFunction {
 
     private static final Logger logger = LoggerFactory.getLogger(Printout.class);
 
-    private static final Pattern queryPattern = Pattern.compile(".*?printout of (.*)", Pattern.DOTALL);
+    private static final String queryRegex = "^TSDBot.*?printout of (.*)";
+    private static final Pattern queryPattern = Pattern.compile(queryRegex, Pattern.DOTALL);
     private static final String acceptableFormats = ".*?(JPG|jpg|PNG|png|JPEG|jpeg)$";
     private static final String outputFileType = "jpg";
 
@@ -49,6 +51,10 @@ public class Printout extends MainFunction {
     private Random random;
     private String printoutDir;
 
+    // set of people who can trigger a printout with a deliberate repitition
+    // e.g. "TSDBot printout of two bears" -> "Not Computing." -> "Two. Bears." -> [img]
+    private HashSet<String> notComputing = new HashSet<>();
+
     @Inject
     public Printout(TSDBot bot, Random random, Properties properties) {
         super(bot);
@@ -60,17 +66,44 @@ public class Printout extends MainFunction {
     public void run(String channel, String sender, String ident, String text) {
 
         String q = null;
-        Matcher m = queryPattern.matcher(text);
-        while(m.find()) {
-            q = m.group(1);
+
+        if(text.matches(queryRegex) && !notComputing.contains(ident)) {
+
+            if(random.nextDouble() < 0.15) {
+                notComputing.add(ident);
+                bot.sendMessage(channel, "Not computing. Please repeat.");
+                return;
+            }
+
+            Matcher m = queryPattern.matcher(text);
+            while (m.find()) {
+                q = m.group(1);
+            }
+
+        } else if(notComputing.contains(ident)) {
+
+            notComputing.remove(ident);
+            StringBuilder qBuilder = new StringBuilder();
+            String[] parts = text.split("\\.");
+            boolean first = true;
+            for(String p : parts) {
+                if(StringUtils.isNotEmpty(p)) {
+                    if(!first)
+                        qBuilder.append(" ");
+                    qBuilder.append(p.trim());
+                    first = false;
+                }
+            }
+            q = qBuilder.toString();
+
         }
 
-        if(StringUtils.isEmpty(q))
+        if (StringUtils.isEmpty(q))
             return;
 
         q = q.replaceAll("\\?", ""); // clear any trailing question marks
 
-        String imgUrl = null;
+        BufferedImage img = null;
         try {
             URIBuilder builder = new URIBuilder(GIS_API_TARGET);
             builder.addParameter(   "v",       GIS_API_VERSION      );
@@ -100,10 +133,13 @@ public class Printout extends MainFunction {
                                 urlResults.add((String) ((JSONObject) results.get(i)).get("url"));
                             }
 
-                            while ((!urlResults.isEmpty()) && imgUrl == null) {
+                            while ((!urlResults.isEmpty()) && img == null) {
                                 String u = urlResults.get(random.nextInt(urlResults.size()));
-                                if (u.matches(acceptableFormats))
-                                    imgUrl = u;
+                                if (u.matches(acceptableFormats)) try {
+                                    img = ImageIO.read(new URL(u));
+                                } catch (Exception e) {
+                                    logger.warn("Could not retrieve external image, skipping...", e);
+                                }
                                 urlResults.remove(u);
                             }
                         }
@@ -114,10 +150,9 @@ public class Printout extends MainFunction {
             logger.error("Error retrieving GIS", e);
         }
 
-        if(imgUrl != null) {
+        if(img != null) {
             try {
                 BufferedImage bg = ImageIO.read(Printout.class.getResourceAsStream("/resources/printout.png"));
-                BufferedImage img = ImageIO.read(new URL(imgUrl));
 
                 BufferedImage resizedImage = Scalr.resize(img, Scalr.Mode.FIT_EXACT, 645, 345);
 
@@ -142,9 +177,9 @@ public class Printout extends MainFunction {
             } catch (Exception e) {
                 logger.error("Error manipulating image(s)", e);
             }
+        } else {
+            bot.sendMessage(channel, "No sequences found.");
         }
-
-        bot.sendMessage(channel, "Not computing.");
 
     }
 }

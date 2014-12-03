@@ -11,6 +11,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -44,7 +45,7 @@ public class FourChan extends MainFunction {
         String[] cmdParts = text.split("\\s+");
 
         if(cmdParts.length != 2) {
-            bot.sendMessage(channel, TSDBot.Command.FOURCHAN.getUsage());
+            bot.sendMessage(channel, Command.FOURCHAN.getUsage());
             return;
         }
 

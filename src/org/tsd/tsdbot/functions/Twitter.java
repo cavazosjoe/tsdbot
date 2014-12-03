@@ -5,7 +5,9 @@ import com.google.inject.Singleton;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.ThreadType;
 import org.tsd.tsdbot.notifications.NotificationEntity;
 import org.tsd.tsdbot.notifications.TwitterManager;
 import org.tsd.tsdbot.runnable.TweetPoll;
@@ -33,7 +35,7 @@ public class Twitter extends MainFunction {
     @Override
     public void run(String channel, String sender, String ident, String text) {
 
-        TSDBot.Command cmd = TSDBot.Command.TWITTER;
+        Command cmd = Command.TWITTER;
 
         User user = bot.getUserFromNick(channel, sender);
         boolean isOp = user.hasPriv(User.Priv.OP);
@@ -134,7 +136,7 @@ public class Twitter extends MainFunction {
                     logger.info("[TWITTER] Throttled {}", cmdParts[2]);
                 } else if(subCmd.equals("propose")) {
 
-                    TweetPoll currentPoll = (TweetPoll) bot.getThreadManager().getIrcThread(TSDBot.ThreadType.TWEETPOLL, channel);
+                    TweetPoll currentPoll = (TweetPoll) bot.getThreadManager().getIrcThread(ThreadType.TWEETPOLL, channel);
                     if(currentPoll != null) {
                         bot.sendMessage(channel,"There is already a tweet poll running. It will end in "
                                 + (currentPoll.getRemainingTime()/(60*1000)) + " minutes");

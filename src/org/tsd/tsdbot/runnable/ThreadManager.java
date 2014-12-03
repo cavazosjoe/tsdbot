@@ -2,7 +2,7 @@ package org.tsd.tsdbot.runnable;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.ThreadType;
 
 import java.util.Collection;
 import java.util.LinkedList;
@@ -20,11 +20,11 @@ public class ThreadManager {
     // row: type
     // col: channel
     // value: thread
-    private Table<TSDBot.ThreadType,String,IRCListenerThread> runningIrcThreads;
+    private Table<ThreadType,String,IRCListenerThread> runningIrcThreads;
 
     public ThreadManager(int poolSize) {
         threadPool = Executors.newFixedThreadPool(poolSize);
-        runningIrcThreads = HashBasedTable.create(TSDBot.ThreadType.values().length, 10);
+        runningIrcThreads = HashBasedTable.create(ThreadType.values().length, 10);
     }
 
     public synchronized void addThread(IRCListenerThread thread) throws DuplicateThreadException {
@@ -42,7 +42,7 @@ public class ThreadManager {
         runningIrcThreads.remove(thread.getThreadType(), thread.getChannel());
     }
 
-    public IRCListenerThread getIrcThread(TSDBot.ThreadType threadType, String channel) {
+    public IRCListenerThread getIrcThread(ThreadType threadType, String channel) {
         return runningIrcThreads.get(threadType,channel);
     }
 
@@ -50,7 +50,7 @@ public class ThreadManager {
         return runningIrcThreads.values();
     }
 
-    public Collection<IRCListenerThread> getThreadsByType(TSDBot.ThreadType threadType) {
+    public Collection<IRCListenerThread> getThreadsByType(ThreadType threadType) {
         Map<String,IRCListenerThread> map = runningIrcThreads.row(threadType);
         if(map != null)
             return map.values();
@@ -59,7 +59,7 @@ public class ThreadManager {
     }
 
     public Collection<IRCListenerThread> getThreadsByChannel(String channel) {
-        Map<TSDBot.ThreadType,IRCListenerThread> map = runningIrcThreads.column(channel);
+        Map<ThreadType,IRCListenerThread> map = runningIrcThreads.column(channel);
         if(map != null)
             return map.values();
         else

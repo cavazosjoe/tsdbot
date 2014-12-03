@@ -3,7 +3,9 @@ package org.tsd.tsdbot.runnable;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.ThreadType;
 import org.tsd.tsdbot.notifications.TwitterManager;
 import twitter4j.Status;
 import twitter4j.TwitterException;
@@ -41,7 +43,7 @@ public class TweetPoll extends IRCListenerThread {
 
         this.replyTo = replyTo;
 
-        listeningCommands.add(TSDBot.Command.TWITTER);
+        listeningCommands.add(Command.TWITTER);
 
         if(proposedTweet == null || proposedTweet.isEmpty())
             throw new Exception("Proposed tweet cannot be blank");
@@ -101,18 +103,18 @@ public class TweetPoll extends IRCListenerThread {
     }
 
     @Override
-    public TSDBot.ThreadType getThreadType() {
-        return TSDBot.ThreadType.TWEETPOLL;
+    public ThreadType getThreadType() {
+        return ThreadType.TWEETPOLL;
     }
 
     @Override
-    public void onMessage(TSDBot.Command command, String sender, String login, String hostname, String message) {
+    public void onMessage(Command command, String sender, String login, String hostname, String message) {
         if(!listeningCommands.contains(command)) return;
         String[] cmdParts = message.split("\\s+");
 
         String subCmd;
 
-        if(command.equals(TSDBot.Command.TWITTER)) {
+        if(command.equals(Command.TWITTER)) {
             if(cmdParts.length < 2) {
                 bot.sendMessage(channel,command.getUsage());
                 return;
@@ -151,7 +153,7 @@ public class TweetPoll extends IRCListenerThread {
     }
 
     @Override
-    public void onPrivateMessage(TSDBot.Command command, String sender, String login, String hostname, String message) {
+    public void onPrivateMessage(Command command, String sender, String login, String hostname, String message) {
 
     }
 

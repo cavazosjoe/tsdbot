@@ -8,6 +8,7 @@ import org.quartz.*;
 import org.quartz.impl.matchers.GroupMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.Persistable;
@@ -73,7 +74,7 @@ public class TSDTV extends MainFunction implements Persistable {
     public void run(String channel, String sender, String ident, String text) {
 
         String[] cmdParts = text.split("\\s+");
-        TSDBot.Command cmd = TSDBot.Command.TSDTV;
+        Command cmd = Command.TSDTV;
         
         if(cmdParts.length < 2) {
             bot.sendMessage(channel, cmd.getUsage());

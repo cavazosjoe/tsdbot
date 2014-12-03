@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.ArchivistUtil;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -232,7 +233,7 @@ public class Archivist /*Exedol*/ extends MainFunction {
 
             } catch (NumberFormatException nfe) {
                 // the second argument isn't a number
-                bot.sendMessage(channel, TSDBot.Command.RECAP.getUsage());
+                bot.sendMessage(channel, Command.RECAP.getUsage());
             }
         }
     }

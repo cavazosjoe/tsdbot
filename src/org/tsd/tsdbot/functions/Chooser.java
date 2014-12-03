@@ -2,6 +2,7 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
 
 import java.util.Random;
@@ -48,7 +49,7 @@ public class Chooser extends MainFunction {
             bot.sendMessage(channel, String.format(format, choice));
 
         } else {
-            bot.sendMessage(channel, TSDBot.Command.CHOOSE.getUsage());
+            bot.sendMessage(channel, Command.CHOOSE.getUsage());
         }
     }
 

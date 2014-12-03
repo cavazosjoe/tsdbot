@@ -1,5 +1,6 @@
 package org.tsd.tsdbot.history;
 
+import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.MiscUtils;
 
@@ -13,7 +14,7 @@ public interface MessageFilterStrategy {
     public static class NoCommandsStrategy implements MessageFilterStrategy {
         @Override
         public boolean apply(HistoryBuff.Message m) {
-            return TSDBot.Command.fromString(m.text).size() == 0;
+            return Command.fromString(m.text).size() == 0;
         }
     }
 

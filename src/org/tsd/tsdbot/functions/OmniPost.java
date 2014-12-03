@@ -2,6 +2,8 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import org.tsd.tsdbot.Command;
+import org.tsd.tsdbot.NotificationType;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.notifications.NotificationEntity;
 import org.tsd.tsdbot.notifications.NotificationManager;
@@ -24,11 +26,11 @@ public class OmniPost extends MainFunction {
     public void run(String channel, String sender, String ident, String text) {
         
         String[] cmdParts = text.split("\\s+");
-        List<TSDBot.Command> matchingCommands = TSDBot.Command.fromString(cmdParts[0]);
+        List<Command> matchingCommands = Command.fromString(cmdParts[0]);
         if(matchingCommands.size() != 1) return;
-        TSDBot.Command command = matchingCommands.get(0);
+        Command command = matchingCommands.get(0);
         
-        TSDBot.NotificationType type = TSDBot.NotificationType.fromCommand(command);
+        NotificationType type = NotificationType.fromCommand(command);
         NotificationManager<NotificationEntity> mgr = bot.getNotificationManagers().get(type);
 
         if(cmdParts.length == 1) {

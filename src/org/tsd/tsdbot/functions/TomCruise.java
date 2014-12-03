@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.Persistable;
@@ -48,7 +49,7 @@ public class TomCruise extends MainFunction implements Persistable {
         } else if(cmdParts[1].equals("clip")) {
             itemType = TomCruiseItemType.clip;
         } else {
-            bot.sendMessage(channel, TSDBot.Command.TOM_CRUISE.getUsage());
+            bot.sendMessage(channel, Command.TOM_CRUISE.getUsage());
             return;
         }
 

@@ -3,7 +3,9 @@ package org.tsd.tsdbot.runnable;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.ThreadType;
 
 import java.util.*;
 
@@ -28,8 +30,8 @@ public class StrawPoll extends IRCListenerThread {
         this.bot = bot;
         this.proposer = proposer;
 
-        listeningCommands.add(TSDBot.Command.STRAWPOLL);
-        listeningCommands.add(TSDBot.Command.VOTE);
+        listeningCommands.add(Command.STRAWPOLL);
+        listeningCommands.add(Command.VOTE);
 
         if(question == null || question.isEmpty())
             throw new Exception("Question cannot be blank");
@@ -124,16 +126,16 @@ public class StrawPoll extends IRCListenerThread {
     }
 
     @Override
-    public TSDBot.ThreadType getThreadType() {
-        return TSDBot.ThreadType.STRAWPOLL;
+    public ThreadType getThreadType() {
+        return ThreadType.STRAWPOLL;
     }
 
     @Override
-    public void onMessage(TSDBot.Command command, String sender, String login, String hostname, String message) {
+    public void onMessage(Command command, String sender, String login, String hostname, String message) {
         if(!listeningCommands.contains(command)) return;
         String[] cmdParts = message.split("\\s+");
 
-        if(command.equals(TSDBot.Command.VOTE)) {
+        if(command.equals(Command.VOTE)) {
 
             if(cmdParts.length != 2) {
                 bot.sendMessage(channel,command.getUsage());
@@ -152,7 +154,7 @@ public class StrawPoll extends IRCListenerThread {
             if(voteResult != null) bot.sendMessage(channel,voteResult + ", " + sender);
 //            else  bot.sendMessage(channel,"Your vote has been counted, " + sender);
 
-        } else if(command.equals(TSDBot.Command.STRAWPOLL)) {
+        } else if(command.equals(Command.STRAWPOLL)) {
 
             if(cmdParts.length != 2) return;
 
@@ -172,7 +174,7 @@ public class StrawPoll extends IRCListenerThread {
     }
 
     @Override
-    public void onPrivateMessage(TSDBot.Command command, String sender, String login, String hostname, String message) {
+    public void onPrivateMessage(Command command, String sender, String login, String hostname, String message) {
 
     }
 
