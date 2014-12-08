@@ -1,5 +1,7 @@
 package org.tsd.tsdbot.functions;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.tsd.tsdbot.Command;
@@ -8,6 +10,7 @@ import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.notifications.NotificationEntity;
 import org.tsd.tsdbot.notifications.NotificationManager;
 
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -27,6 +30,12 @@ public class OmniPost extends MainFunction {
         
         String[] cmdParts = text.split("\\s+");
         List<Command> matchingCommands = Command.fromString(cmdParts[0]);
+        matchingCommands = new LinkedList<>(Collections2.filter(matchingCommands, new Predicate<Command>() {
+            @Override
+            public boolean apply(Command command) {
+                return command.getFunctionMap().equals(OmniPost.class);
+            }
+        }));
         if(matchingCommands.size() != 1) return;
         Command command = matchingCommands.get(0);
         

@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpRequestRetryHandler;
+import org.apache.http.impl.NoConnectionReuseStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
@@ -75,6 +76,7 @@ public class TSDBotConfigModule extends AbstractModule {
         };
         CloseableHttpClient httpClient = HttpClients.custom()
                 .setConnectionManager(poolingManager)
+                .setConnectionReuseStrategy(new NoConnectionReuseStrategy())
                 .setRetryHandler(retryHandler)
                 .build();
         bind(PoolingHttpClientConnectionManager.class).toInstance(poolingManager);

@@ -18,15 +18,6 @@ public class CommandList extends MainFunction {
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
-        bot.sendMessage(channel, "I'm sending you a message with my list of commands, " + sender);
-        boolean first = true;
-        for(Command command : Command.values()) {
-            if(command.getDesc() != null) {
-                if(!first) bot.sendMessage(sender, "-----------------------------------------");
-                bot.sendMessage(sender, command.getDesc());
-                bot.sendMessage(sender, command.getUsage());
-                first = false;
-            }
-        }
+        bot.sendMessage(channel, "http://irc.teamschoolyd.org/commands.txt");
     }
 }

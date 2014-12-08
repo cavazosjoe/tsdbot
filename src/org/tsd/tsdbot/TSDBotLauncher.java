@@ -9,9 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.scheduled.*;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Properties;
 
 import static org.quartz.CronScheduleBuilder.cronSchedule;
@@ -60,6 +58,8 @@ public class TSDBotLauncher {
         Injector injector = Guice.createInjector(module);
         configureScheduler(injector);
         injector.injectMembers(TSDBot.class);
+
+        writeCommandList(properties);
 
         log.info("TSDBot loaded successfully. Beginning conquest...");
     }
@@ -114,6 +114,24 @@ public class TSDBotLauncher {
 
         } catch (Exception e) {
             log.error("ERROR INITIALIZING SCHEDULED SERVICES", e);
+        }
+    }
+
+    private static void writeCommandList(Properties properties) {
+        String cmdListLoc = properties.getProperty("commandList");
+        log.info("Writing command list to {}...", cmdListLoc);
+        try(BufferedWriter commandListWriter = new BufferedWriter(new FileWriter(cmdListLoc))) {
+            boolean first = true;
+            for(Command cmd : Command.values()) {
+                if(cmd.getDesc() != null) {
+                    if(!first) commandListWriter.write("-----------------------------------------\n");
+                    commandListWriter.write(cmd.getDesc() + "\n");
+                    commandListWriter.write(cmd.getUsage() + "\n");
+                    first = false;
+                }
+            }
+        } catch (Exception e) {
+            log.error("ERROR PRINTING COMMAND LIST", e);
         }
     }
 }
