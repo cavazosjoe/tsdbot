@@ -10,6 +10,14 @@ import java.util.List;
  */
 public enum Command {
 
+    XBOX_LIVE(
+            "^\\.xbl.*",
+            "Xbox Live utility",
+            "USAGE: WIP",
+            null,
+            XboxLive.class
+    ),
+
     COMMAND_LIST(
             "^\\.cmd$",
             "Have the bot send you a list of commands",
