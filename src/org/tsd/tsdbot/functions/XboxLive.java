@@ -83,7 +83,8 @@ public class XboxLive extends MainFunction {
             bot.sendMessage(channel, sb.toString());
 
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error getting XBL info", e);
+            bot.sendMessage(channel, "Error getting XBL info");
         }
     }
 
