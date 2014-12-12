@@ -50,7 +50,12 @@ public class XboxLive extends MainFunction {
     private final String xblApiKey; // App key to use API
     private final long xuid;      // XUID for TSD IRC account
 
-    private HashSet<Player> friendsList = new HashSet<>();
+    private TreeSet<Player> friendsList = new TreeSet<>(new Comparator<Player>() {
+        @Override
+        public int compare(Player o1, Player o2) {
+            return o1.gamertag.compareToIgnoreCase(o2.gamertag);
+        }
+    });
 
     LoadingCache<Player, PlayerActivity> activityCache = CacheBuilder.newBuilder()
             .expireAfterWrite(5, TimeUnit.MINUTES)
@@ -122,6 +127,16 @@ public class XboxLive extends MainFunction {
                     logger.error("Error reloading friends list", e);
                     bot.sendMessage(channel, "Error reloading friends list");
                 }
+
+            } else if(subCmd.equals("list")) {
+
+                bot.sendMessage(channel, "Sending you my friends list, " + sender);
+                StringBuilder sb = new StringBuilder();
+                for(Player player : friendsList) {
+                    if(sb.length() > 0) sb.append(", ");
+                    sb.append(player.gamertag);
+                }
+                bot.sendMessage(sender, sb.toString());
 
             } else try {
 
