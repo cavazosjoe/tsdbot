@@ -315,8 +315,10 @@ public class XboxLive extends MainFunction {
             StringBuilder sb = new StringBuilder();
             sb.append(gamertag).append(" is ").append(state);
 
-            if(state.equals(PlayerState.offline) && lastSeen != null) {
-                sb.append(". ").append(lastSeen.toString());
+            if(state.equals(PlayerState.offline)) {
+                sb.append(". ");
+                if(lastSeen != null)
+                    sb.append(lastSeen.toString());
             } else if(devices.length > 0) {
                 Device device = devices[0];
                 switch(device.platform) {
