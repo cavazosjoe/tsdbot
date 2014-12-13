@@ -18,6 +18,7 @@ import org.tsd.tsdbot.history.MessageFilter;
 import org.tsd.tsdbot.history.MessageFilterStrategy;
 import org.tsd.tsdbot.util.FuzzyLogic;
 import org.tsd.tsdbot.util.IRCUtil;
+import org.tsd.tsdbot.util.RelativeDate;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -26,6 +27,8 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -38,6 +41,8 @@ public class XboxLive extends MainFunction {
 
     private static final Logger logger = LoggerFactory.getLogger(Printout.class);
 
+    private static final SimpleDateFormat jsonTimestampFmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSSS'Z'");
+
     // list of all friends for given XUID
     private static final String FRIENDS_TARGET = "https://xboxapi.com/v2/%d/friends";
 
@@ -46,6 +51,10 @@ public class XboxLive extends MainFunction {
 
     // recent activity for a given XUID
     private static final String ACTIVITY_TARGET = "https://xboxapi.com/v2/%d/activity/recent";
+
+    static {
+        jsonTimestampFmt.setTimeZone(TimeZone.getTimeZone("UTC"));
+    }
 
     private final String xblApiKey; // App key to use API
     private final long xuid;      // XUID for TSD IRC account
@@ -57,17 +66,12 @@ public class XboxLive extends MainFunction {
         }
     });
 
-    LoadingCache<Player, PlayerActivity> activityCache = CacheBuilder.newBuilder()
+    LoadingCache<Player, PlayerStatus> statusCache = CacheBuilder.newBuilder()
             .expireAfterWrite(5, TimeUnit.MINUTES)
-            .build(new CacheLoader<Player, PlayerActivity>() {
+            .build(new CacheLoader<Player, PlayerStatus>() {
                 @Override
-                public PlayerActivity load(Player player) throws Exception {
-                    PlayerStatus status = fetchPlayerStatus(player);
-                    if (status.state.equals(PlayerState.offline)) {
-                        return new PlayerActivity(); // empty, offline
-                    } else {
-                        return fetchPlayerActivity(player);
-                    }
+                public PlayerStatus load(Player player) throws Exception {
+                    return fetchPlayerStatus(player);
                 }
             });
 
@@ -88,25 +92,33 @@ public class XboxLive extends MainFunction {
 
             HashMap<String, List<String>> onlinePlayers = new HashMap<>(); // game -> players
             for(Player player : friendsList) {
-                PlayerActivity activity = getCachedPlayerActivity(player);
-                if (!activity.isOffline()) {
-                    String game = activity.contentTitle;
+                PlayerStatus status = getCachedPlayerStatus(player);
+                if (!status.state.equals(PlayerState.offline)) {
+                    String game = status.currentGame;
                     if (!onlinePlayers.containsKey(game))
                         onlinePlayers.put(game, new LinkedList<String>());
                     onlinePlayers.get(game).add(player.gamertag);
                 }
             }
 
-            StringBuilder sb = new StringBuilder();
-            boolean firstGame = true;
-            for(String game : onlinePlayers.keySet()) {
-                if(!firstGame) sb.append(" || ");
-                sb.append(game).append(": ");
-                sb.append(StringUtils.join(onlinePlayers.get(game), ", "));
-                firstGame = false;
-            }
+            if(onlinePlayers.isEmpty()) {
+                bot.sendMessage(channel, "All my friends are dead.");
+            } else {
+                StringBuilder sb = new StringBuilder();
+                boolean firstGame = true;
+                for (String game : onlinePlayers.keySet()) {
+                    if (!firstGame) sb.append(" || ");
+                    if(onlinePlayers.get(game).size() == 1) {
+                        sb.append(onlinePlayers.get(game).get(0)).append(": ").append(game);
+                    } else {
+                        sb.append(game).append(": ");
+                        sb.append(StringUtils.join(onlinePlayers.get(game), ", "));
+                    }
+                    firstGame = false;
+                }
 
-            bot.sendMessage(channel, sb.toString());
+                bot.sendMessage(channel, sb.toString());
+            }
 
         } catch (Exception e) {
             logger.error("Error getting XBL info", e);
@@ -157,13 +169,8 @@ public class XboxLive extends MainFunction {
                     bot.sendMessage(channel, msg.toString());
                 } else {
                     Player player = matchedPlayers.get(0);
-                    PlayerActivity activity = getCachedPlayerActivity(player);
-                    if(activity.isOffline()) {
-                        bot.sendMessage(channel, player.gamertag + " is offline");
-                    } else {
-                        String fmt = "%s is online playing %s (%s)";
-                        bot.sendMessage(channel, String.format(fmt, player.gamertag, activity.contentTitle, activity.platform.displayString));
-                    }
+                    PlayerStatus status = getCachedPlayerStatus(player);
+                    bot.sendMessage(channel, status.toString());
                 }
 
             } catch (Exception e) {
@@ -192,22 +199,22 @@ public class XboxLive extends MainFunction {
 
     private PlayerStatus fetchPlayerStatus(Player player) throws IOException, URISyntaxException {
         String playerStatusJson = fetch(PRESENCE_TARGET, player.xuid);
-        return new PlayerStatus(playerStatusJson);
+        return new PlayerStatus(player.gamertag, playerStatusJson);
     }
 
-    private PlayerActivity getCachedPlayerActivity(Player player) throws IOException, URISyntaxException {
+    private PlayerStatus getCachedPlayerStatus(Player player) throws IOException, URISyntaxException {
         try {
-            return activityCache.get(player);
+            return statusCache.get(player);
         } catch (ExecutionException e) {
             logger.error("Error getting cached activity for {}, defaulting to new fetch...", player.gamertag, e);
-            return fetchPlayerActivity(player);
+            return fetchPlayerStatus(player);
         }
     }
 
-    private PlayerActivity fetchPlayerActivity(Player player) throws IOException, URISyntaxException {
-        String playerActivityJson = fetch(ACTIVITY_TARGET, player.xuid);
-        return new PlayerActivity(playerActivityJson);
-    }
+//    private PlayerActivity fetchPlayerActivity(Player player) throws IOException, URISyntaxException {
+//        String playerActivityJson = fetch(ACTIVITY_TARGET, player.xuid);
+//        return new PlayerActivity(playerActivityJson);
+//    }
 
     private void loadFriendsList() throws IOException, URISyntaxException {
         friendsList.clear();
@@ -252,35 +259,175 @@ public class XboxLive extends MainFunction {
 
     class PlayerStatus {
         public long xuid;
+        public String gamertag;
         public PlayerState state;
-        public PlayerStatus(String json) {
+        public LastSeen lastSeen;
+        public Device[] devices;
+        public String currentGame;
+        public String backgroundApp;
+
+        public PlayerStatus(String gamertag, String json) {
+            this.gamertag = gamertag;
             JSONObject playerStatus = new JSONObject(json);
             this.xuid = playerStatus.getLong("xuid");
             this.state = PlayerState.fromString(playerStatus.getString("state"));
+
+            JSONObject ls = playerStatus.optJSONObject("lastSeen");
+            if(state.equals(PlayerState.offline) && ls != null) try {
+                this.lastSeen = new LastSeen(ls);
+            } catch (Exception e) {
+                logger.error("Error unmarshaling lastSeen info for {}", xuid, e);
+            } else if(state.equals(PlayerState.online) || state.equals(PlayerState.away) || state.equals(PlayerState.busy)) try {
+                JSONArray devicesArr = playerStatus.getJSONArray("devices");
+                this.devices = new Device[devicesArr.length()];
+                for(int i=0 ; i < devicesArr.length() ; i++) {
+                    devices[i] = new Device(devicesArr.getJSONObject(i));
+                }
+
+                if(devices.length > 0) {
+                    Device device = devices[0];
+                    switch(device.platform) {
+                        case xbone: {
+                            if (device.titles[0].name.equals("Home") && device.titles[1] == null) {
+                                currentGame = "Xbone Home";
+                            } else if (device.titles.length == 3 && device.titles[1].name.equals("Home") && StringUtils.isNotEmpty(device.titles[2].name)) {
+                                currentGame = device.titles[0].name;
+                                backgroundApp = device.titles[2].name;
+                            } else if (device.titles.length == 3 && device.titles[0].placement.equals("Background") && StringUtils.isNotEmpty(device.titles[1].name)) {
+                                currentGame = device.titles[1].name;
+                                backgroundApp = device.titles[2].name;
+                            } else {
+                                currentGame = device.titles[1].name;
+                            }
+                        }
+                        case x360: {
+                            currentGame = device.titles[0].name;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                logger.error("Error unmarshaling devices info for {}", xuid, e);
+            }
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append(gamertag).append(" is ").append(state);
+
+            if(state.equals(PlayerState.offline) && lastSeen != null) {
+                sb.append(". ").append(lastSeen.toString());
+            } else if(devices.length > 0) {
+                Device device = devices[0];
+                switch(device.platform) {
+                    case xbone: {
+                        if (currentGame.equals("Home") && StringUtils.isEmpty(backgroundApp)) {
+                            sb.append(" on the Xbone home screen.");
+                        } else {
+                            sb.append(" playing ").append(currentGame).append(" (").append(device.platform.displayString).append(")");
+                            if(StringUtils.isNotEmpty(backgroundApp))
+                                sb.append(" with the ").append(backgroundApp).append(" app snapped in the background");
+                        }
+                        break;
+                    }
+                    case x360: {
+                        sb.append(" playing ").append(currentGame).append(" (").append(device.platform.displayString).append(")");
+                        break;
+                    }
+                }
+            }
+            return sb.toString();
         }
     }
 
-    class PlayerActivity {
+    class LastSeen {
         public Platform platform;
-        public String contentTitle;
+        public String titleName;
+        public Date time;
 
-        // used to represent an offline person
-        public PlayerActivity() {}
-
-        public PlayerActivity(String json) {
-            JSONArray playerActivity = new JSONArray(json);
-            JSONObject activity = playerActivity.getJSONObject(0);
-            platform = Platform.fromFileString(activity.getString("platform"));
-            contentTitle = activity.getString("contentTitle");
+        public LastSeen(JSONObject jsonObject) throws ParseException {
+            this.platform = Platform.fromFileString(jsonObject.getString("deviceType"));
+            this.titleName = jsonObject.getString("titleName");
+            this.time = jsonTimestampFmt.parse(jsonObject.getString("timestamp"));
         }
 
-        public boolean isOffline() {
-            return contentTitle == null;
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Last seen ").append(RelativeDate.getRelativeDate(time));
+            if(platform.equals(Platform.xbone) && titleName.equals("Home")) {
+                sb.append(" on the Xbone's home screen.");
+            } else {
+                sb.append(" playing ").append(titleName).append(" (").append(platform.displayString).append(")");
+            }
+            return sb.toString();
         }
     }
+
+    class Device {
+        public Platform platform;
+        public Title[] titles;
+
+        public Device(JSONObject jsonObject) throws ParseException {
+            this.platform = Platform.fromFileString(jsonObject.getString("type"));
+            JSONArray t = jsonObject.getJSONArray("titles");
+            this.titles = new Title[t.length()];
+            for(int i=0 ; i < t.length() ; i++) {
+                titles[i] = new Title(t.getJSONObject(i));
+            }
+        }
+    }
+
+    class Title {
+        public long id;
+        public Activity activity;
+        public String name;
+        public String placement;
+        public String state;
+        public Date lastModified;
+
+        public Title(JSONObject jsonObject) throws ParseException {
+            this.id = jsonObject.getLong("id");
+            this.name = jsonObject.getString("name");
+            this.placement = jsonObject.getString("placement");
+            this.state = jsonObject.getString("state");
+            this.lastModified = jsonTimestampFmt.parse(jsonObject.getString("lastModified"));
+            JSONObject act = jsonObject.optJSONObject("activity");
+            if(act != null) this.activity = new Activity(act);
+        }
+    }
+
+    class Activity {
+        public String richPresence;
+
+        public Activity(JSONObject jsonObject) {
+            this.richPresence = jsonObject.getString("richPresence");
+        }
+    }
+
+//    class PlayerActivity {
+//        public Platform platform;
+//        public String contentTitle;
+//
+//        // used to represent an offline person
+//        public PlayerActivity() {}
+//
+//        public PlayerActivity(String json) {
+//            JSONArray playerActivity = new JSONArray(json);
+//            JSONObject activity = playerActivity.getJSONObject(0);
+//            this.platform = Platform.fromFileString(activity.getString("platform"));
+//            this.contentTitle = activity.getString("contentTitle");
+//        }
+//
+//        public boolean isOffline() {
+//            return contentTitle == null;
+//        }
+//    }
 
     enum PlayerState {
         online,
+        away,
+        busy,
         offline;
         public static PlayerState fromString(String s) {
             for(PlayerState ps : values()) {

@@ -10,7 +10,8 @@ import java.util.GregorianCalendar;
  */
 public class RelativeDate {
 
-    private static SimpleDateFormat sdf = new SimpleDateFormat( "h:mm a MMM dd, yyyy" );
+//    private static SimpleDateFormat sdf = new SimpleDateFormat( "h:mm a MMM dd, yyyy" );
+    private static SimpleDateFormat sdf = new SimpleDateFormat( "EEE, MMM dd h:mm a z" );
 
     /**
      * This method computes the relative date according to
