@@ -6,7 +6,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.functions.TSDTV;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.Properties;
 
 /**
  * Created by Joe on 3/9/14.
@@ -18,15 +20,21 @@ public class TSDTVStream implements Runnable {
     @Inject
     protected TSDTV tsdtv;
 
+    @Inject
+    protected Properties properties;
+
     @Inject @Named(value = "ffmpeg")
     private String ffmpegFormat;
 
     private String pathToMovie = null;
 
+    private File logFile = null;
+
     @Deprecated
     public TSDTVStream() {}
 
     public void init(String videoFilter, String pathToMovie) {
+        logFile = new File(properties.getProperty("tsdtv.log"));
         ffmpegFormat = String.format(ffmpegFormat, pathToMovie, videoFilter);
     }
 
@@ -54,7 +62,8 @@ public class TSDTVStream implements Runnable {
         logger.info("[TSDTV] preparing movie " + pathToMovie);
         logger.info("[TSDTV] using command: {}", ffmpegFormat);
         ProcessBuilder pb = new ProcessBuilder(ffmpegFormat.split("\\s+"));
-        pb.redirectError(ProcessBuilder.Redirect.INHERIT);
+        pb.redirectErrorStream(true);
+        pb.redirectOutput(logFile);
         boolean playNext = true;
         try {
             Process p = pb.start();

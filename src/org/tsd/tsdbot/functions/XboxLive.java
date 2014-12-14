@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
 @Singleton
 public class XboxLive extends MainFunction {
 
-    private static final Logger logger = LoggerFactory.getLogger(Printout.class);
+    private static final Logger logger = LoggerFactory.getLogger(XboxLive.class);
 
     private static final SimpleDateFormat jsonTimestampFmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSSS'Z'");
 
@@ -198,7 +198,9 @@ public class XboxLive extends MainFunction {
     }
 
     private PlayerStatus fetchPlayerStatus(Player player) throws IOException, URISyntaxException {
+        logger.info("Fetching PlayerStatus for {} ({})", player.gamertag, player.xuid);
         String playerStatusJson = fetch(PRESENCE_TARGET, player.xuid);
+        logger.info(playerStatusJson);
         return new PlayerStatus(player.gamertag, playerStatusJson);
     }
 
@@ -243,11 +245,8 @@ public class XboxLive extends MainFunction {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-
             Player player = (Player) o;
-
             if (xuid != player.xuid) return false;
-
             return true;
         }
 
@@ -264,7 +263,6 @@ public class XboxLive extends MainFunction {
         public LastSeen lastSeen;
         public Device[] devices;
         public String currentGame;
-        public String backgroundApp;
 
         public PlayerStatus(String gamertag, String json) {
             this.gamertag = gamertag;
@@ -288,20 +286,20 @@ public class XboxLive extends MainFunction {
                     Device device = devices[0];
                     switch(device.platform) {
                         case xbone: {
-                            if (device.titles[0].name.equals("Home") && device.titles[1] == null) {
-                                currentGame = "Xbone Home";
-                            } else if (device.titles.length == 3 && device.titles[1].name.equals("Home") && StringUtils.isNotEmpty(device.titles[2].name)) {
-                                currentGame = device.titles[0].name;
-                                backgroundApp = device.titles[2].name;
-                            } else if (device.titles.length == 3 && device.titles[0].placement.equals("Background") && StringUtils.isNotEmpty(device.titles[1].name)) {
-                                currentGame = device.titles[1].name;
-                                backgroundApp = device.titles[2].name;
+                            if(device.titles[0].name.equals("Home")) {
+                                if(device.titles.length > 1 && device.titles[0].placement.equals("Background") && device.titles[1].placement.equals("Full")) {
+                                    currentGame = device.titles[1].toString();
+                                } else {
+                                    currentGame = "Xbox Home";
+                                }
                             } else {
-                                currentGame = device.titles[1].name;
+                                currentGame = device.titles[0].toString();
                             }
+                            break;
                         }
                         case x360: {
-                            currentGame = device.titles[0].name;
+                            currentGame = device.titles[0].toString();
+                            break;
                         }
                     }
                 }
@@ -323,12 +321,10 @@ public class XboxLive extends MainFunction {
                 Device device = devices[0];
                 switch(device.platform) {
                     case xbone: {
-                        if (currentGame.equals("Home") && StringUtils.isEmpty(backgroundApp)) {
+                        if (currentGame.equals("Xbox Home")) {
                             sb.append(" on the Xbone home screen.");
                         } else {
                             sb.append(" playing ").append(currentGame).append(" (").append(device.platform.displayString).append(")");
-                            if(StringUtils.isNotEmpty(backgroundApp))
-                                sb.append(" with the ").append(backgroundApp).append(" app snapped in the background");
                         }
                         break;
                     }
@@ -396,6 +392,15 @@ public class XboxLive extends MainFunction {
             this.lastModified = jsonTimestampFmt.parse(jsonObject.getString("lastModified"));
             JSONObject act = jsonObject.optJSONObject("activity");
             if(act != null) this.activity = new Activity(act);
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append(name);
+            if(activity != null && activity.richPresence != null)
+                sb.append(" (").append(activity.richPresence).append(")");
+            return sb.toString();
         }
     }
 
