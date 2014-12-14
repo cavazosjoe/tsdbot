@@ -213,11 +213,6 @@ public class XboxLive extends MainFunction {
         }
     }
 
-//    private PlayerActivity fetchPlayerActivity(Player player) throws IOException, URISyntaxException {
-//        String playerActivityJson = fetch(ACTIVITY_TARGET, player.xuid);
-//        return new PlayerActivity(playerActivityJson);
-//    }
-
     private void loadFriendsList() throws IOException, URISyntaxException {
         friendsList.clear();
         String friendsJson = fetch(FRIENDS_TARGET, xuid);
@@ -411,25 +406,6 @@ public class XboxLive extends MainFunction {
             this.richPresence = jsonObject.getString("richPresence");
         }
     }
-
-//    class PlayerActivity {
-//        public Platform platform;
-//        public String contentTitle;
-//
-//        // used to represent an offline person
-//        public PlayerActivity() {}
-//
-//        public PlayerActivity(String json) {
-//            JSONArray playerActivity = new JSONArray(json);
-//            JSONObject activity = playerActivity.getJSONObject(0);
-//            this.platform = Platform.fromFileString(activity.getString("platform"));
-//            this.contentTitle = activity.getString("contentTitle");
-//        }
-//
-//        public boolean isOffline() {
-//            return contentTitle == null;
-//        }
-//    }
 
     enum PlayerState {
         online,
