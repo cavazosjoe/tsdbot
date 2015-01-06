@@ -1,7 +1,6 @@
 package org.tsd.tsdbot.history;
 
 import org.tsd.tsdbot.Command;
-import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.MiscUtils;
 
 /**

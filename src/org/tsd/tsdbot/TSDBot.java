@@ -7,9 +7,11 @@ import org.jibble.pircbot.PircBot;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.functions.*;
+import org.tsd.tsdbot.functions.Archivist;
+import org.tsd.tsdbot.functions.Hustle;
+import org.tsd.tsdbot.functions.MainFunction;
 import org.tsd.tsdbot.history.HistoryBuff;
-import org.tsd.tsdbot.notifications.*;
+import org.tsd.tsdbot.notifications.NotificationManager;
 import org.tsd.tsdbot.runnable.IRCListenerThread;
 import org.tsd.tsdbot.runnable.ThreadManager;
 import org.tsd.tsdbot.util.ArchivistUtil;
@@ -41,6 +43,9 @@ public class TSDBot extends PircBot {
 
     @Inject
     protected Archivist archivist;
+
+    @Inject
+    protected Hustle hustle;
 
     public TSDBot(String name, String nickservPass, String server, String[] channels) throws IrcException, IOException {
         setName(name);
@@ -194,6 +199,8 @@ public class TSDBot extends PircBot {
             for(IRCListenerThread listenerThread : threadManager.getThreadsByChannel(channel))
                 listenerThread.onMessage(c, sender, login, hostname, message);
         }
+
+        hustle.process(channel, message);
 
         historyBuff.updateHistory(channel, message, sender);
 

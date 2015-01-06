@@ -10,10 +10,18 @@ import java.util.List;
  */
 public enum Command {
 
+    HUSTLE(
+            "^\\.hustle$",
+            "Get a readout of the current hustle-to-hate ratio",
+            "USAGE: .hustle",
+            null,
+            Hustle.class
+    ),
+
     XBOX_LIVE(
             "^\\.xbl.*",
             "Xbox Live utility",
-            "USAGE: WIP",
+            "USAGE: .xbl [ gamertag ]",
             null,
             XboxLive.class
     ),

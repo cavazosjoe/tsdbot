@@ -13,17 +13,12 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
-import org.tsd.tsdbot.history.HistoryBuff;
-import org.tsd.tsdbot.history.MessageFilter;
-import org.tsd.tsdbot.history.MessageFilterStrategy;
 import org.tsd.tsdbot.util.FuzzyLogic;
-import org.tsd.tsdbot.util.IRCUtil;
 import org.tsd.tsdbot.util.RelativeDate;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;

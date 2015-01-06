@@ -10,7 +10,6 @@ import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.notifications.NotificationEntity;
 import org.tsd.tsdbot.notifications.NotificationManager;
 
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
