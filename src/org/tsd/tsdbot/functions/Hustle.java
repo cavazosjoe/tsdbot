@@ -90,7 +90,8 @@ public class Hustle extends MainFunction {
             JSONObject json = new JSONObject(responseString);
             for(String key : json.keySet()) {
                 if(key.equals("result")) {
-                    HustleItem item = new HustleItem(json.getJSONObject(key).getString("sentiment"), json.getJSONObject(key).getString("confidence"));
+                    HustleItem item = new HustleItem(json.getJSONObject(key).getString("sentiment"),
+                            json.getJSONObject(key).getString("confidence"));
                     huffleBustle.add(item);
                     logger.info("Analysis result: {} (Confidence {})", item.sentiment, item.confidence);
                 }
