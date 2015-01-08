@@ -2,7 +2,6 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.apache.commons.collections.buffer.CircularFifoBuffer;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -10,15 +9,29 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartUtilities;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.annotations.XYTextAnnotation;
+import org.jfree.chart.axis.DateAxis;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.data.time.Second;
+import org.jfree.data.time.TimeSeries;
+import org.jfree.data.time.TimeSeriesCollection;
+import org.jfree.data.time.TimeSeriesDataItem;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
-import org.tsd.tsdbot.history.HistoryBuff;
+import org.tsd.tsdbot.util.CircularBuffer;
+import org.tsd.tsdbot.util.MiscUtils;
 
+import java.awt.*;
+import java.io.File;
 import java.text.DecimalFormat;
-import java.util.LinkedList;
-import java.util.Properties;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * Created by Joe on 1/3/2015.
@@ -29,13 +42,20 @@ public class Hustle extends MainFunction {
     private static final Logger logger = LoggerFactory.getLogger(Hustle.class);
 
     private static final int period = 5; // every [period]th message will be sent for hustle analysis
-    private static final DecimalFormat df = new DecimalFormat("##0.0#");
-    private static final String fmt = "Current Hustle/Hate ratio for %s: %s";
+    private static final DecimalFormat decimalFormat = new DecimalFormat("##0.00");
+    private static final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss a z");
+    private static final String fmt = "Current Hustle/Hate ratio for %s: %s -- %s";
+
+    static {
+        timeFormat.setTimeZone(TimeZone.getTimeZone("America/New_York"));
+    }
 
     private HttpClient httpClient;
     private String apiKey;
+    private String printoutDir;
 
-    CircularFifoBuffer huffleBustle = new CircularFifoBuffer(50);
+    private DataPoint lastDataPoint = null;
+    CircularBuffer<DataPoint> huffleBustle = new CircularBuffer<>(50);
 
     private int msgCnt = 0;
 
@@ -44,28 +64,69 @@ public class Hustle extends MainFunction {
         super(bot);
         this.httpClient = httpClient;
         this.apiKey = properties.getProperty("mashape.apiKey");
+        this.printoutDir = properties.getProperty("printout.dir");
     }
 
     @Override
     protected void run(String channel, String sender, String ident, String text) {
-        double hustle = 1;
-        double hate = 1;
-        for(Object o : huffleBustle) {
-            HustleItem item = (HustleItem)o;
-            double itemScore = (item.confidence/100) * text.length();
-            switch (item.sentiment) {
-                case Positive: hustle += itemScore; break;
-                case Negative: hate += itemScore; break;
-                case Neutral: {
-                    hustle += itemScore;
-                    hate += itemScore;
-                    break;
+
+        logger.info("Generating hustle analysis...");
+
+        try {
+
+            TreeSet<DataPoint> orderedByImpact = new TreeSet<>(new Comparator<DataPoint>() {
+                @Override
+                public int compare(DataPoint o1, DataPoint o2) {
+                    return Double.compare(Math.abs(o1.delta), Math.abs(o2.delta));
                 }
+            });
+
+            TimeSeries timeSeries = new TimeSeries("Time");
+            for (DataPoint dataPoint : huffleBustle) {
+                timeSeries.add(new Second(dataPoint.date), dataPoint.newHhr);
+                orderedByImpact.add(dataPoint);
             }
+
+            TimeSeriesCollection dataset = new TimeSeriesCollection(timeSeries);
+
+            JFreeChart chart = ChartFactory.createTimeSeriesChart(
+                    "Maybe we should hustle as hard as we hate",
+                    "Time",
+                    "HHR",
+                    dataset
+            );
+
+            XYPlot plot = chart.getXYPlot();
+            ((DateAxis)plot.getDomainAxis()).setDateFormatOverride(timeFormat);
+            ((NumberAxis)plot.getRangeAxis()).setNumberFormatOverride(decimalFormat);
+
+            int limit = 5;
+            int i = 0;
+            for(DataPoint dp : orderedByImpact.descendingSet()) {
+                if(i++ > limit)
+                    break;
+                logger.info("Adding annotation, hhr = {}, delta = {}", dp.newHhr, dp.delta);
+                TimeSeriesDataItem importantItem = timeSeries.getDataItem(new Second(dp.date));
+                double x = importantItem.getPeriod().getFirstMillisecond();
+                double y = importantItem.getValue().doubleValue();
+                String s = dp.text.substring(0, Math.min(60, dp.text.length()));
+                XYTextAnnotation a = new XYTextAnnotation(s, x, y);
+                a.setFont(new Font("SansSerif", Font.PLAIN, 12));
+                a.setOutlineStroke(new BasicStroke(5));
+                plot.addAnnotation(a);
+            }
+
+            String fileName = MiscUtils.getRandomString() + ".png";
+            File file = new File(printoutDir + fileName);
+            ChartUtilities.saveChartAsPNG(file, chart, 2000, 500);
+
+            logger.info("Done generating hustle chart");
+            bot.sendMessage(channel, String.format(fmt, channel, decimalFormat.format(calculateCurrentHhr()), "http://irc.teamschoolyd.org/printouts/" + fileName));
+
+        } catch (Exception e) {
+            logger.error("Error generating hustle chart", e);
+            bot.sendMessage(channel, "Error generating hustle analysis. Everything sucks.");
         }
-        double ratio = hustle / hate;
-        logger.info("H/H: {}/{} = {}", hustle, hate, ratio);
-        bot.sendMessage(channel, String.format(fmt, channel, df.format(ratio)));
     }
 
     public void process(String channel, String text) {
@@ -90,10 +151,16 @@ public class Hustle extends MainFunction {
             JSONObject json = new JSONObject(responseString);
             for(String key : json.keySet()) {
                 if(key.equals("result")) {
-                    HustleItem item = new HustleItem(json.getJSONObject(key).getString("sentiment"),
-                            json.getJSONObject(key).getString("confidence"));
-                    huffleBustle.add(item);
-                    logger.info("Analysis result: {} (Confidence {})", item.sentiment, item.confidence);
+                    double confidence = Double.parseDouble(json.getJSONObject(key).getString("confidence"));
+                    Sentiment sentiment = Sentiment.fromString(json.getJSONObject(key).getString("sentiment"));
+                    logger.info("Analysis result: {} (Confidence {})", sentiment, confidence);
+                    double lastHhr = (lastDataPoint == null) ? 0 : lastDataPoint.newHhr;
+                    logger.info("Previous HHR: {}", lastHhr);
+                    lastDataPoint = new DataPoint(text, sentiment, confidence);
+                    huffleBustle.add(lastDataPoint);
+                    lastDataPoint.newHhr = calculateCurrentHhr();
+                    lastDataPoint.delta = lastDataPoint.newHhr - lastHhr;
+                    logger.info("New HHR: {} (delta {})", lastDataPoint.newHhr, lastDataPoint.delta);
                 }
             }
 
@@ -106,6 +173,23 @@ public class Hustle extends MainFunction {
             if(post != null)
                 post.releaseConnection();
         }
+    }
+
+    private double calculateCurrentHhr() {
+        double hustle = 1;
+        double hate = 1;
+        for(DataPoint dataPoint : huffleBustle) {
+            switch (dataPoint.sentiment) {
+                case Positive: hustle += dataPoint.getScore(); break;
+                case Negative: hate += dataPoint.getScore(); break;
+                case Neutral: {
+                    hustle += dataPoint.getScore();
+                    hate += dataPoint.getScore();
+                    break;
+                }
+            }
+        }
+        return hustle/hate;
     }
 
     enum Sentiment {
@@ -122,13 +206,25 @@ public class Hustle extends MainFunction {
         }
     }
 
-    class HustleItem {
+    class DataPoint {
+
+        public String text;
         public Sentiment sentiment;
         public double confidence;
+        public Date date;
+        public double newHhr;
+        public double delta;
 
-        HustleItem(String sentiment, String confidence) {
-            this.sentiment = Sentiment.fromString(sentiment);
-            this.confidence = Double.parseDouble(confidence);
+        DataPoint(String text, Sentiment sentiment, double confidence) {
+            this.text = text;
+            this.sentiment = sentiment;
+            this.confidence = confidence;
+            this.date = new Date();
+        }
+
+        public double getScore() {
+            return (confidence/100) * text.length();
         }
     }
+
 }

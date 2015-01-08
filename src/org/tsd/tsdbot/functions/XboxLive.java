@@ -88,7 +88,7 @@ public class XboxLive extends MainFunction {
             HashMap<String, List<String>> onlinePlayers = new HashMap<>(); // game -> players
             for(Player player : friendsList) {
                 PlayerStatus status = getCachedPlayerStatus(player);
-                if (!status.state.equals(PlayerState.offline)) {
+                if (status.xuid != null && !status.state.equals(PlayerState.offline)) {
                     String game = status.currentGame;
                     if (!onlinePlayers.containsKey(game))
                         onlinePlayers.put(game, new LinkedList<String>());
@@ -165,7 +165,11 @@ public class XboxLive extends MainFunction {
                 } else {
                     Player player = matchedPlayers.get(0);
                     PlayerStatus status = getCachedPlayerStatus(player);
-                    bot.sendMessage(channel, status.toString());
+                    if(status.xuid != null) {
+                        bot.sendMessage(channel, status.toString());
+                    } else {
+                        bot.sendMessage(channel, "Error fetching status for " + player.gamertag);
+                    }
                 }
 
             } catch (Exception e) {
@@ -247,7 +251,7 @@ public class XboxLive extends MainFunction {
     }
 
     class PlayerStatus {
-        public long xuid;
+        public Long xuid;
         public String gamertag;
         public PlayerState state;
         public LastSeen lastSeen;
@@ -257,44 +261,50 @@ public class XboxLive extends MainFunction {
         public PlayerStatus(String gamertag, String json) {
             this.gamertag = gamertag;
             JSONObject playerStatus = new JSONObject(json);
-            this.xuid = playerStatus.getLong("xuid");
-            this.state = PlayerState.fromString(playerStatus.getString("state"));
+            try {
+                this.xuid = playerStatus.getLong("xuid");
+                this.state = PlayerState.fromString(playerStatus.getString("state"));
 
-            JSONObject ls = playerStatus.optJSONObject("lastSeen");
-            if(state.equals(PlayerState.offline) && ls != null) try {
-                this.lastSeen = new LastSeen(ls);
-            } catch (Exception e) {
-                logger.error("Error unmarshaling lastSeen info for {}", xuid, e);
-            } else if(state.equals(PlayerState.online) || state.equals(PlayerState.away) || state.equals(PlayerState.busy)) try {
-                JSONArray devicesArr = playerStatus.getJSONArray("devices");
-                this.devices = new Device[devicesArr.length()];
-                for(int i=0 ; i < devicesArr.length() ; i++) {
-                    devices[i] = new Device(devicesArr.getJSONObject(i));
+                JSONObject ls = playerStatus.optJSONObject("lastSeen");
+                if (state.equals(PlayerState.offline) && ls != null) try {
+                    this.lastSeen = new LastSeen(ls);
+                } catch (Exception e) {
+                    logger.error("Error unmarshaling lastSeen info for {}", xuid, e);
                 }
+                else if (state.equals(PlayerState.online) || state.equals(PlayerState.away) || state.equals(PlayerState.busy))
+                    try {
+                        JSONArray devicesArr = playerStatus.getJSONArray("devices");
+                        this.devices = new Device[devicesArr.length()];
+                        for (int i = 0; i < devicesArr.length(); i++) {
+                            devices[i] = new Device(devicesArr.getJSONObject(i));
+                        }
 
-                if(devices.length > 0) {
-                    Device device = devices[0];
-                    switch(device.platform) {
-                        case xbone: {
-                            if(device.titles[0].name.equals("Home")) {
-                                if(device.titles.length > 1 && device.titles[0].placement.equals("Background") && device.titles[1].placement.equals("Full")) {
-                                    currentGame = device.titles[1].toString();
-                                } else {
-                                    currentGame = "Xbox Home";
+                        if (devices.length > 0) {
+                            Device device = devices[0];
+                            switch (device.platform) {
+                                case xbone: {
+                                    if (device.titles[0].name.equals("Home")) {
+                                        if (device.titles.length > 1 && device.titles[0].placement.equals("Background") && device.titles[1].placement.equals("Full")) {
+                                            currentGame = device.titles[1].toString();
+                                        } else {
+                                            currentGame = "Xbox Home";
+                                        }
+                                    } else {
+                                        currentGame = device.titles[0].toString();
+                                    }
+                                    break;
                                 }
-                            } else {
-                                currentGame = device.titles[0].toString();
+                                case x360: {
+                                    currentGame = device.titles[0].toString();
+                                    break;
+                                }
                             }
-                            break;
                         }
-                        case x360: {
-                            currentGame = device.titles[0].toString();
-                            break;
-                        }
+                    } catch (Exception e) {
+                        logger.error("Error unmarshaling devices info for {}", xuid, e);
                     }
-                }
             } catch (Exception e) {
-                logger.error("Error unmarshaling devices info for {}", xuid, e);
+                logger.error("Error interpreting Player Status json for {}", gamertag, e);
             }
         }
 
