@@ -32,8 +32,6 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
 
     private static Logger logger = LoggerFactory.getLogger(HboForumManager.class);
 
-    private HttpClient client;
-
     private static final Pattern newThreadPattern = Pattern.compile("<tr><td><a name='m_(\\d+)'");
     private static final Pattern postInfoPattern = Pattern.compile(
             "<div class='msg_headln'>(.*?)</div>.*?<span class='msg_poster'><a.*?>(.*?)</a>.*?" +
@@ -47,6 +45,8 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
         HtmlSanitizer.forbiddenTags = Pattern.compile("^(b|p|i|s|a|img|table|thead|tbody|tfoot|tr|th|td|dd|dl|dt|em|h1|h2|h3|h4|h5|h6|li|ul|ol|span|div|strike|strong|"
                 + "sub|sup|pre|del|code|blockquote|strike|kbd|br|hr|area|map|object|embed|param|link|form|small|big|script|object|embed|link|style|form|input)$");
     }
+
+    private HttpClient client;
 
     @Inject
     public HboForumManager(HttpClient client) {
@@ -97,20 +97,20 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
                 try {
 
                     postId = Integer.parseInt(indexMatcher.group(1));
-                    logger.info("Found HBO Forum thread, postId = {}", postId);
+//                    logger.info("Found HBO Forum thread, postId = {}", postId);
                     if( (!recentNotifications.isEmpty()) &&
                             (postId <= recentNotifications.getFirst().getPostId() ) ) {
-                        logger.info("Found thread {} is older than bottom of notification queue ({})",
-                                postId, recentNotifications.getFirst().getPostId());
+//                        logger.info("Found thread {} is older than bottom of notification queue ({})",
+//                                postId, recentNotifications.getFirst().getPostId());
                         continue;
                     }
-                    logger.info("Found thread {} is new, getting post info...", postId);
+//                    logger.info("Found thread {} is new, getting post info...", postId);
                     postGet = new HttpGet("http://carnage.bungie.org/haloforum/halo.forum.pl?read=" + postId);
                     postResponse = client.execute(postGet, context);
                     postEntity = postResponse.getEntity();
                     String postText = EntityUtils.toString(postEntity);
                     if(postText.contains("<div class=\"msg_prev\">")) {
-                        logger.info("Found thread {} is actually a stale reply, skipping...", postId);
+//                        logger.info("Found thread {} is actually a stale reply, skipping...", postId);
                         continue; // stale reply
                     }
                     postMatcher = postInfoPattern.matcher(postText);
@@ -128,7 +128,7 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
                         foundPost.setBody(sanitizedBody);
 
                         notifications.addLast(foundPost);
-                        logger.info("Added thread {} \"{}\" to notification list", postId, foundPost.getSubject());
+//                        logger.info("Added thread {} \"{}\" to notification list", postId, foundPost.getSubject());
                     }
 
                 } finally {

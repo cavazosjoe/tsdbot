@@ -12,19 +12,23 @@ import org.apache.http.util.EntityUtils;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.annotations.XYPointerAnnotation;
 import org.jfree.chart.annotations.XYTextAnnotation;
 import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.time.Second;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 import org.jfree.data.time.TimeSeriesDataItem;
+import org.jfree.util.ShapeUtilities;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.CircularBuffer;
+import org.tsd.tsdbot.util.IRCUtil;
 import org.tsd.tsdbot.util.MiscUtils;
 
 import java.awt.*;
@@ -81,7 +85,7 @@ public class Hustle extends MainFunction {
                 }
             });
 
-            TimeSeries timeSeries = new TimeSeries("Time");
+            TimeSeries timeSeries = new TimeSeries("Hustle");
             for (DataPoint dataPoint : huffleBustle) {
                 timeSeries.add(new Second(dataPoint.date), dataPoint.newHhr);
                 orderedByImpact.add(dataPoint);
@@ -97,8 +101,17 @@ public class Hustle extends MainFunction {
             );
 
             XYPlot plot = chart.getXYPlot();
-            ((DateAxis)plot.getDomainAxis()).setDateFormatOverride(timeFormat);
-            ((NumberAxis)plot.getRangeAxis()).setNumberFormatOverride(decimalFormat);
+
+            DateAxis domainAxis = (DateAxis) plot.getDomainAxis();
+            domainAxis.setDateFormatOverride(timeFormat);
+
+            NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
+            rangeAxis.setNumberFormatOverride(decimalFormat);
+            double mid = rangeAxis.getRange().getCentralValue();
+
+            XYLineAndShapeRenderer renderer = (XYLineAndShapeRenderer) plot.getRenderer();
+            renderer.setSeriesShape(0, ShapeUtilities.createDiamond(5));
+            renderer.setSeriesShapesVisible(0, true);
 
             int limit = 5;
             int i = 0;
@@ -109,8 +122,10 @@ public class Hustle extends MainFunction {
                 TimeSeriesDataItem importantItem = timeSeries.getDataItem(new Second(dp.date));
                 double x = importantItem.getPeriod().getFirstMillisecond();
                 double y = importantItem.getValue().doubleValue();
-                String s = dp.text.substring(0, Math.min(60, dp.text.length()));
-                XYTextAnnotation a = new XYTextAnnotation(s, x, y);
+                double r = (y > mid) ? (Math.PI / 2) : (3 * Math.PI / 2);
+                String s = trimMessage(dp.text);
+                XYPointerAnnotation a = new XYPointerAnnotation(s, x, y, r);
+                a.setLabelOffset(10);
                 a.setFont(new Font("SansSerif", Font.PLAIN, 12));
                 a.setOutlineStroke(new BasicStroke(5));
                 plot.addAnnotation(a);
@@ -190,6 +205,25 @@ public class Hustle extends MainFunction {
             }
         }
         return hustle/hate;
+    }
+
+    private String trimMessage(String text) {
+        int maxChars = 50;
+        String[] words = text.split("\\s+");
+        StringBuilder sb = new StringBuilder();
+        int i_c = 0;
+        for(String word : words) {
+            if(i_c > maxChars) {
+                sb.append("...");
+                return sb.toString();
+            } else if(i_c != 0)  {
+                sb.append(" ");
+                i_c++;
+            }
+            sb.append(word);
+            i_c += word.length();
+        }
+        return sb.toString();
     }
 
     enum Sentiment {

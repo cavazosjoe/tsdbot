@@ -71,11 +71,17 @@ public class XboxLive extends MainFunction {
             });
 
     @Inject
-    public XboxLive(TSDBot bot, Properties properties) throws IOException, URISyntaxException {
+    public XboxLive(TSDBot bot, Properties properties) {
         super(bot);
         xblApiKey = properties.getProperty("xbl.apiKey");
         xuid = Long.parseLong(properties.getProperty("xbl.xuid"));
-        loadFriendsList();
+        try {
+            loadFriendsList();
+        } catch (Exception e) {
+            String msg = "Error initializing XBL friends list";
+            logger.error(msg, e);
+            bot.broadcast(msg);
+        }
     }
 
     @Override
