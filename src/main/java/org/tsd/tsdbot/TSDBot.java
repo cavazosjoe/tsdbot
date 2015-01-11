@@ -2,6 +2,7 @@ package org.tsd.tsdbot;
 
 import com.google.inject.Inject;
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.jetty.server.Server;
 import org.jibble.pircbot.IrcException;
 import org.jibble.pircbot.PircBot;
 import org.jibble.pircbot.User;
@@ -14,14 +15,12 @@ import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.notifications.NotificationManager;
 import org.tsd.tsdbot.runnable.IRCListenerThread;
 import org.tsd.tsdbot.runnable.ThreadManager;
+import org.tsd.tsdbot.stats.Stats;
 import org.tsd.tsdbot.util.ArchivistUtil;
 import org.tsd.tsdbot.util.FuzzyLogic;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by Joe on 2/18/14.
@@ -37,6 +36,7 @@ public class TSDBot extends PircBot {
 
     private HashMap<Command, MainFunction> functions = new HashMap<>();
     private HashMap<NotificationType, NotificationManager> notificationManagers = new HashMap<>();
+    private HashSet<Stats> stats = new HashSet<>();
 
     @Inject
     protected HistoryBuff historyBuff;
@@ -78,6 +78,13 @@ public class TSDBot extends PircBot {
             for(NotificationType type : NotificationType.fromManager(manager)) {
                 this.notificationManagers.put(type, manager);
             }
+        }
+    }
+
+    @Inject
+    public void setStats(Set<Stats> stats) {
+        for(Stats s : stats) {
+            this.stats.add(s);
         }
     }
 
@@ -200,7 +207,9 @@ public class TSDBot extends PircBot {
                 listenerThread.onMessage(c, sender, login, hostname, message);
         }
 
-        hustle.process(channel, message);
+        for(Stats s : stats) {
+            s.processMessage(channel, sender, login, hostname, message);
+        }
 
         historyBuff.updateHistory(channel, message, sender);
 

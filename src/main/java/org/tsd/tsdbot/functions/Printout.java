@@ -152,7 +152,7 @@ public class Printout extends MainFunction {
 
         if(img != null) {
             try {
-                BufferedImage bg = ImageIO.read(Printout.class.getResourceAsStream("/resources/printout.png"));
+                BufferedImage bg = ImageIO.read(Printout.class.getResourceAsStream("/printout.png"));
 
                 BufferedImage resizedImage = Scalr.resize(img, Scalr.Mode.FIT_EXACT, 645, 345);
 

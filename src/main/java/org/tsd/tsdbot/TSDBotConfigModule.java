@@ -5,6 +5,7 @@ import com.gargoylesoftware.htmlunit.WebClient;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
+import com.google.inject.servlet.ServletModule;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpClient;
@@ -14,6 +15,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.protocol.HttpContext;
+import org.hyperic.sigar.Sigar;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.SchedulerFactory;
@@ -27,10 +29,15 @@ import org.tsd.tsdbot.functions.*;
 import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.notifications.*;
 import org.tsd.tsdbot.scheduled.InjectableJobFactory;
+import org.tsd.tsdbot.servlets.TestServlet;
+import org.tsd.tsdbot.stats.HustleStats;
+import org.tsd.tsdbot.stats.Stats;
+import org.tsd.tsdbot.stats.SystemStats;
 import org.tsd.tsdbot.tsdtv.InjectableStreamFactory;
 import twitter4j.Twitter;
 import twitter4j.TwitterFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import java.util.Properties;
@@ -55,6 +62,26 @@ public class TSDBotConfigModule extends AbstractModule {
 
     @Override
     protected void configure() {
+
+        // need to load some platform-specific libraries for SIGAR system info API
+        try {
+            File sigarLibs = new File(getClass().getClassLoader().getResource("sigar").toURI());
+            String libPath = null;
+            for(File lib : sigarLibs.listFiles()) {
+                try {
+                    libPath = lib.getAbsolutePath();
+                    log.info("Attempting to load SIGAR lib {}", libPath);
+                    System.load(libPath);
+                    log.info("Successfully loaded {}", libPath);
+                } catch (UnsatisfiedLinkError e) {
+                    log.warn("Failed to load {}, skipping...", libPath);
+                }
+            }
+            bind(Sigar.class).toInstance(new Sigar());
+            log.info("SIGAR successfully initialized");
+        } catch (Exception e) {
+            log.error("Error loading SIGAR libraries", e);
+        }
 
         bind(Stage.class).toInstance(stage);
 
@@ -172,5 +199,11 @@ public class TSDBotConfigModule extends AbstractModule {
         notificationBinder.addBinding().to(DboForumManager.class);
         notificationBinder.addBinding().to(DboNewsManager.class);
 
+        Multibinder<Stats> statsBinder = Multibinder.newSetBinder(binder(), Stats.class);
+        statsBinder.addBinding().to(HustleStats.class);
+        statsBinder.addBinding().to(SystemStats.class);
+
     }
+
+
 }

@@ -2,14 +2,35 @@ package org.tsd.tsdbot;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.servlet.GuiceFilter;
+import org.apache.tomcat.InstanceManager;
+import org.apache.tomcat.SimpleInstanceManager;
+import org.eclipse.jetty.annotations.ServletContainerInitializersStarter;
+import org.eclipse.jetty.apache.jsp.JettyJasperInitializer;
+import org.eclipse.jetty.jsp.JettyJspServlet;
+import org.eclipse.jetty.plus.annotation.ContainerInitializer;
+import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.servlet.DefaultServlet;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.webapp.WebAppContext;
 import org.quartz.CronTrigger;
 import org.quartz.JobDetail;
 import org.quartz.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.scheduled.*;
+import org.tsd.tsdbot.servlets.TestServlet;
 
+import javax.servlet.DispatcherType;
 import java.io.*;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Properties;
 
 import static org.quartz.CronScheduleBuilder.cronSchedule;
@@ -54,14 +75,87 @@ public class TSDBotLauncher {
         TSDBot bot = new TSDBot(botName, nickservPass, server, channels);
 
         TSDBotConfigModule module = new TSDBotConfigModule(bot, properties, stage);
+        TSDBotServletModule servletModule = new TSDBotServletModule();
 
-        Injector injector = Guice.createInjector(module);
+        Injector injector = Guice.createInjector(module, servletModule);
         configureScheduler(injector);
         injector.injectMembers(TSDBot.class);
 
         writeCommandList(properties);
 
-        log.info("TSDBot loaded successfully. Beginning conquest...");
+        log.info("TSDBot loaded successfully. Starting server...");
+
+        Server httpServer = new Server();
+        ServerConnector connector = new ServerConnector(httpServer);
+        connector.setPort(7777);
+        httpServer.addConnector(connector);
+
+        URL indexUri = TSDBotLauncher.class.getResource("/webroot/");
+
+        System.setProperty("org.apache.jasper.compiler.disablejsr199", "false");
+
+        File tempDir = new File(System.getProperty("java.io.tmpdir"));
+        File scratchDir = new File(tempDir.toString(), "embedded-jetty-jsp");
+        if(!scratchDir.exists())
+            scratchDir.mkdirs();
+
+        JettyJasperInitializer sci = new JettyJasperInitializer();
+        ContainerInitializer initializer = new ContainerInitializer(sci, null);
+        List<ContainerInitializer> initializers = new ArrayList<>();
+        initializers.add(initializer);
+
+        ClassLoader jspClassLoader = new URLClassLoader(new URL[0], TSDBotLauncher.class.getClassLoader());
+
+        ServletHolder holderJsp = new ServletHolder("jsp", JettyJspServlet.class);
+        holderJsp.setInitOrder(0);
+        holderJsp.setInitParameter("logVerbosityLevel", "DEBUG");
+        holderJsp.setInitParameter("fork", "false");
+        holderJsp.setInitParameter("xpoweredBy", "false");
+        holderJsp.setInitParameter("compilerTargetVM", "1.7");
+        holderJsp.setInitParameter("compilerSourceVM", "1.7");
+        holderJsp.setInitParameter("keepgenerated", "true");
+
+        WebAppContext context = new WebAppContext();
+        context.setContextPath("/");
+        context.setAttribute("javax.servlet.context.tempdir", scratchDir);
+        context.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
+                ".*/[^/]*servlet-api-[^/]*\\.jar$|.*/javax.servlet.jsp.jstl-.*\\.jar$|.*/.*taglibs.*\\.jar$");
+        context.setResourceBase(indexUri.toURI().toASCIIString());
+        context.setAttribute("org.eclipse.jetty.containerInitializers", initializers);
+        context.setAttribute(InstanceManager.class.getName(), new SimpleInstanceManager());
+        context.addBean(new ServletContainerInitializersStarter(context), true);
+        context.setClassLoader(jspClassLoader);
+
+        context.addFilter(GuiceFilter.class, "/*", EnumSet.allOf(DispatcherType.class));
+
+        context.addServlet(DefaultServlet.class, "/");
+
+//        context.addServlet(holderJsp, "*.jsp");
+//        // Add Application Servlets
+//        context.addServlet(TestServlet.class, "/test/");
+//
+//        ServletHolder holderDefault = new ServletHolder("default", DefaultServlet.class);
+//        holderDefault.setInitParameter("resourceBase", indexUri.toURI().toASCIIString());
+//        holderDefault.setInitParameter("dirAllowed", "true");
+//        context.addServlet(holderDefault, "/");
+
+        httpServer.setHandler(context);
+
+        httpServer.start();
+
+        String scheme = "http";
+        for (ConnectionFactory connectFactory : connector.getConnectionFactories()) {
+            if (connectFactory.getProtocol().equals("SSL-http")) {
+                scheme = "https";
+            }
+        }
+        String host = connector.getHost();
+        if (host == null) {
+            host = "localhost";
+        }
+        int port = connector.getLocalPort();
+        URI serverURI = new URI(String.format("%s://%s:%d/", scheme, host, port));
+        log.info("Server started, URI = {}", serverURI);
     }
 
     private static void configureScheduler(Injector injector) {

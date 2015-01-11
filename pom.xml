@@ -8,8 +8,11 @@
   <artifactId>TSDBot</artifactId>
   <version>1.0</version>
 
+  <properties>
+    <jetty-version>9.2.6.v20141205</jetty-version>
+  </properties>
+
   <repositories>
-    <!--other repositories if any-->
     <repository>
       <id>tsdbot.local</id>
       <name>tsdbot-local</name>
@@ -25,6 +28,42 @@
       <version>1.0</version>
     </dependency>
 
+    <!--begin jetty stuff-->
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>3.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-annotations</artifactId>
+      <version>${jetty-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-webapp</artifactId>
+      <version>${jetty-version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>apache-jsp</artifactId>
+      <version>${jetty-version}</version>
+      <type>jar</type>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>apache-jstl</artifactId>
+      <version>${jetty-version}</version>
+      <type>pom</type>
+    </dependency>
+    <!--end jetty stuff-->
+
+    <dependency>
+      <groupId>org.fusesource</groupId>
+      <artifactId>sigar</artifactId>
+      <version>1.6.4</version>
+    </dependency>
+
     <dependency>
       <groupId>com.google.inject</groupId>
       <artifactId>guice</artifactId>
@@ -38,21 +77,27 @@
     </dependency>
 
     <dependency>
+      <groupId>com.google.inject.extensions</groupId>
+      <artifactId>guice-servlet</artifactId>
+      <version>3.0</version>
+    </dependency>
+
+    <dependency>
       <groupId>net.sourceforge.htmlunit</groupId>
       <artifactId>htmlunit</artifactId>
       <version>2.15</version>
     </dependency>
 
     <dependency>
-      <groupId>org.jfree</groupId>
-      <artifactId>jfreechart</artifactId>
-      <version>1.0.19</version>
-    </dependency>
-
-    <dependency>
       <groupId>org.quartz-scheduler</groupId>
       <artifactId>quartz</artifactId>
       <version>2.2.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jfree</groupId>
+      <artifactId>jfreechart</artifactId>
+      <version>1.0.19</version>
     </dependency>
 
     <dependency>
@@ -200,7 +245,7 @@
     <dependency>
       <groupId>xml-apis</groupId>
       <artifactId>xml-apis</artifactId>
-      <version>2.0.2</version>
+      <version>1.4.01</version>
     </dependency>
 
   </dependencies>
