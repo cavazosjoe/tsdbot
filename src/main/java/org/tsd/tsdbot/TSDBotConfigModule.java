@@ -5,7 +5,6 @@ import com.gargoylesoftware.htmlunit.WebClient;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
-import com.google.inject.servlet.ServletModule;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -31,7 +30,7 @@ import org.tsd.tsdbot.functions.*;
 import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.notifications.*;
 import org.tsd.tsdbot.scheduled.InjectableJobFactory;
-import org.tsd.tsdbot.servlets.TestServlet;
+import org.tsd.tsdbot.stats.GvStats;
 import org.tsd.tsdbot.stats.HustleStats;
 import org.tsd.tsdbot.stats.Stats;
 import org.tsd.tsdbot.stats.SystemStats;
@@ -105,6 +104,21 @@ public class TSDBotConfigModule extends AbstractModule {
         } catch (Exception e) {
             log.error("Error loading SIGAR libraries", e);
         }
+
+        String hostname = properties.getProperty("server.hostname");
+        bind(String.class).annotatedWith(ServerHostname.class)
+                .toInstance(hostname);
+
+        int port = Integer.parseInt(properties.getProperty("server.port"));
+        bind(Integer.class).annotatedWith(ServerPort.class)
+                .toInstance(port);
+
+        StringBuilder urlBuilder = new StringBuilder();
+        urlBuilder.append("http://").append(hostname);
+        if(port != 80)
+            urlBuilder.append(":").append(port);
+        bind(String.class).annotatedWith(Names.named("serverUrl"))
+                .toInstance(urlBuilder.toString());
 
         bind(Stage.class).toInstance(stage);
 
@@ -189,6 +203,20 @@ public class TSDBotConfigModule extends AbstractModule {
                 .annotatedWith(Names.named("ffmpeg"))
                 .toInstance(ffmpeg);
 
+        bindStats();
+        bindFunctions();
+        bindNotifiers();
+
+    }
+
+    private void bindStats() {
+        Multibinder<Stats> statsBinder = Multibinder.newSetBinder(binder(), Stats.class);
+        statsBinder.addBinding().to(HustleStats.class);
+        statsBinder.addBinding().to(SystemStats.class);
+        statsBinder.addBinding().to(GvStats.class);
+    }
+
+    private void bindFunctions() {
         Multibinder<MainFunction> functionBinder = Multibinder.newSetBinder(binder(), MainFunction.class);
         functionBinder.addBinding().to(Archivist.class);
         functionBinder.addBinding().to(BlunderCount.class);
@@ -214,19 +242,15 @@ public class TSDBotConfigModule extends AbstractModule {
         functionBinder.addBinding().to(Hustle.class);
         if(stage.equals(Stage.production))
             functionBinder.addBinding().to(TSDTV.class);
+    }
 
+    private void bindNotifiers() {
         Multibinder<NotificationManager> notificationBinder = Multibinder.newSetBinder(binder(), NotificationManager.class);
         notificationBinder.addBinding().to(TwitterManager.class);
         notificationBinder.addBinding().to(HboForumManager.class);
         notificationBinder.addBinding().to(HboNewsManager.class);
         notificationBinder.addBinding().to(DboForumManager.class);
         notificationBinder.addBinding().to(DboNewsManager.class);
-
-        Multibinder<Stats> statsBinder = Multibinder.newSetBinder(binder(), Stats.class);
-        statsBinder.addBinding().to(HustleStats.class);
-        statsBinder.addBinding().to(SystemStats.class);
-
     }
-
 
 }

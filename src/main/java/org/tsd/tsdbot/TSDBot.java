@@ -2,7 +2,6 @@ package org.tsd.tsdbot;
 
 import com.google.inject.Inject;
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.jetty.server.Server;
 import org.jibble.pircbot.IrcException;
 import org.jibble.pircbot.PircBot;
 import org.jibble.pircbot.User;

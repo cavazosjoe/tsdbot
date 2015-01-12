@@ -53,10 +53,11 @@ public class HustleStats implements Stats {
     private HttpClient httpClient;
     private String apiKey;
 
-    private DataPoint lastDataPoint = null;
     private CircularBuffer<DataPoint> hustleBuffer = new CircularBuffer<>(50);
 
     private int msgCnt = 0;
+
+    private JFreeChart chart = null;
 
     @Inject
     public HustleStats(TSDBot bot, HttpClient httpClient, Properties properties) {
@@ -65,9 +66,17 @@ public class HustleStats implements Stats {
         this.apiKey = properties.getProperty("mashape.apiKey");
     }
 
+    public JFreeChart getChart() {
+        return chart;
+    }
+
+    public double getHhr() {
+        return calculateCurrentHhr();
+    }
+
     @Override
-    public HashMap<String, Object> getReport() {
-        HashMap<String, Object> report = new HashMap<>();
+    public LinkedHashMap<String, Object> getReport() {
+        LinkedHashMap<String, Object> report = new LinkedHashMap<>();
         report.put("Current HHR", "<a href=\"/hustle\">" + calculateCurrentHhr() + "</a>");
         return report;
     }
@@ -97,18 +106,17 @@ public class HustleStats implements Stats {
                 if(key.equals("result")) {
                     double confidence = Double.parseDouble(json.getJSONObject(key).getString("confidence"));
                     Sentiment sentiment = Sentiment.fromString(json.getJSONObject(key).getString("sentiment"));
-                    log.info("Analysis result: {} (Confidence {})", sentiment, confidence);
-                    double lastHhr = (lastDataPoint == null) ? 0 : lastDataPoint.newHhr;
-                    log.info("Previous HHR: {}", lastHhr);
-                    lastDataPoint = new DataPoint(message, sentiment, confidence);
-                    hustleBuffer.add(lastDataPoint);
-                    lastDataPoint.newHhr = calculateCurrentHhr();
-                    lastDataPoint.delta = lastDataPoint.newHhr - lastHhr;
-                    log.info("New HHR: {} (delta {})", lastDataPoint.newHhr, lastDataPoint.delta);
+                    DataPoint dataPoint = new DataPoint(message, sentiment, confidence);
+                    log.info("Analysis result: {}, Confidence {} -> Score = {}", new Object[]{sentiment, confidence, dataPoint.getScore()});
+                    hustleBuffer.add(dataPoint);
+                    dataPoint.newHhr = calculateCurrentHhr();
+                    log.info("New HHR: {}", dataPoint.newHhr);
                 }
             }
 
             EntityUtils.consumeQuietly(response.getEntity());
+
+            generateChart();
 
         } catch (Exception e) {
             log.error("Error retrieving text sentiment", e);
@@ -122,11 +130,14 @@ public class HustleStats implements Stats {
     @Override
     public void processAction(String sender, String login, String hostname, String target, String action) {}
 
-    public JFreeChart generateChart() {
-        TreeSet<DataPoint> orderedByImpact = new TreeSet<>(new Comparator<DataPoint>() {
+    private void generateChart() {
+
+        log.info("Generating hustle chart...");
+
+        TreeSet<DataPoint> orderedByScore = new TreeSet<>(new Comparator<DataPoint>() {
             @Override
             public int compare(DataPoint o1, DataPoint o2) {
-                return Double.compare(Math.abs(o1.delta), Math.abs(o2.delta));
+                return Double.compare(o1.getScore(), o2.getScore());
             }
         });
 
@@ -134,7 +145,7 @@ public class HustleStats implements Stats {
         for (DataPoint dataPoint : hustleBuffer) {
             Second date = new Second(dataPoint.date);
             timeSeries.add(date, dataPoint.newHhr);
-            orderedByImpact.add(dataPoint);
+            orderedByScore.add(dataPoint);
         }
 
         TimeSeriesCollection dataset = new TimeSeriesCollection(timeSeries);
@@ -161,10 +172,10 @@ public class HustleStats implements Stats {
 
         int limit = 5;
         int i = 0;
-        for(DataPoint dp : orderedByImpact.descendingSet()) {
+        for(DataPoint dp : orderedByScore.descendingSet()) {
             if(i++ > limit)
                 break;
-            log.info("Adding annotation, hhr = {}, delta = {}", dp.newHhr, dp.delta);
+            log.info("Adding annotation, hhr = {}, score = {}", dp.newHhr, dp.getScore());
             TimeSeriesDataItem importantItem = timeSeries.getDataItem(new Second(dp.date));
             double x = importantItem.getPeriod().getFirstMillisecond();
             double y = importantItem.getValue().doubleValue();
@@ -177,7 +188,8 @@ public class HustleStats implements Stats {
             plot.addAnnotation(a);
         }
 
-        return chart;
+        this.chart = chart;
+        log.info("Hustle chart generated successfully");
     }
 
     private double calculateCurrentHhr() {
@@ -237,7 +249,7 @@ public class HustleStats implements Stats {
         public double confidence;
         public Date date;
         public double newHhr;
-        public double delta;
+//        public double delta;
 
         DataPoint(String text, Sentiment sentiment, double confidence) {
             this.text = text;
@@ -247,7 +259,7 @@ public class HustleStats implements Stats {
         }
 
         public double getScore() {
-            return (confidence/100) * text.length();
+            return (confidence/100) * Math.log(text.length() + 1);
         }
     }
 }

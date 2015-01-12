@@ -2,6 +2,8 @@ package org.tsd.tsdbot;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Key;
+import com.google.inject.name.Names;
 import com.google.inject.servlet.GuiceFilter;
 import org.apache.tomcat.InstanceManager;
 import org.apache.tomcat.SimpleInstanceManager;
@@ -21,11 +23,11 @@ import org.quartz.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.scheduled.*;
-import org.tsd.tsdbot.servlets.TestServlet;
 
 import javax.servlet.DispatcherType;
 import java.io.*;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -81,13 +83,15 @@ public class TSDBotLauncher {
         configureScheduler(injector);
         injector.injectMembers(TSDBot.class);
 
-        writeCommandList(properties);
-
         log.info("TSDBot loaded successfully. Starting server...");
+        initializeJettyServer(injector);
+    }
 
+    private static void initializeJettyServer(Injector injector) throws Exception {
         Server httpServer = new Server();
         ServerConnector connector = new ServerConnector(httpServer);
-        connector.setPort(7777);
+        int port = injector.getInstance(Key.get(Integer.class, ServerPort.class));
+        connector.setPort(port);
         httpServer.addConnector(connector);
 
         URL indexUri = TSDBotLauncher.class.getResource("/webroot/");
@@ -118,8 +122,6 @@ public class TSDBotLauncher {
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         context.setAttribute("javax.servlet.context.tempdir", scratchDir);
-//        context.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
-//                ".*/[^/]*servlet-api-[^/]*\\.jar$|.*/javax.servlet.jsp.jstl-.*\\.jar$|.*/[^/]*taglibs.*\\.jar$");
         context.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern", ".*jar$|.*/classes/.*");
         context.setResourceBase(indexUri.toURI().toASCIIString());
         context.setAttribute("org.eclipse.jetty.containerInitializers", initializers);
@@ -145,7 +147,7 @@ public class TSDBotLauncher {
         if (host == null) {
             host = "localhost";
         }
-        int port = connector.getLocalPort();
+        port = connector.getLocalPort();
         URI serverURI = new URI(String.format("%s://%s:%d/", scheme, host, port));
         log.info("Server started, URI = {}", serverURI);
     }
@@ -203,21 +205,21 @@ public class TSDBotLauncher {
         }
     }
 
-    private static void writeCommandList(Properties properties) {
-        String cmdListLoc = properties.getProperty("commandList");
-        log.info("Writing command list to {}...", cmdListLoc);
-        try(BufferedWriter commandListWriter = new BufferedWriter(new FileWriter(cmdListLoc))) {
-            boolean first = true;
-            for(Command cmd : Command.values()) {
-                if(cmd.getDesc() != null) {
-                    if(!first) commandListWriter.write("-----------------------------------------\n");
-                    commandListWriter.write(cmd.getDesc() + "\n");
-                    commandListWriter.write(cmd.getUsage() + "\n");
-                    first = false;
-                }
-            }
-        } catch (Exception e) {
-            log.error("ERROR PRINTING COMMAND LIST", e);
-        }
-    }
+//    private static void writeCommandList(Properties properties) {
+//        String cmdListLoc = properties.getProperty("commandList");
+//        log.info("Writing command list to {}...", cmdListLoc);
+//        try(BufferedWriter commandListWriter = new BufferedWriter(new FileWriter(cmdListLoc))) {
+//            boolean first = true;
+//            for(Command cmd : Command.values()) {
+//                if(cmd.getDesc() != null) {
+//                    if(!first) commandListWriter.write("-----------------------------------------\n");
+//                    commandListWriter.write(cmd.getDesc() + "\n");
+//                    commandListWriter.write(cmd.getUsage() + "\n");
+//                    first = false;
+//                }
+//            }
+//        } catch (Exception e) {
+//            log.error("ERROR PRINTING COMMAND LIST", e);
+//        }
+//    }
 }

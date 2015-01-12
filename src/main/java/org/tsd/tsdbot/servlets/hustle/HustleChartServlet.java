@@ -23,9 +23,8 @@ public class HustleChartServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         resp.setContentType("image/png");
-
-        ChartUtilities.writeChartAsPNG(resp.getOutputStream(), hustleStats.generateChart(), 1000, 600);
-
+        if(hustleStats.getChart() != null)
+            ChartUtilities.writeChartAsPNG(resp.getOutputStream(), hustleStats.getChart(), 1000, 600);
         resp.getOutputStream().close();
     }
 }

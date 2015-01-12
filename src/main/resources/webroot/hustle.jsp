@@ -5,6 +5,8 @@
     </head>
     <body>
         <h1 style="text-align:center">Maybe we should hustle as hard as we hate</h1>
-        <img src="<%=request.getContextPath()%>/hustle/chart"></img>
+        <div style="text-align: center;">
+            <img src="<%=request.getContextPath()%>/hustle/chart"></img>
+        </div>
     </body>
 </html>

@@ -6,7 +6,6 @@ import org.hyperic.sigar.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.management.ManagementFactory;
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -25,7 +24,7 @@ public class SystemStats implements Stats {
     private Sigar sigar;
 
     @Override
-    public HashMap<String, Object> getReport() {
+    public LinkedHashMap<String, Object> getReport() {
 
         LinkedHashMap<String, Object> report = new LinkedHashMap<>();
 
