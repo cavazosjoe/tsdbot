@@ -3,7 +3,6 @@
     <head>
     </head>
     <body>
-        <jsp
         <h1></h1>
         <hr>
         <p>A trivial FOO example

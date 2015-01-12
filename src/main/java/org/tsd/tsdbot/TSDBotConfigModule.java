@@ -6,6 +6,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
 import com.google.inject.servlet.ServletModule;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpClient;
@@ -37,8 +39,7 @@ import org.tsd.tsdbot.tsdtv.InjectableStreamFactory;
 import twitter4j.Twitter;
 import twitter4j.TwitterFactory;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.sql.Connection;
 import java.util.Properties;
 import java.util.Random;
@@ -63,20 +64,42 @@ public class TSDBotConfigModule extends AbstractModule {
     @Override
     protected void configure() {
 
-        // need to load some platform-specific libraries for SIGAR system info API
+        /**
+         * Need to load some platform-specific libraries for SIGAR system info API.
+         * Because these libs are included in the JAR file, we need to do some hackery
+         * to load them individually: extract each file to a tmp directory, then load
+         * that file into the system
+         */
         try {
-            File sigarLibs = new File(getClass().getClassLoader().getResource("sigar").toURI());
-            String libPath = null;
-            for(File lib : sigarLibs.listFiles()) {
-                try {
-                    libPath = lib.getAbsolutePath();
-                    log.info("Attempting to load SIGAR lib {}", libPath);
-                    System.load(libPath);
-                    log.info("Successfully loaded {}", libPath);
+            log.info("Loading SIGAR libraries...");
+            String tmpPath = System.getProperty("java.io.tmpdir");
+
+            // the output directory where the libs will be extracted
+            File sigDir = new File(tmpPath + "/sigar/");
+            if(sigDir.exists())
+                sigDir.delete();
+            sigDir.mkdir();
+
+            InputStream in = null;
+            File fileOut = null;
+            OutputStream out = null;
+
+            // iterate over each entry in the manifest, locate file in JAR, and extract to tmp folder
+            try(BufferedReader br = new BufferedReader(new InputStreamReader(getClass().getClassLoader().getResourceAsStream("sigarlist.txt")))) {
+                for(String line; (line = br.readLine()) != null; ) try {
+                    in = getClass().getClassLoader().getResourceAsStream("sigar/" + line);
+                    fileOut = new File(tmpPath + "/sigar/" + line);
+                    out = FileUtils.openOutputStream(fileOut);
+                    IOUtils.copy(in, out);
+                    in.close();
+                    out.close();
+                    System.load(fileOut.toString());
+                    log.info("Successfully loaded {}", fileOut.toString());
                 } catch (UnsatisfiedLinkError e) {
-                    log.warn("Failed to load {}, skipping...", libPath);
+                    log.warn("Failed to load {}, skipping...", fileOut.toString());
                 }
             }
+
             bind(Sigar.class).toInstance(new Sigar());
             log.info("SIGAR successfully initialized");
         } catch (Exception e) {

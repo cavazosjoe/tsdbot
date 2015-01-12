@@ -118,8 +118,9 @@ public class TSDBotLauncher {
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         context.setAttribute("javax.servlet.context.tempdir", scratchDir);
-        context.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
-                ".*/[^/]*servlet-api-[^/]*\\.jar$|.*/javax.servlet.jsp.jstl-.*\\.jar$|.*/.*taglibs.*\\.jar$");
+//        context.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
+//                ".*/[^/]*servlet-api-[^/]*\\.jar$|.*/javax.servlet.jsp.jstl-.*\\.jar$|.*/[^/]*taglibs.*\\.jar$");
+        context.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern", ".*jar$|.*/classes/.*");
         context.setResourceBase(indexUri.toURI().toASCIIString());
         context.setAttribute("org.eclipse.jetty.containerInitializers", initializers);
         context.setAttribute(InstanceManager.class.getName(), new SimpleInstanceManager());
@@ -129,15 +130,6 @@ public class TSDBotLauncher {
         context.addFilter(GuiceFilter.class, "/*", EnumSet.allOf(DispatcherType.class));
 
         context.addServlet(DefaultServlet.class, "/");
-
-//        context.addServlet(holderJsp, "*.jsp");
-//        // Add Application Servlets
-//        context.addServlet(TestServlet.class, "/test/");
-//
-//        ServletHolder holderDefault = new ServletHolder("default", DefaultServlet.class);
-//        holderDefault.setInitParameter("resourceBase", indexUri.toURI().toASCIIString());
-//        holderDefault.setInitParameter("dirAllowed", "true");
-//        context.addServlet(holderDefault, "/");
 
         httpServer.setHandler(context);
 
