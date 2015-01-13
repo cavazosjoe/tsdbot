@@ -1,7 +1,8 @@
-package org.tsd.tsdbot.functions;
+package org.tsd.tsdbot.tsdtv;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.google.inject.name.Named;
 import org.apache.commons.lang3.StringUtils;
 import org.jibble.pircbot.User;
 import org.quartz.*;
@@ -12,10 +13,11 @@ import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.Persistable;
+import org.tsd.tsdbot.functions.MainFunction;
 import org.tsd.tsdbot.scheduled.SchedulerConstants;
-import org.tsd.tsdbot.tsdtv.*;
 import org.tsd.tsdbot.util.FuzzyLogic;
 import org.tsd.tsdbot.util.IRCUtil;
+import org.tsd.tsdbot.util.TSDTVUtil;
 
 import java.io.*;
 import java.sql.Connection;
@@ -36,13 +38,15 @@ import static org.quartz.TriggerBuilder.newTrigger;
  * Created by Joe on 3/9/14.
  */
 @Singleton
-public class TSDTV extends MainFunction implements Persistable {
+public class TSDTV implements Persistable {
 
     private static Logger logger = LoggerFactory.getLogger(TSDTV.class);
 
-    private static final Pattern episodeNumberPattern = Pattern.compile("^(\\d+).*",Pattern.DOTALL);
+
     private static final int dayBoundaryHour = 4; // 4:00 AM
     private static final TimeZone timeZone = TimeZone.getTimeZone("America/New_York");
+
+    private TSDBot bot;
 
     private DBConnectionProvider connectionProvider;
     private Random random;
@@ -50,6 +54,7 @@ public class TSDTV extends MainFunction implements Persistable {
     private Scheduler scheduler;
     private String catalogPath;
     private String scheduleLoc;
+    private String serverUrl;
 
     private LinkedList<TSDTVProgram> queue = new LinkedList<>(); // file paths
 
@@ -58,150 +63,17 @@ public class TSDTV extends MainFunction implements Persistable {
     @Inject
     public TSDTV(TSDBot bot, Properties prop, Scheduler scheduler,
                  DBConnectionProvider connectionProvider, InjectableStreamFactory streamFactory,
-                 Random random) throws SQLException {
-        super(bot);
+                 Random random, @Named("serverUrl") String serverUrl) throws SQLException {
+        this.bot = bot;
         this.random = random;
         this.catalogPath = prop.getProperty("tsdtv.catalog");
         this.scheduleLoc = prop.getProperty("tsdtv.schedule");
         this.scheduler = scheduler;
         this.connectionProvider = connectionProvider;
         this.streamFactory = streamFactory;
+        this.serverUrl = serverUrl;
         initDB();
         buildSchedule();
-    }
-    
-    @Override
-    public void run(String channel, String sender, String ident, String text) {
-
-        String[] cmdParts = text.split("\\s+");
-        Command cmd = Command.TSDTV;
-        
-        if(cmdParts.length < 2) {
-            bot.sendMessage(channel, cmd.getUsage());
-            return;
-        }
-
-        String subCmd = cmdParts[1];
-
-        if(subCmd.equals("catalog")) {
-
-            String subdir = null;
-            if(cmdParts.length > 2) {
-                subdir = cmdParts[2].replaceAll("/","");
-            }
-
-            try {
-                bot.sendMessage(channel, "I'm sending you a list of my available movies, " + sender);
-                catalog(sender, subdir);
-            } catch (Exception e) {
-                bot.sendMessage(channel, "Error retrieving catalog: " + e.getMessage());
-            }
-
-        } else if(subCmd.equals("replay")) {
-
-            if(cmdParts.length < 3) {
-                bot.sendMessage(channel, cmd.getUsage());
-                return;
-            }
-
-            prepareBlockReplay(channel, cmdParts[2]);
-
-        } else if(subCmd.equals("play")) {
-
-            String subdir = null;
-            String query;
-            if(cmdParts.length > 3) {
-                subdir = cmdParts[2].replaceAll("/","");
-                query = cmdParts[3].replaceAll("/", "");
-            } else {
-                query = cmdParts[2].replaceAll("/","");
-            }
-
-            try {
-                prepareOnDemand(channel, subdir, query);
-            } catch (Exception e) {
-                bot.sendMessage(channel, "Error: " + e.getMessage());
-            }
-
-        } else if(subCmd.equals("kill")) {
-
-            if(!bot.getUserFromNick(channel, sender).hasPriv(User.Priv.OP)) {
-                bot.sendMessage(channel, "Only ops can use that");
-                return;
-            }
-            kill();
-            bot.sendMessage(channel, "The stream has been killed");
-
-        } else if(subCmd.equals("reload")) {
-
-            if(!bot.getUserFromNick(channel, sender).hasPriv(User.Priv.OP)) {
-                bot.sendMessage(channel, "Only ops can use that");
-                return;
-            }
-
-            try{
-                initDB();
-                logger.info("");
-            } catch (SQLException e) {
-                logger.error("Error re-initializing TSDTV DB", e);
-                bot.sendMessage(channel, "Error re-initializing TSDTV DB");
-            }
-            buildSchedule();
-            bot.sendMessage(channel, "The schedule has been reloaded");
-
-        } else if(subCmd.equals("schedule")) {
-
-            if(cmdParts.length > 2 && cmdParts[2].equalsIgnoreCase("all"))
-                printSchedule(channel, false);
-            else
-                printSchedule(channel, true);
-
-        } else if(subCmd.equals("viewers")) {
-
-            int count = getViewerCount();
-            String msg;
-            switch (count) {
-                case -1: msg = "An error occurred getting the viewer count"; break;
-                case 1: msg = "There is 1 viewer watching the stream"; break;
-                default: msg = "There are " + count + " viewers watching the stream"; break;
-            }
-            if(runningStream == null) {
-                msg += ". But there isn't a stream running";
-            }
-            bot.sendMessage(channel, msg);
-
-        } else if(subCmd.equals("current")) {
-
-            // .tsdtv current ippo
-            if(cmdParts.length > 2) {
-                try {
-                    File show = getFuzzyShow(cmdParts[2]);
-                    int nextEpisode = getCurrentEpisode(show.getName());
-                    if(nextEpisode > getNumberOfEpisodes(show.getName()))
-                        nextEpisode = 1;
-
-                    int prevEpisode = getCurrentEpisode(show.getName()) - 1;
-                    if(prevEpisode < 1)
-                        prevEpisode = getNumberOfEpisodes(show.getName());
-
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("The next episode of ")
-                            .append(show.getName())
-                            .append(" will be ")
-                            .append(nextEpisode)
-                            .append(". The previously watched episode was ")
-                            .append(prevEpisode)
-                            .append(".");
-                    bot.sendMessage(channel, sb.toString());
-                } catch (Exception e) {
-                    bot.sendMessage(channel, "Error: " + e.getMessage());
-                }
-            } else {
-                bot.sendMessage(channel, cmd.getUsage());
-            }
-        } else if(subCmd.equals("links")) {
-            bot.sendMessage(channel, getLinks(true));
-        }
     }
 
     @Override
@@ -244,6 +116,31 @@ public class TSDTV extends MainFunction implements Persistable {
                 }
             }
         }
+    }
+
+    public File getCatalogDir() {
+        return new File(catalogPath);
+    }
+
+    public File getShowDir(String show) throws ShowNotFoundException {
+        return getFuzzyShow(show);
+    }
+
+    public ShowInfo getPrevAndNextEpisodeNums(String showQuery) throws ShowNotFoundException, SQLException {
+        File show = getFuzzyShow(showQuery);
+        int nextEpisode = getCurrentEpisode(show.getName());
+        if(nextEpisode > getNumberOfEpisodes(show.getName()))
+            nextEpisode = 1;
+
+        int prevEpisode = getCurrentEpisode(show.getName()) - 1;
+        if(prevEpisode < 1)
+            prevEpisode = getNumberOfEpisodes(show.getName());
+
+        return new ShowInfo(show.getName(), prevEpisode, nextEpisode);
+    }
+
+    public boolean isRunning() {
+        return runningStream != null;
     }
 
     public void catalog(String requester, String subdir) throws Exception {
@@ -335,11 +232,29 @@ public class TSDTV extends MainFunction implements Persistable {
         }
 
         TSDTVProgram program = new TSDTVProgram(matchedFiles.get(0).getAbsolutePath(), show);
-        if(runningStream != null) {
+        if(isRunning()) {
             queue.addLast(program);
             bot.sendMessage(channel, "There is already a stream running. Your show has been enqueued");
         } else play(program);
 
+    }
+
+    /**
+     * method to play a movie from the webpage catalog
+     * returns TRUE if it will play immediately, FALSE if it's queued
+     */
+    public boolean playFromCatalog(String fileName, String show) throws ShowNotFoundException {
+        File showDir = getShowDir(show);
+        String filePath = showDir.getAbsolutePath() + "/" + fileName;
+        TSDTVProgram program = new TSDTVProgram(filePath, show);
+        if(isRunning()) {
+            queue.addLast(program);
+            bot.broadcast("[TSDTV] A show has been enqueued via web: " + show + " - " + fileName);
+            return false;
+        } else {
+            play(program);
+            return true;
+        }
     }
 
     public void prepareScheduledBlock(TSDTVBlock blockInfo, int offset) throws SQLException {
@@ -646,8 +561,7 @@ public class TSDTV extends MainFunction implements Persistable {
         }
     }
 
-    private File getFuzzyShow(String query) throws Exception {
-
+    private File getFuzzyShow(String query) throws ShowNotFoundException {
         // return the File object, use it to getName or getPath
         List<File> matchingDirs = FuzzyLogic.fuzzySubset(
                 query,
@@ -660,13 +574,13 @@ public class TSDTV extends MainFunction implements Persistable {
         });
 
         if(matchingDirs.size() == 0)
-            throw new Exception("Could not find directory matching \"" + query + "\"");
+            throw new ShowNotFoundException("Could not find directory matching \"" + query + "\"");
         else if(matchingDirs.size() > 1) {
             StringBuilder sb = new StringBuilder();
             sb.append("Found multiple directories matching for \"").append(query).append("\":");
             for(File f : matchingDirs)
                 sb.append(" ").append(f.getName());
-            throw new Exception(sb.toString());
+            throw new ShowNotFoundException(sb.toString());
         } else {
             return matchingDirs.get(0);
         }
@@ -676,14 +590,13 @@ public class TSDTV extends MainFunction implements Persistable {
         File showDir = new File(catalogPath + "/" + show);
         java.util.regex.Matcher epNumMatcher;
         if(showDir.exists()) {
-            for(File f : showDir.listFiles()) {
-                epNumMatcher = episodeNumberPattern.matcher(f.getName());
-                while(epNumMatcher.find()) {
-                    int epNum = Integer.parseInt(epNumMatcher.group(1));
-                    if(epNum == episodeNumber) {
-                        return f.getAbsolutePath();
-                    }
+            for(File f : showDir.listFiles()) try {
+                int epNum = TSDTVUtil.getEpisodeNumberFromFilename(f.getName());
+                if(epNum == episodeNumber) {
+                    return f.getAbsolutePath();
                 }
+            } catch (Exception e) {
+                logger.warn("Failed to parse episode number from file {}, skipping...", f.getName());
             }
         } else {
             logger.error("Could not find show directory: {}", catalogPath + "/" + show);
@@ -730,7 +643,7 @@ public class TSDTV extends MainFunction implements Persistable {
         return -1;
     }
 
-    private int getViewerCount() {
+    public int getViewerCount() {
 
         //TODO: extend this to match connections with chat users
 
@@ -758,7 +671,7 @@ public class TSDTV extends MainFunction implements Persistable {
         return viewerCount;
     }
 
-    private String getLinks(boolean includeVlc) {
+    public String getLinks(boolean includeVlc) {
         StringBuilder sb = new StringBuilder();
         sb.append("http://irc.teamschoolyd.org/tsdtv.html");
         if(includeVlc)

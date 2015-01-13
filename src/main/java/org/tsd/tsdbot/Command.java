@@ -64,7 +64,7 @@ public enum Command {
             "The TSDTV Streaming Entertainment Value Service",
             "USAGE: .tsdtv [ catalog [<directory>] | play [<movie-name> | <directory> <movie-name>] ]",
             null,
-            org.tsd.tsdbot.functions.TSDTV.class
+            TSDTVFunction.class
     ),
 
     FILENAME(

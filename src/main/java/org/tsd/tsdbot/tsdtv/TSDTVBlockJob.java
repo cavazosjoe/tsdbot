@@ -6,7 +6,6 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.functions.TSDTV;
 
 import java.sql.SQLException;
 

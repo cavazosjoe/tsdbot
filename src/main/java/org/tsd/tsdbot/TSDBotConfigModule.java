@@ -35,6 +35,7 @@ import org.tsd.tsdbot.stats.HustleStats;
 import org.tsd.tsdbot.stats.Stats;
 import org.tsd.tsdbot.stats.SystemStats;
 import org.tsd.tsdbot.tsdtv.InjectableStreamFactory;
+import org.tsd.tsdbot.tsdtv.TSDTV;
 import twitter4j.Twitter;
 import twitter4j.TwitterFactory;
 
@@ -203,6 +204,8 @@ public class TSDBotConfigModule extends AbstractModule {
                 .annotatedWith(Names.named("ffmpeg"))
                 .toInstance(ffmpeg);
 
+        bind(TSDTV.class).asEagerSingleton();
+
         bindStats();
         bindFunctions();
         bindNotifiers();
@@ -240,8 +243,7 @@ public class TSDBotConfigModule extends AbstractModule {
         functionBinder.addBinding().to(Printout.class);
         functionBinder.addBinding().to(XboxLive.class);
         functionBinder.addBinding().to(Hustle.class);
-        if(stage.equals(Stage.production))
-            functionBinder.addBinding().to(TSDTV.class);
+        functionBinder.addBinding().to(TSDTVFunction.class);
     }
 
     private void bindNotifiers() {

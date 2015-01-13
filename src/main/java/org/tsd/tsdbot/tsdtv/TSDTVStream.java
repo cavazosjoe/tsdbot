@@ -4,7 +4,6 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.functions.TSDTV;
 
 import java.io.File;
 import java.io.IOException;
