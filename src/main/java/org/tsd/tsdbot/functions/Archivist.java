@@ -4,7 +4,6 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.ArchivistUtil;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -39,6 +38,9 @@ public class Archivist /*Exedol*/ extends MainFunction {
     public Archivist(TSDBot bot, Properties properties) throws IOException {
 
         super(bot);
+
+        this.description = "Catchup function. Get a personalized review of what you missed";
+        this.usage = ".catchup [ minutes (integer) ]";
 
         stdSdf.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
 
@@ -233,9 +235,14 @@ public class Archivist /*Exedol*/ extends MainFunction {
 
             } catch (NumberFormatException nfe) {
                 // the second argument isn't a number
-                bot.sendMessage(channel, Command.RECAP.getUsage());
+                bot.sendMessage(channel, usage);
             }
         }
+    }
+
+    @Override
+    public String getRegex() {
+        return "^\\.catchup.*";
     }
 
     private TreeMap<Long, LinkedList<String>> trimFiveMinuteBuffer(TreeMap<Long, LinkedList<String>> buffer, long fromTime) {

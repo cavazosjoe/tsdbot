@@ -1,11 +1,11 @@
 package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.tsdtv.ShowInfo;
 import org.tsd.tsdbot.tsdtv.ShowNotFoundException;
@@ -17,6 +17,7 @@ import java.sql.SQLException;
 /**
  * Created by Joe on 1/12/2015.
  */
+@Singleton
 public class TSDTVFunction extends MainFunction {
 
     private static final Logger logger = LoggerFactory.getLogger(TSDTVFunction.class);
@@ -27,6 +28,8 @@ public class TSDTVFunction extends MainFunction {
     @Inject
     public TSDTVFunction(TSDBot bot, TSDTV tsdtv, @Named("serverUrl") String serverUrl) {
         super(bot);
+        this.description = "The TSDTV Streaming Entertainment Value Service";
+        this.usage = "USAGE: .tsdtv [ catalog [<directory>] | play [<movie-name> | <directory> <movie-name>] ]";
         this.tsdtv = tsdtv;
         this.serverUrl = serverUrl;
     }
@@ -34,10 +37,9 @@ public class TSDTVFunction extends MainFunction {
     @Override
     protected void run(String channel, String sender, String ident, String text) {
         String[] cmdParts = text.split("\\s+");
-        Command cmd = Command.TSDTV;
 
         if(cmdParts.length < 2) {
-            bot.sendMessage(channel, cmd.getUsage());
+            bot.sendMessage(channel, usage);
             return;
         }
 
@@ -60,7 +62,7 @@ public class TSDTVFunction extends MainFunction {
         } else if(subCmd.equals("replay")) {
 
             if(cmdParts.length < 3) {
-                bot.sendMessage(channel, cmd.getUsage());
+                bot.sendMessage(channel, usage);
                 return;
             }
 
@@ -149,10 +151,15 @@ public class TSDTVFunction extends MainFunction {
                     bot.sendMessage(channel, "Error: " + e.getMessage());
                 }
             } else {
-                bot.sendMessage(channel, cmd.getUsage());
+                bot.sendMessage(channel, usage);
             }
         } else if(subCmd.equals("links")) {
             bot.sendMessage(channel, tsdtv.getLinks(true));
         }
+    }
+
+    @Override
+    public String getRegex() {
+        return "^\\.tsdtv.*";
     }
 }

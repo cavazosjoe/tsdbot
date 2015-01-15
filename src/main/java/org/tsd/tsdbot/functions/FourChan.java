@@ -11,7 +11,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -37,6 +36,8 @@ public class FourChan extends MainFunction {
         super(bot);
         this.httpClient = httpClient;
         this.random = random;
+        this.description = "4chan \"utility\". Currently just retrieves random images from a board you specify";
+        this.usage = "USAGE: .4chan <board>";
     }
 
     @Override
@@ -45,7 +46,7 @@ public class FourChan extends MainFunction {
         String[] cmdParts = text.split("\\s+");
 
         if(cmdParts.length != 2) {
-            bot.sendMessage(channel, Command.FOURCHAN.getUsage());
+            bot.sendMessage(channel, usage);
             return;
         }
 
@@ -99,5 +100,10 @@ public class FourChan extends MainFunction {
                 if(indexGet != null) indexGet.releaseConnection();
             }
         }
+    }
+
+    @Override
+    public String getRegex() {
+        return "^\\.(4chan|4ch).*";
     }
 }

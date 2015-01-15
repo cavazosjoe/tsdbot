@@ -4,7 +4,6 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.history.HistoryBuff;
 
@@ -26,6 +25,10 @@ public class GeeVee extends MainFunction {
     @Inject
     public GeeVee(TSDBot bot, HistoryBuff historyBuff, Random random) {
         super(bot);
+        this.description = "The Generally Vague Utility, I guess, but I don't know why you would want to use it, unless " +
+                "you had a good reason, but I guess that goes without saying, even though I never really had to," +
+                "because if I did have to, I would have just done it";
+        this.usage = "USAGE: .gv [pls]";
         this.historyBuff = historyBuff;
         this.random = random;
     }
@@ -45,7 +48,7 @@ public class GeeVee extends MainFunction {
         } else if(cmdParts.length == 2) {
 
             if(!cmdParts[1].equals("pls")) {
-                bot.sendMessage(channel, Command.GV.getUsage());
+                bot.sendMessage(channel, usage);
             } else {
                 String[] gvAliases = {"general","gv"};
                 List<HistoryBuff.Message> gvLines = new LinkedList<>();
@@ -69,6 +72,11 @@ public class GeeVee extends MainFunction {
                     bot.sendMessage(channel, runOnSentence);
             }
         }
+    }
+
+    @Override
+    public String getRegex() {
+        return "^\\.gv.*";
     }
 
     public String getRandomGvResponse() {

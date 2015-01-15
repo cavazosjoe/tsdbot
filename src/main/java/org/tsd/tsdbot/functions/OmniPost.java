@@ -1,17 +1,14 @@
 package org.tsd.tsdbot.functions;
 
-import com.google.common.base.Predicate;
-import com.google.common.collect.Collections2;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.NotificationType;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.notifications.NotificationEntity;
 import org.tsd.tsdbot.notifications.NotificationManager;
 
 import java.util.LinkedList;
-import java.util.List;
+import java.util.Set;
 
 /**
  * Created by Joe on 5/24/14.
@@ -19,30 +16,35 @@ import java.util.List;
 @Singleton
 public class OmniPost extends MainFunction {
 
+    private Set<NotificationManager> notificationManagers;
+
     @Inject
-    public OmniPost(TSDBot bot) {
+    public OmniPost(TSDBot bot, Set<NotificationManager> notificationManagers) {
         super(bot);
+        this.description = "OmniPost notification system. Browse recent posts from the HBO and DBO forums and news feeds";
+        this.usage = "USAGE: [ .hbof | .hbon | .dbof | .dbon ] [ list | pv [ postId (optional) ] ]";
+        this.notificationManagers = notificationManagers;
     }
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
-        
-        String[] cmdParts = text.split("\\s+");
-        List<Command> matchingCommands = Command.fromString(cmdParts[0]);
-        matchingCommands = new LinkedList<>(Collections2.filter(matchingCommands, new Predicate<Command>() {
-            @Override
-            public boolean apply(Command command) {
-                return command.getFunctionMap().equals(OmniPost.class);
+
+        NotificationType type = NotificationType.fromCommand(text);
+        if(type == null)
+            return;
+
+        NotificationManager<NotificationEntity> mgr = null;
+        for(NotificationManager manager : notificationManagers) {
+            if(manager.getNotificationType().equals(type)) {
+                mgr = manager;
+                break;
             }
-        }));
-        if(matchingCommands.size() != 1) return;
-        Command command = matchingCommands.get(0);
-        
-        NotificationType type = NotificationType.fromCommand(command);
-        NotificationManager<NotificationEntity> mgr = bot.getNotificationManagers().get(type);
+        }
+
+        String[] cmdParts = text.split("\\s+");
 
         if(cmdParts.length == 1) {
-            bot.sendMessage(channel,command.getUsage());
+            bot.sendMessage(channel, usage);
         } else if(cmdParts[1].equals("list")) {
             if(mgr.history() == null || mgr.history().isEmpty())
                 bot.sendMessage(channel, "No " + type.getDisplayString() + " posts in recent history");
@@ -69,7 +71,13 @@ public class OmniPost extends MainFunction {
                 else bot.sendMessage(channel,ret.get(0).getPreview());
             }
         } else {
-            bot.sendMessage(channel,command.getUsage());
+            bot.sendMessage(channel, usage);
         }
     }
+
+    @Override
+    public String getRegex() {
+        return "^\\.(hbof|hbon|dbof|dbon)\\s+.*";
+    }
+
 }

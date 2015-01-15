@@ -19,6 +19,8 @@ public class Wod extends MainFunction {
     @Inject
     public Wod(TSDBot bot, Random random) {
         super(bot);
+        this.description = "TSD WorkBot. Get a randomized workout for today, you lazy sack of shit";
+        this.usage = "USAGE: .workbot [ options ]";
         this.random = random;
     }
 
@@ -181,6 +183,11 @@ public class Wod extends MainFunction {
             bot.sendMessage(sender, exercise.toString());
         }
 
+    }
+
+    @Override
+    public String getRegex() {
+        return "^\\.(wod|workbot|werkbot).*";
     }
 
     public static enum Exercise {

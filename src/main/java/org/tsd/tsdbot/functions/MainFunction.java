@@ -11,8 +11,9 @@ import java.util.Date;
  */
 public abstract class MainFunction {
 
-    @Inject
     protected TSDBot bot;
+    protected String description;
+    protected String usage;
     private Long cooldownMillis;
     private Date lastUsed;
 
@@ -20,12 +21,21 @@ public abstract class MainFunction {
         this.bot = bot;
     }
 
-    protected MainFunction(int cooldownMinutes) {
+    protected MainFunction(TSDBot bot, int cooldownMinutes) {
+        this.bot = bot;
         this.cooldownMillis = (long)cooldownMinutes * 60 * 1000;
     }
 
     @Deprecated // should be injected?
     protected MainFunction() {}
+
+    public String getDescription() {
+        return description;
+    }
+
+    public String getUsage() {
+        return usage;
+    }
 
     public void engage(String channel, String sender, String ident, String text) {
         long timeRemaining = getRemainingCooldown(); // millis
@@ -38,10 +48,11 @@ public abstract class MainFunction {
         }
     }
 
-    protected abstract void run(String channel, String sender, String ident, String text);
-
     private long getRemainingCooldown() {
         if(cooldownMillis == null || lastUsed == null) return -1; // no cooldown or hasn't been run yet
         return lastUsed.getTime() + cooldownMillis - System.currentTimeMillis();
     }
+
+    protected abstract void run(String channel, String sender, String ident, String text);
+    public abstract String getRegex();
 }

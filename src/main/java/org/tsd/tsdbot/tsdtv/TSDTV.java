@@ -4,16 +4,13 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import org.apache.commons.lang3.StringUtils;
-import org.jibble.pircbot.User;
 import org.quartz.*;
 import org.quartz.impl.matchers.GroupMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.Persistable;
-import org.tsd.tsdbot.functions.MainFunction;
 import org.tsd.tsdbot.scheduled.SchedulerConstants;
 import org.tsd.tsdbot.util.FuzzyLogic;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -485,10 +482,6 @@ public class TSDTV implements Persistable {
             bot.sendMessage(channel, "(Error retrieving scheduled info)");
             logger.error("Error getting scheduled info", e);
         }
-    }
-
-    public void refreshDatabase() {
-
     }
 
     public void buildSchedule() {

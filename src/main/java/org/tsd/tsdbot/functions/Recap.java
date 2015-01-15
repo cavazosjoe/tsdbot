@@ -3,14 +3,13 @@ package org.tsd.tsdbot.functions;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.tsd.tsdbot.TSDBot;
-import org.tsd.tsdbot.history.HistoryBuff;
-import org.tsd.tsdbot.history.MessageFilter;
-import org.tsd.tsdbot.history.MessageFilterStrategy;
+import org.tsd.tsdbot.history.*;
 import org.tsd.tsdbot.util.IRCUtil;
 
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Random;
+import java.util.Set;
 
 /**
  * Created by Joe on 5/24/14.
@@ -20,27 +19,32 @@ public class Recap extends MainFunction {
 
     private static final int dramaCount = 4;
 
+    private InjectableMsgFilterStrategyFactory filterFactory;
     private HistoryBuff historyBuff;
     private Random random;
 
     @Inject
-    public Recap(TSDBot bot, HistoryBuff historyBuff, Random random) {
-        super(10);
-        this.bot = bot;
+    public Recap(TSDBot bot, HistoryBuff historyBuff, Random random, InjectableMsgFilterStrategyFactory filterFactory) {
+        super(bot, 10);
+        this.description = "Recap function. Get a dramatic recap of recent chat history";
+        this.usage = "USAGE: .recap [ minutes (integer) ]";
         this.historyBuff = historyBuff;
         this.random = random;
+        this.filterFactory = filterFactory;
     }
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
 
+        NoCommandsStrategy noCmdStrat = new NoCommandsStrategy();
+        filterFactory.injectStrategy(noCmdStrat);
         LinkedList<HistoryBuff.Message> chosen = historyBuff.getRandomFilteredMessages(
                 channel,
                 null,
                 dramaCount,
                 MessageFilter.create()
-                        .addFilter(new MessageFilterStrategy.NoCommandsStrategy())
-                        .addFilter(new MessageFilterStrategy.LengthStrategy(0, 80))
+                        .addFilter(noCmdStrat)
+                        .addFilter(new LengthStrategy(0, 80))
         );
 
         if(!chosen.isEmpty()) {
@@ -63,6 +67,11 @@ public class Recap extends MainFunction {
 
             bot.sendMessage(channel, "Tonight's episode: \"" + episodeNames[random.nextInt(episodeNames.length)] + "\"");
         }
+    }
+
+    @Override
+    public String getRegex() {
+        return "^\\.recap";
     }
 
     private String getScrambledNick(String nick, HashMap<String, String> dict) {

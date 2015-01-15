@@ -2,7 +2,6 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
 
 import java.util.Random;
@@ -18,6 +17,8 @@ public class Chooser extends MainFunction {
     @Inject
     public Chooser(TSDBot bot, Random random) {
         super(bot);
+        this.description = "Have the bot choose a random selection for you";
+        this.usage = "USAGE: .choose option1 | option2 [ | option3...]";
         this.random = random;
     }
 
@@ -49,8 +50,13 @@ public class Chooser extends MainFunction {
             bot.sendMessage(channel, String.format(format, choice));
 
         } else {
-            bot.sendMessage(channel, Command.CHOOSE.getUsage());
+            bot.sendMessage(channel, usage);
         }
+    }
+
+    @Override
+    public String getRegex() {
+        return "^\\.choose.*";
     }
 
     private static String[] formats = new String[] {

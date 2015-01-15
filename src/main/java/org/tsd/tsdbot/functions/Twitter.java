@@ -5,11 +5,12 @@ import com.google.inject.Singleton;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.ThreadType;
 import org.tsd.tsdbot.notifications.NotificationEntity;
 import org.tsd.tsdbot.notifications.TwitterManager;
+import org.tsd.tsdbot.runnable.InjectableIRCThreadFactory;
+import org.tsd.tsdbot.runnable.ThreadManager;
 import org.tsd.tsdbot.runnable.TweetPoll;
 import twitter4j.Status;
 import twitter4j.TwitterException;
@@ -24,18 +25,29 @@ public class Twitter extends MainFunction {
 
     private static final Logger logger = LoggerFactory.getLogger(Twitter.class);
 
+    private ThreadManager threadManager;
+    private InjectableIRCThreadFactory threadFactory;
     private TwitterManager twitterManager;
 
     @Inject
-    public Twitter(TSDBot bot, TwitterManager mgr) {
+    public Twitter(TSDBot bot, TwitterManager mgr, ThreadManager threadManager,
+                   InjectableIRCThreadFactory threadFactory) {
         super(bot);
+        this.description = "Twitter utility: send and receive tweets from our exclusive @TSD_IRC Twitter account! " +
+                "Propose tweets for the chat to vote on.";
+        this.usage = "USAGE: .tw [ following | timeline | tweet <message> | reply <reply-to-id> <message> | " +
+                "follow <handle> | unfollow <handle> | propose [ reply <reply-to-id> ] <message> ]";
         this.twitterManager = mgr;
+        this.threadManager = threadManager;
+        this.threadFactory = threadFactory;
     }
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
 
-        Command cmd = Command.TWITTER;
+        // this is an operation on a running poll, disregard
+        if(TweetPoll.TweetPollOperation.fromString(text) != null)
+            return;
 
         User user = bot.getUserFromNick(channel, sender);
         boolean isOp = user.hasPriv(User.Priv.OP);
@@ -43,22 +55,31 @@ public class Twitter extends MainFunction {
         String[] cmdParts = text.split("\\s+");
 
         if(cmdParts.length == 1) {
-            bot.sendMessage(channel, cmd.getUsage());
+            bot.sendMessage(channel, usage);
         } else {
             try {
                 String subCmd = cmdParts[1];
 
-                if(cmd.threadCmd(subCmd)) return;
-
                 if(subCmd.equals("following")) {
+
                     bot.sendMessage(sender,"Here is a list of the people I'm following: ");
-                    for(String s : twitterManager.getFollowing()) bot.sendMessage(sender,s);
+                    for(String s : twitterManager.getFollowing())
+                        bot.sendMessage(sender,s);
+
                 } else if(subCmd.equals("timeline")) {
-                    if(twitterManager.history().isEmpty()) bot.sendMessage(channel,"I don't have any tweets in my recent history");
-                    else for(TwitterManager.Tweet t : twitterManager.history()) bot.sendMessage(channel,t.getInline());
+
+                    if(twitterManager.history().isEmpty())
+                        bot.sendMessage(channel,"I don't have any tweets in my recent history");
+                    else
+                        for(TwitterManager.Tweet t : twitterManager.history())
+                            bot.sendMessage(channel,t.getInline());
+
                 } else if(cmdParts.length < 3) { // below this clause, 3 args are always required
-                    bot.sendMessage(channel, cmd.getUsage());
+
+                    bot.sendMessage(channel, usage);
+
                 } else if(subCmd.equals("tweet") ) {
+
                     if(!isOp) {
                         bot.sendMessage(channel,"Only ops can use .tw tweet");
                         return;
@@ -68,7 +89,9 @@ public class Twitter extends MainFunction {
                     Status postedTweet = twitterManager.postTweet(tweet);
                     bot.sendMessage(channel,"Tweet successful: " + "https://twitter.com/TSD_IRC/status/" + postedTweet.getId());
                     logger.info("[TWITTER] Posted tweet: {}", "https://twitter.com/TSD_IRC/status/" + postedTweet.getId());
+
                 } else if(subCmd.equals("reply")) {
+
                     if(!isOp) {
                         bot.sendMessage(channel,"Only ops can use .tw reply");
                         return;
@@ -88,7 +111,9 @@ public class Twitter extends MainFunction {
                         bot.sendMessage(channel,"Reply successful: " + "https://twitter.com/TSD_IRC/status/" + postedReply.getId());
                         logger.info("[TWITTER] Posted reply: {}", "https://twitter.com/TSD_IRC/status/" + postedReply.getId());
                     }
+
                 } else if(subCmd.equals("retweet")) {
+
                     if(!isOp) {
                         bot.sendMessage(channel,"Only ops can use .tw retweet");
                         return;
@@ -106,37 +131,46 @@ public class Twitter extends MainFunction {
                         bot.sendMessage(channel,"Retweet successful: " + "https://twitter.com/TSD_IRC/status/" + retweet.getId());
                         logger.info("[TWITTER] Posted retweet: {}", "https://twitter.com/TSD_IRC/status/" + retweet.getId());
                     }
+
                 } else if(subCmd.equals("follow")) {
+
                     if(!isOp) {
                         bot.sendMessage(channel,"Only ops can use .tw follow");
                         return;
                     }
                     twitterManager.follow(channel, cmdParts[2]);
                     logger.info("[TWITTER] Followed {}", cmdParts[2]);
+
                 } else if(subCmd.equals("unfollow")) {
+
                     if(!isOp) {
                         bot.sendMessage(channel,"Only ops can use .tw unfollow");
                         return;
                     }
                     twitterManager.unfollow(channel, cmdParts[2]);
                     logger.info("[TWITTER] Unfollowed {}", cmdParts[2]);
+
                 } else if(subCmd.equals("unleash")) {
+
                     if(!isOp) {
                         bot.sendMessage(channel,"Only ops can use .tw unleash");
                         return;
                     }
                     twitterManager.unleash(channel, cmdParts[2]);
                     logger.info("[TWITTER] Unleashed {}", cmdParts[2]);
+
                 } else if(subCmd.equals("throttle")) {
+
                     if(!isOp) {
                         bot.sendMessage(channel,"Only ops can use .tw throttle");
                         return;
                     }
                     twitterManager.throttle(channel, cmdParts[2]);
                     logger.info("[TWITTER] Throttled {}", cmdParts[2]);
+
                 } else if(subCmd.equals("propose")) {
 
-                    TweetPoll currentPoll = (TweetPoll) bot.getThreadManager().getIrcThread(ThreadType.TWEETPOLL, channel);
+                    TweetPoll currentPoll = (TweetPoll) threadManager.getIrcThread(ThreadType.TWEETPOLL, channel);
                     if(currentPoll != null) {
                         bot.sendMessage(channel,"There is already a tweet poll running. It will end in "
                                 + (currentPoll.getRemainingTime()/(60*1000)) + " minutes");
@@ -166,14 +200,8 @@ public class Twitter extends MainFunction {
                             TwitterManager.Tweet foundTweet = matchedTweets.get(0);
                             for(int i=4 ; i < cmdParts.length ; i++) proposedTweet += (cmdParts[i] + " ");
                             try {
-                                currentPoll = new TweetPoll(
-                                        bot,
-                                        channel,
-                                        sender,
-                                        twitterManager,
-                                        proposedTweet,
-                                        foundTweet);
-                                bot.getThreadManager().addThread(currentPoll);
+                                currentPoll = threadFactory.newTweetPoll(channel, sender, proposedTweet, foundTweet);
+                                threadManager.addThread(currentPoll);
                             } catch (Exception e) {
                                 bot.sendMessage(channel,e.getMessage());
                                 bot.blunderCount++;
@@ -184,14 +212,8 @@ public class Twitter extends MainFunction {
 
                         for(int i=2 ; i < cmdParts.length ; i++) proposedTweet += (cmdParts[i] + " ");
                         try {
-                            currentPoll = new TweetPoll(
-                                    bot,
-                                    channel,
-                                    sender,
-                                    twitterManager,
-                                    proposedTweet,
-                                    null);
-                            bot.getThreadManager().addThread(currentPoll);
+                            currentPoll = threadFactory.newTweetPoll(channel, sender, proposedTweet, null);
+                            threadManager.addThread(currentPoll);
                         } catch (Exception e) {
                             bot.sendMessage(channel,e.getMessage());
                             bot.blunderCount++;
@@ -199,12 +221,17 @@ public class Twitter extends MainFunction {
                     }
 
                 } else {
-                    bot.sendMessage(channel,cmd.getUsage());
+                    bot.sendMessage(channel, usage);
                 }
             } catch (TwitterException t) {
                 bot.sendMessage(channel,"Error: " + t.getMessage());
                 bot.blunderCount++;
             }
         }
+    }
+
+    @Override
+    public String getRegex() {
+        return "^\\.tw.*";
     }
 }

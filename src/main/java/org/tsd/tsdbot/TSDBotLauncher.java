@@ -3,7 +3,6 @@ package org.tsd.tsdbot;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
-import com.google.inject.name.Names;
 import com.google.inject.servlet.GuiceFilter;
 import org.apache.tomcat.InstanceManager;
 import org.apache.tomcat.SimpleInstanceManager;
@@ -25,9 +24,10 @@ import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.scheduled.*;
 
 import javax.servlet.DispatcherType;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -49,32 +49,30 @@ public class TSDBotLauncher {
     // TSDBot.jar tsd-test irc.teamschoolyd.org TSDBot /path/to/tsdbot.properties dev
     public static void main(String[] args) throws Exception {
 
-        if(args.length < 5) {
-            throw new Exception("USAGE: TSDBot.jar [channel] [server] [nick] [properties location] [stage=dev,production]");
+        if(args.length != 1) {
+            throw new Exception("USAGE: TSDBot.jar [properties location]");
         }
 
-        String[] channels;
-        String channel = args[0];
-        if(!channel.startsWith("#")) channel = "#"+channel;
-        channels = new String[]{channel};
-
-        String server = args[1];
-        String botName = args[2];
-        String propertiesLocation = args[3];
-        Stage stage = Stage.fromString(args[4]);
-        if(stage == null) {
-            throw new Exception("STAGE must be one of [dev, production]");
-        }
-
-        log.info("channel={}, server={} , name={} , propLoc={}, stage={}", new Object[]{channel, server, botName, propertiesLocation, stage});
-
+        String propertiesLocation = args[0];
         Properties properties = new Properties();
         try(InputStream fis = new FileInputStream(new File(propertiesLocation))) {
             properties.load(fis);
         }
 
-        String nickservPass = properties.getProperty("nickserv.pass");
-        TSDBot bot = new TSDBot(botName, nickservPass, server, channels);
+        String ident = properties.getProperty("ident");
+        String nick = properties.getProperty("nick");
+        String pass = properties.getProperty("nickserv.pass");
+        String server = properties.getProperty("server");
+        String[] channels = properties.getProperty("channels").split(",");
+        Stage stage = Stage.fromString(properties.getProperty("stage"));
+        if(stage == null) {
+            throw new Exception("STAGE must be one of [dev, production]");
+        }
+
+        log.info("ident={}, nick={}, pass=***, server={}, channels={}, stage={}",
+                new Object[]{ident, nick, server, channels, stage});
+
+        TSDBot bot = new TSDBot(ident, nick, pass, server, channels);
 
         TSDBotConfigModule module = new TSDBotConfigModule(bot, properties, stage);
         TSDBotServletModule servletModule = new TSDBotServletModule();

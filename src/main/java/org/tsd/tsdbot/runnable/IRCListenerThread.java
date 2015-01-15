@@ -1,10 +1,8 @@
 package org.tsd.tsdbot.runnable;
 
-import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.ThreadType;
 
-import java.util.HashSet;
 import java.util.concurrent.Callable;
 
 /**
@@ -15,13 +13,13 @@ public abstract class IRCListenerThread implements Callable {
     protected ThreadManager manager;
     protected TSDBot bot;
     protected String channel;
-    protected HashSet<Command> listeningCommands;
+    protected String listeningRegex;
     protected long startTime = -1;
     protected final Object mutex = new Object();
 
-    public IRCListenerThread(String channel) {
-        this.channel = channel;
-        this.listeningCommands = new HashSet<>();
+    public IRCListenerThread(TSDBot bot, ThreadManager threadManager) {
+        this.bot = bot;
+        this.manager = threadManager;
     }
 
     public String getChannel() {
@@ -29,9 +27,13 @@ public abstract class IRCListenerThread implements Callable {
     }
 
     public abstract ThreadType getThreadType();
-    public abstract void onMessage(Command command, String sender, String login, String hostname, String message);
-    public abstract void onPrivateMessage(Command command, String sender, String login, String hostname, String message);
+    public abstract void onMessage(String sender, String login, String hostname, String message);
+    public abstract void onPrivateMessage(String sender, String login, String hostname, String message);
     public abstract long getRemainingTime();
+
+    public boolean matches(String text) {
+        return text.matches(listeningRegex);
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -46,5 +48,10 @@ public abstract class IRCListenerThread implements Callable {
     @Override
     public int hashCode() {
         return (getThreadType() + channel).hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return super.toString();
     }
 }

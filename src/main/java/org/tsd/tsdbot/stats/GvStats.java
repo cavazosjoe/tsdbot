@@ -4,9 +4,7 @@ import com.google.inject.Inject;
 import org.jibble.pircbot.User;
 import org.tsd.tsdbot.TSDBot;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.Objects;
 
 /**
  * Created by Joe on 1/12/2015.

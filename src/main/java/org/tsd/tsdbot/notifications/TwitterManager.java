@@ -5,6 +5,7 @@ import com.google.inject.Singleton;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.NotificationType;
 import org.tsd.tsdbot.Stage;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -280,6 +281,11 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     @Override
     public LinkedList<Tweet> sweep() {
         return new LinkedList<>();
+    }
+
+    @Override
+    public NotificationType getNotificationType() {
+        return NotificationType.TWITTER;
     }
 
     public class Tweet extends NotificationEntity {

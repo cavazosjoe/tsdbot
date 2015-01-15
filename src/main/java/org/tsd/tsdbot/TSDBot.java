@@ -19,7 +19,9 @@ import org.tsd.tsdbot.util.ArchivistUtil;
 import org.tsd.tsdbot.util.FuzzyLogic;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Set;
 
 /**
  * Created by Joe on 2/18/14.
@@ -31,10 +33,13 @@ public class TSDBot extends PircBot {
     public static long blunderCount = 0;
     public static boolean showNotifications = false;
 
-    private ThreadManager threadManager = new ThreadManager(10);
+    @Inject
+    private ThreadManager threadManager;
 
-    private HashMap<Command, MainFunction> functions = new HashMap<>();
-    private HashMap<NotificationType, NotificationManager> notificationManagers = new HashMap<>();
+    @Inject
+    private Set<MainFunction> functions = new HashSet<>();
+
+    @Inject
     private HashSet<Stats> stats = new HashSet<>();
 
     @Inject
@@ -46,10 +51,10 @@ public class TSDBot extends PircBot {
     @Inject
     protected Hustle hustle;
 
-    public TSDBot(String name, String nickservPass, String server, String[] channels) throws IrcException, IOException {
+    public TSDBot(String ident, String name, String nickservPass, String server, String[] channels) throws IrcException, IOException {
         setName(name);
         setAutoNickChange(true);
-        setLogin("tsdbot");
+        setLogin(ident);
         setVerbose(false);
         setMessageDelay(10); //10 ms
         connect(server);
@@ -57,42 +62,9 @@ public class TSDBot extends PircBot {
             identify(nickservPass);
 
         for(String channel : channels) {
-            joinChannel(channel);
+            joinChannel("#"+channel);
             logger.info("Joined channel {}", channel);
         }
-    }
-
-    @Inject
-    public void setFunctionTable(Set<MainFunction> functions) {
-        for(MainFunction function : functions) {
-            for(Command c : Command.fromFunction(function)) {
-                this.functions.put(c, function);
-            }
-        }
-    }
-
-    @Inject
-    public void setNotificationTable(Set<NotificationManager> managers) {
-        for(NotificationManager manager : managers) {
-            for(NotificationType type : NotificationType.fromManager(manager)) {
-                this.notificationManagers.put(type, manager);
-            }
-        }
-    }
-
-    @Inject
-    public void setStats(Set<Stats> stats) {
-        for(Stats s : stats) {
-            this.stats.add(s);
-        }
-    }
-
-    public HashMap<NotificationType, NotificationManager> getNotificationManagers() {
-        return notificationManagers;
-    }
-
-    public ThreadManager getThreadManager() {
-        return threadManager;
     }
 
     @Override
@@ -197,15 +169,21 @@ public class TSDBot extends PircBot {
                 message
         ));
 
-        List<Command> matchingCommands = Command.fromString(message);
-        for(Command c : matchingCommands) {
-            functions.get(c).engage(channel, sender, login, message);
-
-            // propagate command to all listening threads
-            for(IRCListenerThread listenerThread : threadManager.getThreadsByChannel(channel))
-                listenerThread.onMessage(c, sender, login, hostname, message);
+        // pass message to functions that match its pattern
+        for(MainFunction function : functions) {
+            if(message.matches(function.getRegex())) {
+                function.engage(channel, sender, login, message);
+            }
         }
 
+        // propagate message to all listening threads
+        for(IRCListenerThread listenerThread : threadManager.getThreadsByChannel(channel)) {
+            if(listenerThread.matches(message)) {
+                listenerThread.onMessage(sender, login, hostname, message);
+            }
+        }
+
+        // pass message to all stat-collecting entities
         for(Stats s : stats) {
             s.processMessage(channel, sender, login, hostname, message);
         }

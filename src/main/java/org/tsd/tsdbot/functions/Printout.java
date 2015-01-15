@@ -59,7 +59,9 @@ public class Printout extends MainFunction {
     public Printout(TSDBot bot, Random random, Properties properties) {
         super(bot);
         this.random = random;
-        printoutDir = properties.getProperty("printout.dir");
+        this.description = "Get a printout";
+        this.usage = "USAGE: TSDBot can you get me a printout of [query]";
+        this.printoutDir = properties.getProperty("printout.dir");
     }
 
     @Override
@@ -181,5 +183,14 @@ public class Printout extends MainFunction {
             bot.sendMessage(channel, "No sequences found.");
         }
 
+    }
+
+    @Override
+    public String getRegex() {
+        if(notComputing.size() > 0) {
+            return "^(TSDBot.*?printout.*|.*?\\.+.*?)";
+        } else {
+            return "^TSDBot.*?printout.*";
+        }
     }
 }

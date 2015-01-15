@@ -14,6 +14,8 @@ public class ShutItDown extends MainFunction {
     @Inject
     public ShutItDown(TSDBot bot) {
         super(bot);
+        this.description = "SHUT IT DOWN (owner only)";
+        this.usage = "USAGE: SHUT IT DOWN";
     }
 
     @Override
@@ -24,5 +26,10 @@ public class ShutItDown extends MainFunction {
             //TODO: change this to actually shut down
             bot.partChannel(channel, "ABORT ABORT ABORT");
         }
+    }
+
+    @Override
+    public String getRegex() {
+        return "^\\.SHUT_IT_DOWN$";
     }
 }

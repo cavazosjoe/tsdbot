@@ -24,6 +24,8 @@ public class Sanic extends MainFunction {
     public Sanic(TSDBot bot, HttpClient httpClient) {
         super(bot);
         this.httpClient = httpClient;
+        this.description = "Sanic \"fanfunction\". Retrieves a random page from the Sonic fanfiction wiki";
+        this.usage = "USAGE: .sanic";
     }
 
     @Override
@@ -45,5 +47,10 @@ public class Sanic extends MainFunction {
         } finally {
             post.releaseConnection();
         }
+    }
+
+    @Override
+    public String getRegex() {
+        return "^\\.sanic$";
     }
 }

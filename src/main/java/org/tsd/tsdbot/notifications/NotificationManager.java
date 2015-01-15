@@ -1,5 +1,7 @@
 package org.tsd.tsdbot.notifications;
 
+import org.tsd.tsdbot.NotificationType;
+
 import java.util.LinkedList;
 
 /**
@@ -40,4 +42,5 @@ public abstract class NotificationManager<T extends NotificationEntity> {
         while(recentNotifications.size() > MAX_HISTORY) recentNotifications.removeLast();
     }
 
+    public abstract NotificationType getNotificationType();
 }

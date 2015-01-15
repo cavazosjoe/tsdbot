@@ -1,9 +1,9 @@
 package org.tsd.tsdbot.runnable;
 
+import com.google.inject.Inject;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.ThreadType;
 import org.tsd.tsdbot.notifications.TwitterManager;
@@ -17,7 +17,7 @@ import java.util.HashSet;
  */
 public class TweetPoll extends IRCListenerThread {
 
-    private static Logger logger = LoggerFactory.getLogger("TweetPoll");
+    private static Logger logger = LoggerFactory.getLogger(TweetPoll.class);
 
     private TwitterManager twitterManager;
     private String proposedTweet;
@@ -28,12 +28,15 @@ public class TweetPoll extends IRCListenerThread {
     private HashSet<String> ayes = new HashSet<>();
     private boolean aborted = false;
 
-    public TweetPoll(TSDBot bot, String channel, String proposer, TwitterManager twitterManager, String proposedTweet, TwitterManager.Tweet replyTo) throws Exception {
-
-        super(channel);
-
-        this.bot = bot;
+    @Inject
+    public TweetPoll(TSDBot bot, ThreadManager threadManager, TwitterManager twitterManager) throws Exception {
+        super(bot, threadManager);
         this.twitterManager = twitterManager;
+    }
+
+    public void init(String channel, String proposer, String proposedTweet, TwitterManager.Tweet replyTo) throws Exception {
+        this.channel = channel;
+        this.listeningRegex = "^\\.tw (aye|abort)$";
         this.proposedTweet = proposedTweet;
         this.proposer = proposer;
 
@@ -43,15 +46,13 @@ public class TweetPoll extends IRCListenerThread {
 
         this.replyTo = replyTo;
 
-        listeningCommands.add(Command.TWITTER);
-
         if(proposedTweet == null || proposedTweet.isEmpty())
             throw new Exception("Proposed tweet cannot be blank");
     }
 
-    public String castVote(String voter) {
-        if(!ayes.add(voter)) return "You can't vote twice";
-        else return null;
+    public void castVote(String voter) throws DuplicateVoteException {
+        if(!ayes.add(voter))
+            throw new DuplicateVoteException();
     }
 
     public int getVotesNeeded() {
@@ -108,54 +109,49 @@ public class TweetPoll extends IRCListenerThread {
     }
 
     @Override
-    public void onMessage(Command command, String sender, String login, String hostname, String message) {
-        if(!listeningCommands.contains(command)) return;
-        String[] cmdParts = message.split("\\s+");
+    public void onMessage(String sender, String login, String hostname, String message) {
+        synchronized (mutex) {
+            switch(TweetPollOperation.fromString(message)) {
 
-        String subCmd;
+                case aye: {
 
-        if(command.equals(Command.TWITTER)) {
-            if(cmdParts.length < 2) {
-                bot.sendMessage(channel,command.getUsage());
-                return;
-            }
-
-            synchronized (mutex) {
-                subCmd = cmdParts[1];
-
-                if(subCmd.equals("aye")) {
-                    String result = castVote(login);
-                    String response;
-                    if(result == null) {
-                        response = "Your vote has been counted, " + sender + ". ";
+                    try {
+                        castVote(login);
+                        String response = "Your vote has been counted, " + sender + ". ";
                         int votesNeeded = getVotesNeeded();
-                        if(votesNeeded > 0) {
+                        if (votesNeeded > 0) {
                             response += (votesNeeded + " more vote(s) needed!");
                             bot.sendMessage(channel, response);
-                        }
-                        else {
+                        } else {
                             response += "No more votes needed! It's happening!";
-                            bot.sendMessage(channel,response);
+                            bot.sendMessage(channel, response);
                             mutex.notify();
                         }
-                    } else bot.sendMessage(channel, result + ", " + sender);
-                } else if(subCmd.equals("abort")) {
-                    if(sender.equals(proposer) || bot.getUserFromNick(channel,sender).hasPriv(User.Priv.OP)) {
+                    } catch (DuplicateVoteException e) {
+                        bot.sendMessage(channel, "You can't vote twice, " + sender);
+                    }
+
+                    break;
+                }
+
+                case abort: {
+
+                    if (sender.equals(proposer) || bot.getUserFromNick(channel, sender).hasPriv(User.Priv.OP)) {
                         this.aborted = true;
                         mutex.notify();
                     } else {
-                        bot.sendMessage(channel,"Only an op or the proposer can abort a tweet. " +
+                        bot.sendMessage(channel, "Only an op or the proposer can abort a tweet. " +
                                 "Don't call it a grave, this is the future you chose.");
                     }
+
+                    break;
                 }
             }
         }
     }
 
     @Override
-    public void onPrivateMessage(Command command, String sender, String login, String hostname, String message) {
-
-    }
+    public void onPrivateMessage(String sender, String login, String hostname, String message) {}
 
     @Override
     public long getRemainingTime() {
@@ -176,5 +172,26 @@ public class TweetPoll extends IRCListenerThread {
         manager.removeThread(this);
         return null;
     }
+
+    public enum TweetPollOperation {
+        aye(".tw aye"),
+        abort(".tw abort");
+
+        private String prefix;
+
+        TweetPollOperation(String prefix) {
+            this.prefix = prefix;
+        }
+
+        public static TweetPollOperation fromString(String s) {
+            for(TweetPollOperation op : values()) {
+                if(s.startsWith(op.prefix))
+                    return op;
+            }
+            return null;
+        }
+    }
+
+    class DuplicateVoteException extends Exception {}
 
 }

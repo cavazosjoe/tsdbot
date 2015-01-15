@@ -3,9 +3,7 @@ package org.tsd.tsdbot.functions;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.tsd.tsdbot.TSDBot;
-import org.tsd.tsdbot.history.HistoryBuff;
-import org.tsd.tsdbot.history.MessageFilter;
-import org.tsd.tsdbot.history.MessageFilterStrategy;
+import org.tsd.tsdbot.history.*;
 import org.tsd.tsdbot.util.IRCUtil;
 
 import java.util.*;
@@ -18,25 +16,32 @@ public class ScareQuote extends MainFunction {
 
     //TODO: put more than 5 minutes of effort into this and stop trying to "fix" it while drunk
 
+    private InjectableMsgFilterStrategyFactory filterFactory;
     private HistoryBuff historyBuff;
     private Random random;
 
     @Inject
-    public ScareQuote(TSDBot bot, HistoryBuff historyBuff, Random random) {
+    public ScareQuote(TSDBot bot, HistoryBuff historyBuff,
+                      Random random, InjectableMsgFilterStrategyFactory filterFactory) {
         super(bot);
+        this.description = "Scare quote \"function\"";
+        this.usage = "USAGE: .quote";
         this.historyBuff = historyBuff;
         this.random = random;
+        this.filterFactory = filterFactory;
     }
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
 
+        NoCommandsStrategy noCmdStrat = new NoCommandsStrategy();
+        filterFactory.injectStrategy(noCmdStrat);
         HistoryBuff.Message chosen = historyBuff.getRandomFilteredMessage(
                 channel,
                 null,
                 MessageFilter.create()
-                        .addFilter(new MessageFilterStrategy.NoCommandsStrategy())
-                        .addFilter(new MessageFilterStrategy.LengthStrategy(null, 100))
+                        .addFilter(noCmdStrat)
+                        .addFilter(new LengthStrategy(null, 100))
                         .addFilter(new MessageFilterStrategy() {
                             @Override
                             public boolean apply(HistoryBuff.Message m) {
@@ -106,6 +111,11 @@ public class ScareQuote extends MainFunction {
 
             bot.sendMessage(channel, "<" + IRCUtil.scrambleNick(chosen.sender) + "> " + result.toString());
         }
+    }
+
+    @Override
+    public String getRegex() {
+        return "^\\.quote";
     }
 
     private boolean isThrowaway(String word) {

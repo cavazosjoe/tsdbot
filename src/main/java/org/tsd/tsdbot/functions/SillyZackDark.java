@@ -23,6 +23,8 @@ public class SillyZackDark extends MainFunction {
     @Inject
     public SillyZackDark(TSDBot bot) {
         super(bot);
+        this.description = ";)";
+        this.usage = ";)";
     }
 
     @Override
@@ -53,5 +55,10 @@ public class SillyZackDark extends MainFunction {
                 }
             }
         }
+    }
+
+    @Override
+    public String getRegex() {
+        return "^\\s*(o/|\\\\o)\\s*$";
     }
 }

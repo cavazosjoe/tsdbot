@@ -29,6 +29,8 @@ public class Filename extends MainFunction {
     @Inject
     public Filename(TSDBot bot, HttpClient httpClient, Random random) {
         super(bot);
+        this.description = "Pull a random entry from the TSD Filenames Database";
+        this.usage = "USAGE: [ .filename | .fname ]";
         this.httpClient = httpClient;
         this.random = random;
     }
@@ -56,5 +58,10 @@ public class Filename extends MainFunction {
         } finally {
             if(fnamesGet != null) fnamesGet.releaseConnection();
         }
+    }
+
+    @Override
+    public String getRegex() {
+        return "^\\.(filename|fname)$";
     }
 }

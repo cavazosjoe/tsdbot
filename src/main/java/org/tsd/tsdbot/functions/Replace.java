@@ -25,6 +25,8 @@ public class Replace extends MainFunction {
     public Replace(TSDBot bot, HistoryBuff historyBuff) {
         super(bot);
         this.historyBuff = historyBuff;
+        this.description = "Replace stuff";
+        this.usage = "USAGE: s/text1/text2";
     }
 
     @Override
@@ -32,6 +34,11 @@ public class Replace extends MainFunction {
         String replaceResult = tryStringReplace(channel, text, historyBuff);
         if(replaceResult != null)
             bot.sendMessage(channel, replaceResult);
+    }
+
+    @Override
+    public String getRegex() {
+        return "^s/.+?/[^/]*";
     }
 
     public String tryStringReplace(String channel, String message, HistoryBuff historyBuffer) {

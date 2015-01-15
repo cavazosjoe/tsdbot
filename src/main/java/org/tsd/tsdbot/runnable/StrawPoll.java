@@ -1,11 +1,12 @@
 package org.tsd.tsdbot.runnable;
 
+import com.google.inject.Inject;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.ThreadType;
+import org.tsd.tsdbot.functions.StrawPollFunction;
 
 import java.util.*;
 
@@ -14,7 +15,7 @@ import java.util.*;
  */
 public class StrawPoll extends IRCListenerThread {
 
-    private static Logger logger = LoggerFactory.getLogger("StrawPoll");
+    private static Logger logger = LoggerFactory.getLogger(StrawPoll.class);
 
     private String proposer;
     private String question;
@@ -23,15 +24,15 @@ public class StrawPoll extends IRCListenerThread {
     private HashSet<Vote> votes = new HashSet<>();
     private boolean aborted = false;
 
-    public StrawPoll(TSDBot bot, String channel, String proposer, String question, int duration, String[] options) throws Exception {
+    @Inject
+    public StrawPoll(TSDBot bot, ThreadManager threadManager) throws Exception {
+        super(bot, threadManager);
+    }
 
-        super(channel);
-
-        this.bot = bot;
+    public void init(String channel, String proposer, String question, int duration, String[] options) throws Exception {
+        this.channel = channel;
+        this.listeningRegex = "^\\.(poll|vote).*";
         this.proposer = proposer;
-
-        listeningCommands.add(Command.STRAWPOLL);
-        listeningCommands.add(Command.VOTE);
 
         if(question == null || question.isEmpty())
             throw new Exception("Question cannot be blank");
@@ -58,10 +59,13 @@ public class StrawPoll extends IRCListenerThread {
 
     }
 
-    public String castVote(String voter, Integer choice) {
-        if(!optionsTable.containsKey(choice)) return choice + " is not a valid choice";
-        if(!(votes.add(new Vote(voter,optionsTable.get(choice))))) return "You can't vote twice";
-        return null;
+    public void castVote(String voter, Integer choice) throws InvalidChoiceException, DuplicateVoteException {
+        if(!optionsTable.containsKey(choice))
+            throw new InvalidChoiceException();
+
+        boolean voteResult = votes.add(new Vote(voter,optionsTable.get(choice)));
+        if(!voteResult)
+            throw new DuplicateVoteException();
     }
 
     private void handlePollStart() {
@@ -131,14 +135,20 @@ public class StrawPoll extends IRCListenerThread {
     }
 
     @Override
-    public void onMessage(Command command, String sender, String login, String hostname, String message) {
-        if(!listeningCommands.contains(command)) return;
+    public void onMessage(String sender, String login, String hostname, String message) {
+
+        StrawPollOperation pollOp = StrawPollOperation.fromString(message);
+        if(pollOp == null)
+            return;
+
+        logger.info("Received message: {} -> pollOp = {}", message, pollOp);
+
         String[] cmdParts = message.split("\\s+");
 
-        if(command.equals(Command.VOTE)) {
+        if(pollOp.equals(StrawPollOperation.vote)) {
 
             if(cmdParts.length != 2) {
-                bot.sendMessage(channel,command.getUsage());
+                bot.sendMessage(channel, ".vote [number of your choice]");
                 return;
             }
 
@@ -146,27 +156,27 @@ public class StrawPoll extends IRCListenerThread {
             try {
                 selection = Integer.parseInt(cmdParts[1]);
             } catch (NumberFormatException nfe) {
-                bot.sendMessage(channel,command.getUsage());
+                logger.warn("NFE", nfe);
+                bot.sendMessage(channel, ".vote [number of your choice]");
                 return;
             }
 
-            String voteResult = castVote(login, selection);
-            if(voteResult != null) bot.sendMessage(channel,voteResult + ", " + sender);
-//            else  bot.sendMessage(channel,"Your vote has been counted, " + sender);
+            try{
+                castVote(login, selection);
+                bot.sendMessage(channel, "Your vote has been counted, " + sender);
+            } catch (DuplicateVoteException e) {
+                bot.sendMessage(channel, "You can't vote twice, " + sender);
+            } catch (InvalidChoiceException e) {
+                bot.sendMessage(channel, "That is not a valid choice, " + sender);
+            }
 
-        } else if(command.equals(Command.STRAWPOLL)) {
+        } else if(pollOp.equals(StrawPollOperation.abort)) {
 
-            if(cmdParts.length != 2) return;
-
-            synchronized (mutex) {
-                if(cmdParts[1].equals("abort")) {
-                    if(sender.equals(proposer) || bot.getUserFromNick(channel,sender).hasPriv(User.Priv.OP)) {
-                        this.aborted = true;
-                        mutex.notify();
-                    } else {
-                        bot.sendMessage(channel,"Only an op or the proposer can cancel this poll.");
-                    }
-                }
+            if(sender.equals(proposer) || bot.getUserFromNick(channel, sender).hasPriv(User.Priv.OP)) {
+                this.aborted = true;
+                mutex.notify();
+            } else {
+                bot.sendMessage(channel, "Only an op or the proposer can cancel this poll.");
             }
 
         }
@@ -174,9 +184,7 @@ public class StrawPoll extends IRCListenerThread {
     }
 
     @Override
-    public void onPrivateMessage(Command command, String sender, String login, String hostname, String message) {
-
-    }
+    public void onPrivateMessage(String sender, String login, String hostname, String message) {}
 
     @Override
     public long getRemainingTime() {
@@ -221,4 +229,26 @@ public class StrawPoll extends IRCListenerThread {
             return voter.hashCode();
         }
     }
+
+    public enum StrawPollOperation {
+        vote(".vote "),
+        abort(".poll abort");
+
+        StrawPollOperation(String prefix) {
+            this.prefix = prefix;
+        }
+
+        private String prefix;
+
+        public static StrawPollOperation fromString(String s) {
+            for(StrawPollOperation op : values()) {
+                if(s.startsWith(op.prefix))
+                    return op;
+            }
+            return null;
+        }
+    }
+
+    class InvalidChoiceException extends Exception {}
+    class DuplicateVoteException extends Exception {}
 }

@@ -1,6 +1,5 @@
 package org.tsd.tsdbot.stats;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 /**

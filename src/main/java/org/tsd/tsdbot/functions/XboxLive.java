@@ -73,8 +73,10 @@ public class XboxLive extends MainFunction {
     @Inject
     public XboxLive(TSDBot bot, Properties properties) {
         super(bot);
-        xblApiKey = properties.getProperty("xbl.apiKey");
-        xuid = Long.parseLong(properties.getProperty("xbl.xuid"));
+        this.description = "Xbox Live utility";
+        this.usage = "USAGE: .xbl [ gamertag ]";
+        this.xblApiKey = properties.getProperty("xbl.apiKey");
+        this.xuid = Long.parseLong(properties.getProperty("xbl.xuid"));
         try {
             loadFriendsList();
         } catch (Exception e) {
@@ -183,6 +185,11 @@ public class XboxLive extends MainFunction {
                 bot.sendMessage(channel, "Error getting player status");
             }
         }
+    }
+
+    @Override
+    public String getRegex() {
+        return "^\\.xbl.*";
     }
 
     /**

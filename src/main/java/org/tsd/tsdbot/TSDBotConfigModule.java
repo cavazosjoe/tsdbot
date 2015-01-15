@@ -29,6 +29,8 @@ import org.tsd.tsdbot.database.DBConnectionString;
 import org.tsd.tsdbot.functions.*;
 import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.notifications.*;
+import org.tsd.tsdbot.runnable.InjectableIRCThreadFactory;
+import org.tsd.tsdbot.runnable.ThreadManager;
 import org.tsd.tsdbot.scheduled.InjectableJobFactory;
 import org.tsd.tsdbot.stats.GvStats;
 import org.tsd.tsdbot.stats.HustleStats;
@@ -129,6 +131,11 @@ public class TSDBotConfigModule extends AbstractModule {
 
         bind(HistoryBuff.class).asEagerSingleton();
         bind(Archivist.class).asEagerSingleton();
+
+        bind(ThreadManager.class).toInstance(new ThreadManager(10));
+        bind(InjectableIRCThreadFactory.class).asEagerSingleton();
+
+        bind(InjectableStreamFactory.class).toInstance(new InjectableStreamFactory());
 
         PoolingHttpClientConnectionManager poolingManager = new PoolingHttpClientConnectionManager();
         poolingManager.setMaxTotal(100);
@@ -236,7 +243,7 @@ public class TSDBotConfigModule extends AbstractModule {
         functionBinder.addBinding().to(Sanic.class);
         functionBinder.addBinding().to(ScareQuote.class);
         functionBinder.addBinding().to(ShutItDown.class);
-        functionBinder.addBinding().to(StrawPoll.class);
+        functionBinder.addBinding().to(StrawPollFunction.class);
         functionBinder.addBinding().to(TomCruise.class);
         functionBinder.addBinding().to(Wod.class);
         functionBinder.addBinding().to(SillyZackDark.class);
@@ -244,6 +251,7 @@ public class TSDBotConfigModule extends AbstractModule {
         functionBinder.addBinding().to(XboxLive.class);
         functionBinder.addBinding().to(Hustle.class);
         functionBinder.addBinding().to(TSDTVFunction.class);
+
     }
 
     private void bindNotifiers() {

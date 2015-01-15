@@ -12,6 +12,7 @@ import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.NotificationType;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -146,6 +147,11 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
         recentNotifications.addAll(0,notifications);
         trimHistory();
         return notifications;
+    }
+
+    @Override
+    public NotificationType getNotificationType() {
+        return NotificationType.HBO_FORUM;
     }
 
     public class HboForumPost extends NotificationEntity {

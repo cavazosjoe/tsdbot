@@ -6,6 +6,7 @@ import it.sauronsoftware.feed4j.bean.Feed;
 import it.sauronsoftware.feed4j.bean.FeedItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.NotificationType;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -66,6 +67,11 @@ public class DboNewsManager extends NotificationManager<DboNewsManager.DboNewsPo
         recentNotifications.addAll(0,notifications);
         trimHistory();
         return notifications;
+    }
+
+    @Override
+    public NotificationType getNotificationType() {
+        return NotificationType.DBO_NEWS;
     }
 
     private int getPostNumFromLink(String url) throws Exception {

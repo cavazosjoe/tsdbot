@@ -3,7 +3,6 @@ package org.tsd.tsdbot.functions;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.jibble.pircbot.User;
-import org.tsd.tsdbot.Command;
 import org.tsd.tsdbot.TSDBot;
 
 import java.util.Random;
@@ -20,6 +19,8 @@ public class BlunderCount extends MainFunction {
     public BlunderCount(TSDBot bot, Random random) {
         super(bot);
         this.random = random;
+        this.description = "View, manage, and update the blunder count";
+        this.usage = "USAGE: .blunder [ count | + ]";
     }
 
     @Override
@@ -28,7 +29,7 @@ public class BlunderCount extends MainFunction {
         String[] cmdParts = text.split("\\s+");
 
         if(cmdParts.length == 1) {
-            bot.sendMessage(channel, Command.BLUNDER_COUNT.getUsage());
+            bot.sendMessage(channel, usage);
         } else {
             String subCmd = cmdParts[1];
             if(subCmd.equals("count")) { // display the current blunder count
@@ -45,9 +46,14 @@ public class BlunderCount extends MainFunction {
                         + "Blunder count incremented to %d",++TSDBot.blunderCount);
                 bot.sendMessage(channel, response);
             } else {
-                bot.sendMessage(channel, Command.BLUNDER_COUNT.getUsage());
+                bot.sendMessage(channel, usage);
             }
         }
+    }
+
+    @Override
+    public String getRegex() {
+        return "^\\.blunder.*";
     }
 
     private static String[] responses = new String[]{
