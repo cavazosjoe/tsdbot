@@ -37,10 +37,10 @@ public class TSDBot extends PircBot {
     private ThreadManager threadManager;
 
     @Inject
-    private Set<MainFunction> functions = new HashSet<>();
+    private Set<MainFunction> functions;
 
     @Inject
-    private HashSet<Stats> stats = new HashSet<>();
+    private Set<Stats> stats;
 
     @Inject
     protected HistoryBuff historyBuff;
