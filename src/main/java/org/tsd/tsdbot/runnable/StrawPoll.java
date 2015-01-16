@@ -27,11 +27,11 @@ public class StrawPoll extends IRCListenerThread {
     @Inject
     public StrawPoll(TSDBot bot, ThreadManager threadManager) throws Exception {
         super(bot, threadManager);
+        this.listeningRegex = "^\\.(poll|vote).*";
     }
 
     public void init(String channel, String proposer, String question, int duration, String[] options) throws Exception {
         this.channel = channel;
-        this.listeningRegex = "^\\.(poll|vote).*";
         this.proposer = proposer;
 
         if(question == null || question.isEmpty())
@@ -174,7 +174,9 @@ public class StrawPoll extends IRCListenerThread {
 
             if(sender.equals(proposer) || bot.getUserFromNick(channel, sender).hasPriv(User.Priv.OP)) {
                 this.aborted = true;
-                mutex.notify();
+                synchronized (mutex) {
+                    mutex.notify();
+                }
             } else {
                 bot.sendMessage(channel, "Only an op or the proposer can cancel this poll.");
             }

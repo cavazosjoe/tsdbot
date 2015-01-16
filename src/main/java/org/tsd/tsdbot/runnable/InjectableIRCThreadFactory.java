@@ -33,4 +33,11 @@ public class InjectableIRCThreadFactory {
         poll.init(channel, proposer, proposedTweet, replyTo);
         return poll;
     }
+
+    public DorjThread newDorjThread(String channel, String ident) throws Exception {
+        logger.info("Creating and injecting new DorjThread...");
+        DorjThread dorjThread = injector.getInstance(DorjThread.class);
+        dorjThread.init(channel, ident);
+        return dorjThread;
+    }
 }

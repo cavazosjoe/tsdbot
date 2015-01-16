@@ -31,12 +31,12 @@ public class TweetPoll extends IRCListenerThread {
     @Inject
     public TweetPoll(TSDBot bot, ThreadManager threadManager, TwitterManager twitterManager) throws Exception {
         super(bot, threadManager);
+        this.listeningRegex = "^\\.tw (aye|abort)$";
         this.twitterManager = twitterManager;
     }
 
     public void init(String channel, String proposer, String proposedTweet, TwitterManager.Tweet replyTo) throws Exception {
         this.channel = channel;
-        this.listeningRegex = "^\\.tw (aye|abort)$";
         this.proposedTweet = proposedTweet;
         this.proposer = proposer;
 

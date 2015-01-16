@@ -29,6 +29,7 @@ import org.tsd.tsdbot.database.DBConnectionString;
 import org.tsd.tsdbot.functions.*;
 import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.notifications.*;
+import org.tsd.tsdbot.runnable.DorjThread;
 import org.tsd.tsdbot.runnable.InjectableIRCThreadFactory;
 import org.tsd.tsdbot.runnable.ThreadManager;
 import org.tsd.tsdbot.scheduled.InjectableJobFactory;
@@ -251,6 +252,7 @@ public class TSDBotConfigModule extends AbstractModule {
         functionBinder.addBinding().to(XboxLive.class);
         functionBinder.addBinding().to(Hustle.class);
         functionBinder.addBinding().to(TSDTVFunction.class);
+        functionBinder.addBinding().to(Dorj.class);
 
     }
 

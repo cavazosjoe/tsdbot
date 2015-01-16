@@ -5,5 +5,6 @@ package org.tsd.tsdbot;
 */
 public enum ThreadType {
     STRAWPOLL,
-    TWEETPOLL
+    TWEETPOLL,
+    DORJ
 }
