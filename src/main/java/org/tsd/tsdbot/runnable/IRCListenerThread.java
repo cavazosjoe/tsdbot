@@ -30,6 +30,8 @@ public abstract class IRCListenerThread implements Callable {
     public abstract void onMessage(String sender, String login, String hostname, String message);
     public abstract void onPrivateMessage(String sender, String login, String hostname, String message);
     public abstract long getRemainingTime();
+    protected abstract void handleStart();
+    protected abstract void handleEnd();
 
     public boolean matches(String text) {
         return text.matches(listeningRegex);

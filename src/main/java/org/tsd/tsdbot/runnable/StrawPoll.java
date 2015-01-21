@@ -68,7 +68,8 @@ public class StrawPoll extends IRCListenerThread {
             throw new DuplicateVoteException();
     }
 
-    private void handlePollStart() {
+    @Override
+    protected void handleStart() {
         String[] displayTable = new String[3];
         displayTable[0] = "NEW STRAWPOLL: " + question;
 
@@ -87,7 +88,8 @@ public class StrawPoll extends IRCListenerThread {
         logger.info("BEGINNING STRAW POLL: {}, duration={}", question, duration);
     }
 
-    private void handlePollResult() {
+    @Override
+    protected void handleEnd() {
 
         if(aborted) {
             bot.sendMessage(channel, "The strawpoll has been canceled.");
@@ -195,7 +197,7 @@ public class StrawPoll extends IRCListenerThread {
 
     @Override
     public Object call() throws Exception {
-        handlePollStart();
+        handleStart();
         synchronized (mutex) {
             try {
                 mutex.wait(duration * 60 * 1000);
@@ -203,7 +205,7 @@ public class StrawPoll extends IRCListenerThread {
                 logger.info("StrawPoll.call() interrupted", e);
             }
         }
-        handlePollResult();
+        handleEnd();
         manager.removeThread(this);
         return null;
     }

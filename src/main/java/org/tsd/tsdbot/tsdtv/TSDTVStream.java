@@ -12,7 +12,7 @@ import java.util.Properties;
 /**
  * Created by Joe on 3/9/14.
  */
-public class TSDTVStream implements Runnable {
+public class TSDTVStream extends Thread {
 
     private static Logger logger = LoggerFactory.getLogger(TSDTVStream.class);
 
@@ -25,28 +25,21 @@ public class TSDTVStream implements Runnable {
     @Inject @Named(value = "ffmpeg")
     private String ffmpegFormat;
 
-    private String pathToMovie = null;
+    private TSDTVProgram movie = null;
 
     private File logFile = null;
 
     @Deprecated
     public TSDTVStream() {}
 
-    public void init(String videoFilter, String pathToMovie) {
-        logFile = new File(properties.getProperty("tsdtv.log"));
-        ffmpegFormat = String.format(ffmpegFormat, pathToMovie, videoFilter);
+    public void init(String videoFilter, TSDTVProgram program) {
+        this.movie = program;
+        this.logFile = new File(properties.getProperty("tsdtv.log"));
+        this.ffmpegFormat = String.format(ffmpegFormat, program.file.getAbsolutePath(), videoFilter);
     }
 
-    public String getPathToMovie() {
-        return pathToMovie;
-    }
-
-    public String getMovieName() {
-        return pathToMovie.substring(pathToMovie.lastIndexOf("/")+1);
-    }
-
-    public boolean isInitialized() {
-        return pathToMovie != null;
+    public TSDTVProgram getMovie() {
+        return movie;
     }
 
     @Override
@@ -58,8 +51,7 @@ public class TSDTVStream implements Runnable {
             tsdtv.finishStream(false);
             return;
         }
-        logger.info("[TSDTV] preparing movie " + pathToMovie);
-        logger.info("[TSDTV] using command: {}", ffmpegFormat);
+        logger.info("[TSDTV] preparing movie {} using command {}", movie.file.getAbsolutePath(), ffmpegFormat);
         ProcessBuilder pb = new ProcessBuilder(ffmpegFormat.split("\\s+"));
         pb.redirectErrorStream(true);
         pb.redirectOutput(logFile);

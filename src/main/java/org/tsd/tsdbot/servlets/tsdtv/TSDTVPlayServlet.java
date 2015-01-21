@@ -4,12 +4,15 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.tsd.tsdbot.tsdtv.ShowNotFoundException;
 import org.tsd.tsdbot.tsdtv.TSDTV;
+import org.tsd.tsdbot.tsdtv.TSDTVProgram;
+import org.tsd.tsdbot.tsdtv.TSDTVStream;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.LinkedList;
 
 /**
  * Created by Joe on 1/12/2015.
@@ -22,6 +25,19 @@ public class TSDTVPlayServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+
+        // queue with dotshows (commercials, bumps, intros, etc) removed
+        LinkedList<TSDTVProgram> effectiveQueue = new LinkedList<>();
+
+        if(tsdtv.getNowPlaying() != null && !tsdtv.getNowPlaying().getMovie().show.startsWith(".")) {
+            effectiveQueue.add(tsdtv.getNowPlaying().getMovie());
+        }
+
+        for(TSDTVProgram prog : tsdtv.getQueue()) {
+            if(!prog.show.startsWith("."))
+                effectiveQueue.add(prog);
+        }
+        req.setAttribute("queue", effectiveQueue);
         req.getRequestDispatcher("/tsdtvPlayResult.jsp").forward(req, resp);
     }
 

@@ -39,9 +39,9 @@ public class TSDTV implements Persistable {
 
     private static Logger logger = LoggerFactory.getLogger(TSDTV.class);
 
-
     private static final int dayBoundaryHour = 4; // 4:00 AM
     private static final TimeZone timeZone = TimeZone.getTimeZone("America/New_York");
+    private static final Pattern durationPattern = Pattern.compile("(\\d+):(\\d+):(\\d+)\\.(\\d+)");
 
     private TSDBot bot;
 
@@ -54,8 +54,7 @@ public class TSDTV implements Persistable {
     private String serverUrl;
 
     private LinkedList<TSDTVProgram> queue = new LinkedList<>(); // file paths
-
-    private ThreadStream runningStream;
+    private TSDTVStream runningStream;
 
     @Inject
     public TSDTV(TSDBot bot, Properties prop, Scheduler scheduler,
@@ -115,6 +114,14 @@ public class TSDTV implements Persistable {
         }
     }
 
+    public TSDTVStream getNowPlaying() {
+        return runningStream;
+    }
+
+    public LinkedList<TSDTVProgram> getQueue() {
+        return queue;
+    }
+
     public File getCatalogDir() {
         return new File(catalogPath);
     }
@@ -165,13 +172,11 @@ public class TSDTV implements Persistable {
         // determine if we have subtitles for this
         StringBuilder videoFilter = new StringBuilder();
         videoFilter.append("yadif");
-        if(hasSubtitles(program.filePath))
-            videoFilter.append(",subtitles=").append(program.filePath);
+        if(hasSubtitles(program.file))
+            videoFilter.append(",subtitles=").append(program.file);
 
-        TSDTVStream stream = streamFactory.newStream(videoFilter.toString(), program.filePath);
-        Thread thread = new Thread(stream);
-        runningStream = new ThreadStream(thread, stream);
-        runningStream.begin();
+        runningStream = streamFactory.newStream(videoFilter.toString(), program);
+        runningStream.start();
 
         if(program.show != null && program.episodeNum > 0) {
             try {
@@ -190,11 +195,11 @@ public class TSDTV implements Persistable {
         }
 
         if(!program.show.startsWith(".")) { // skip commercials and bumps
-            HashMap<String,String> metadata = getVideoMetadata(program.filePath);
+            HashMap<String,String> metadata = getVideoMetadata(program.file);
             String artist = metadata.get(TSDTVConstants.METADATA_ARTIST_FIELD);
             if(artist == null) artist = program.show;
             String title = metadata.get(TSDTVConstants.METADATA_TITLE_FIELD);
-            if(title == null) title = program.filePath.substring(program.filePath.lastIndexOf("/")+1);
+            if(title == null) title = program.file.getName();
 
             String msg = "[TSDTV] NOW PLAYING: " + artist + ": " + title + " -- " + getLinks(false);
             bot.broadcast(msg.replaceAll("_"," "));
@@ -228,11 +233,17 @@ public class TSDTV implements Persistable {
             throw new Exception(ex.toString());
         }
 
-        TSDTVProgram program = new TSDTVProgram(matchedFiles.get(0).getAbsolutePath(), show);
+
+        File movie = matchedFiles.get(0);
+        Date[] startEndDates = getStartEndDatesForVOD(movie);
         if(isRunning()) {
+            TSDTVProgram program = new TSDTVProgram(movie, show, startEndDates[0], startEndDates[1]);
             queue.addLast(program);
             bot.sendMessage(channel, "There is already a stream running. Your show has been enqueued");
-        } else play(program);
+        } else {
+            TSDTVProgram program = new TSDTVProgram(movie, show, startEndDates[0], startEndDates[1]);
+            play(program);
+        }
 
     }
 
@@ -242,8 +253,10 @@ public class TSDTV implements Persistable {
      */
     public boolean playFromCatalog(String fileName, String show) throws ShowNotFoundException {
         File showDir = getShowDir(show);
-        String filePath = showDir.getAbsolutePath() + "/" + fileName;
-        TSDTVProgram program = new TSDTVProgram(filePath, show);
+        File movie = new File(showDir.getAbsolutePath() + "/" + fileName);
+
+        Date[] startEndDates = getStartEndDatesForVOD(movie);
+        TSDTVProgram program = new TSDTVProgram(movie, show, startEndDates[0], startEndDates[1]);
         if(isRunning()) {
             queue.addLast(program);
             bot.broadcast("[TSDTV] A show has been enqueued via web: " + show + " - " + fileName);
@@ -259,38 +272,50 @@ public class TSDTV implements Persistable {
         logger.info("Preparing TSDTV block: {} with offset {}", blockInfo.name, offset);
 
         if(runningStream != null) {
-            runningStream.kill(); // end running stream
+            runningStream.interrupt(); // end running stream
             logger.info("Ended currently running stream");
         }
 
         queue.clear();
 
+        // use rolling calendar to handle start/end times
+        Calendar calendar = Calendar.getInstance();
+
         // prepare the block intro if it exists
-        String blockIntro = getBlockIntro(blockInfo.id);
-        if(blockIntro != null)
-            queue.addLast(new TSDTVProgram(blockIntro, TSDTVConstants.INTRO_DIR_NAME));
+        File blockIntro = getBlockIntro(blockInfo.id);
+        if(blockIntro != null) {
+            Date startTime = calendar.getTime();
+            Date endTime = getEndDateForVideo(calendar, blockIntro);
+            queue.addLast(new TSDTVProgram(blockIntro, TSDTVConstants.INTRO_DIR_NAME, startTime, endTime));
+        }
 
         // use dynamic map to get correct episode numbers for repeating shows
         // use offset to handle replays/reruns
         HashMap<String, Integer> episodeNums = new HashMap<>(); // show -> episode num
         for(String show : blockInfo.scheduleParts) {
 
+            HashMap<String, String> metadata = null;
+
             if(show.startsWith(".")) { // commercial or bump, grab random
 
                 File showDir = new File(catalogPath + "/" + show);
-                String showPath = getRandomFilePathFromDirectory(showDir);
-                if(showPath != null) {
-                    queue.addLast(new TSDTVProgram(showPath, show));
-                    logger.info("Added {} to queue", showPath);
+                File movie = getRandomFilePathFromDirectory(showDir);
+                if(movie != null) {
+                    Date startTime = calendar.getTime();
+                    Date endTime = getEndDateForVideo(calendar, movie);
+                    queue.addLast(new TSDTVProgram(movie, show, startTime, endTime));
+                    logger.info("Added {} to queue", movie);
                 } else {
-                    logger.error("Could not find any shows in {}", showDir.getAbsolutePath());
+                    logger.error("Could not find any movies in {}", showDir.getAbsolutePath());
                 }
 
             } else {
 
-                String introPath = getShowIntro(show);
-                if(introPath != null) {
-                    queue.addLast(new TSDTVProgram(introPath, TSDTVConstants.INTRO_DIR_NAME));
+                File intro = getShowIntro(show);
+                if(intro != null) {
+                    Date introStartTime = calendar.getTime();
+                    Date introEndTime = getEndDateForVideo(calendar, intro);
+                    queue.addLast(new TSDTVProgram(intro, TSDTVConstants.INTRO_DIR_NAME, introStartTime, introEndTime));
                 }
 
                 int occurrences = Collections.frequency(Arrays.asList(blockInfo.scheduleParts), show);
@@ -310,13 +335,15 @@ public class TSDTV implements Persistable {
                 }
 
                 logger.info("Looking for episode {} of {}", episodeNum, show);
-                String episodePath = getEpisode(show, episodeNum);
-                if(episodePath != null) {
+                File episode = getEpisode(show, episodeNum);
+                if(episode != null) {
+                    Date startTime = calendar.getTime();
+                    Date endTime = getEndDateForVideo(calendar, episode);
                     if(offset == 0)
-                        queue.addLast(new TSDTVProgram(episodePath, show, episodeNum));
+                        queue.addLast(new TSDTVProgram(episode, show, episodeNum, startTime, endTime));
                     else
-                        queue.addLast(new TSDTVProgram(episodePath, show)); // don't worry about ep if it's a replay
-                    logger.info("Added {} to queue", episodePath);
+                        queue.addLast(new TSDTVProgram(episode, show, startTime, endTime)); // don't worry about ep if it's a replay
+                    logger.info("Added {} to queue", episode);
                 } else {
                     logger.error("Could not retrieve episode {} of {}", episodeNum, show);
                 }
@@ -409,13 +436,12 @@ public class TSDTV implements Persistable {
         HashMap<String, String> metadata;
 
         if(runningStream != null) {
-            metadata = getVideoMetadata(runningStream.stream.getPathToMovie());
+            metadata = getVideoMetadata(runningStream.getMovie().file);
             String artist = metadata.get(TSDTVConstants.METADATA_ARTIST_FIELD);
             String title = metadata.get(TSDTVConstants.METADATA_TITLE_FIELD);
 
-            String np;
-            if(artist == null || title == null) np = runningStream.stream.getMovieName();
-            else np = artist + " - " + title;
+            String np = (artist == null || title == null) ?
+                    runningStream.getMovie().file.getName() : artist + " - " + title;
 
             bot.sendMessage(channel, "NOW PLAYING: " + np);
         }
@@ -541,7 +567,7 @@ public class TSDTV implements Persistable {
     public void kill() {
         logger.info("Received kill signal...");
         if(runningStream != null) {
-            runningStream.kill();
+            runningStream.interrupt();
         }
     }
 
@@ -579,14 +605,14 @@ public class TSDTV implements Persistable {
         }
     }
 
-    private String getEpisode(String show, int episodeNumber) {
+    private File getEpisode(String show, int episodeNumber) {
         File showDir = new File(catalogPath + "/" + show);
         java.util.regex.Matcher epNumMatcher;
         if(showDir.exists()) {
             for(File f : showDir.listFiles()) try {
                 int epNum = TSDTVUtil.getEpisodeNumberFromFilename(f.getName());
                 if(epNum == episodeNumber) {
-                    return f.getAbsolutePath();
+                    return f;
                 }
             } catch (Exception e) {
                 logger.warn("Failed to parse episode number from file {}, skipping...", f.getName());
@@ -598,12 +624,12 @@ public class TSDTV implements Persistable {
         return null;
     }
 
-    private String getShowIntro(String show) {
+    private File getShowIntro(String show) {
         File introDir = new File(catalogPath + "/" + show + "/" + TSDTVConstants.INTRO_DIR_NAME);
         return getRandomFilePathFromDirectory(introDir);
     }
 
-    private String getBlockIntro(String blockId) {
+    private File getBlockIntro(String blockId) {
         File introDir = new File(catalogPath + "/"
                 + TSDTVConstants.BLOCKS_DIR_NAME + "/" + blockId + "/" + TSDTVConstants.INTRO_DIR_NAME);
         return getRandomFilePathFromDirectory(introDir);
@@ -619,10 +645,9 @@ public class TSDTV implements Persistable {
         return null;
     }
 
-    private String getRandomFilePathFromDirectory(File dir) {
+    private File getRandomFilePathFromDirectory(File dir) {
         File f = getRandomFileFromDirectory(dir);
-        if(f == null) return null;
-        else return f.getAbsolutePath();
+        return f;
     }
 
     private int getCurrentEpisode(String show) throws SQLException {
@@ -672,13 +697,13 @@ public class TSDTV implements Persistable {
         return sb.toString();
     }
 
-    private HashMap<Integer, StreamType> getVideoStreams(String moviePath) {
+    private HashMap<Integer, StreamType> getVideoStreams(File movie) {
 
         Pattern trackPattern = Pattern.compile("^Track ID\\s+(\\d+):\\s+(\\w+)\\s+\\(.*\\)$", Pattern.DOTALL);
         HashMap<Integer, StreamType> streams = new HashMap<>();
 
         try {
-            ProcessBuilder pb = new ProcessBuilder("mkvmerge", "-i", moviePath);
+            ProcessBuilder pb = new ProcessBuilder("mkvmerge", "-i", movie.getAbsolutePath());
             Process p = pb.start();
             p.waitFor();
             InputStream out = p.getInputStream();
@@ -705,12 +730,13 @@ public class TSDTV implements Persistable {
         return streams;
     }
 
-    private HashMap<String, String> getVideoMetadata(String moviePath) {
+    private HashMap<String, String> getVideoMetadata(File movie) {
 
+        logger.info("Retrieving metadata for {}", movie.getAbsolutePath());
         HashMap<String, String> metadata = new HashMap<>();
 
         try {
-            ProcessBuilder pb = new ProcessBuilder("ffmpeg", "-i", moviePath);
+            ProcessBuilder pb = new ProcessBuilder("ffmpeg", "-i", movie.getAbsolutePath());
             Process p = pb.start();
             p.waitFor();
             InputStream out = p.getErrorStream();
@@ -733,7 +759,7 @@ public class TSDTV implements Persistable {
             }
 
         } catch (InterruptedException | IOException e) {
-            logger.error(e.getMessage());
+            logger.error("Error getting video metadata", e);
         }
 
         return metadata;
@@ -754,8 +780,8 @@ public class TSDTV implements Persistable {
         return count;
     }
 
-    private boolean hasSubtitles(String pathToMovie) {
-        HashMap<Integer, StreamType> streams = getVideoStreams(pathToMovie);
+    private boolean hasSubtitles(File movie) {
+        HashMap<Integer, StreamType> streams = getVideoStreams(movie);
         for(Integer streamNum : streams.keySet()) {
             if(streams.get(streamNum).equals(StreamType.SUBTITLES)) {
                 return true;
@@ -764,23 +790,54 @@ public class TSDTV implements Persistable {
         return false;
     }
 
-    static class ThreadStream {
-        public Thread thread;
-        public TSDTVStream stream;
-
-        public ThreadStream(Thread thread, TSDTVStream stream) {
-            this.thread = thread;
-            this.stream = stream;
+    private Date getEndDateForVideo(Calendar cal, File f) {
+        HashMap<String, String> metadata = getVideoMetadata(f);
+        Matcher m = durationPattern.matcher(metadata.get(TSDTVConstants.METADATA_DURATION_FIELD));
+        while(m.find()) {
+            cal.add(Calendar.HOUR, Integer.parseInt(m.group(1)));
+            cal.add(Calendar.MINUTE, Integer.parseInt(m.group(2)));
+            cal.add(Calendar.SECOND, Integer.parseInt(m.group(3)));
         }
+        return cal.getTime();
+    }
 
-        public void begin() {
-            thread.start();
-        }
-
-        public void kill() {
-            thread.interrupt();
+    private Date[] getStartEndDatesForVOD(File movie) {
+        Calendar cal = Calendar.getInstance();
+        Date startTime;
+        Date endTime;
+        if(isRunning()) {
+            if(!queue.isEmpty()) {
+                cal.setTime(queue.getLast().endTime);
+            } else {
+                cal.setTime(runningStream.getMovie().endTime);
+            }
+            startTime = cal.getTime();
+            endTime = getEndDateForVideo(cal, movie);
+            return new Date[]{startTime, endTime};
+        } else {
+            endTime = getEndDateForVideo(cal, movie);
+            return new Date[]{cal.getTime(), endTime};
         }
     }
+
+//    static class ThreadStream {
+//        public Thread thread;
+//        public TSDTVStream stream;
+//
+//        public ThreadStream(Thread thread, TSDTVStream stream) {
+//            this.thread = thread;
+//            this.stream = stream;
+//        }
+//
+//        public void begin() {
+//            thread.start();
+//            logger.info("TSDTV Thread started");
+//        }
+//
+//        public void kill() {
+//            thread.interrupt();
+//        }
+//    }
 
     public static class TSDTVBlock {
         public String id;

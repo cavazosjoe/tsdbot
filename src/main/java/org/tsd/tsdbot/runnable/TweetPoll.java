@@ -59,7 +59,8 @@ public class TweetPoll extends IRCListenerThread {
         return requiredVotes - ayes.size();
     }
 
-    private void handlePollStart() {
+    @Override
+    protected void handleStart() {
         String[] lines = new String[3];
         if(replyTo == null)  lines[0] = proposer + " has proposed we send a new Tweet:";
         else lines[0] = proposer + " has proposed we send a reply to @" + replyTo.getStatus().getUser().getScreenName() + ":";
@@ -71,7 +72,8 @@ public class TweetPoll extends IRCListenerThread {
         logger.info("BEGINNING TWEET POLL: {}, duration={}, proposedBy={}", new Object[]{proposedTweet, duration, proposer});
     }
 
-    private void handlePollEnd() {
+    @Override
+    protected void handleEnd() {
 
         if(this.aborted) {
             bot.sendMessage(channel,"The tweet proposal has been canceled.");
@@ -160,7 +162,7 @@ public class TweetPoll extends IRCListenerThread {
 
     @Override
     public Object call() throws Exception {
-        handlePollStart();
+        handleStart();
         synchronized (mutex) {
             try {
                 mutex.wait(duration * 60 * 1000);
@@ -168,7 +170,7 @@ public class TweetPoll extends IRCListenerThread {
                 logger.info("TweetPoll interrupted!", e);
             }
         }
-        handlePollEnd();
+        handleEnd();
         manager.removeThread(this);
         return null;
     }

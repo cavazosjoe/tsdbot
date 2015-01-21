@@ -58,7 +58,8 @@ public class DorjThread extends IRCListenerThread {
         this.starter = senderIdent;
     }
 
-    private void handleStart() {
+    @Override
+    protected void handleStart() {
         bot.sendMessage(channel, "Dorj system starting ... [ \u000303ONLINE\u0003 ] ... standing by ...");
     }
 
@@ -103,7 +104,8 @@ public class DorjThread extends IRCListenerThread {
         }
     }
 
-    private void handleEnd() {
+    @Override
+    protected void handleEnd() {
         if(summoners.size() == 4) try {
             // successful dorj
             NoCommandsStrategy strat = new NoCommandsStrategy();
@@ -113,7 +115,7 @@ public class DorjThread extends IRCListenerThread {
             bot.sendMessage(channel, "Dorj assembled and deployed: " + "https://twitter.com/TSD_IRC/status/" + tweet.getId());
         } catch (Exception e ) {
             logger.error("Error sending dorj", e);
-            bot.sendMessage(channel, "Failed to send the dorj :(");
+            bot.sendMessage(channel, "Failed to send the Dorj due to error :(");
         } else {
             // unsuccessful
             bot.sendMessage(channel, "Failed to summon the Dorj.");
