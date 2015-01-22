@@ -12,24 +12,27 @@ public class TSDTVProgram {
 
     public File file;
     public String show;
+    public TSDTV.TSDTVBlock block;
     public int episodeNum;
     public Date startTime;
     public Date endTime;
 
-    public TSDTVProgram(File file, String show, int episodeNum, Date startTime, Date endTime) {
+    public TSDTVProgram(File file, String show, TSDTV.TSDTVBlock block, int episodeNum, Date startTime, Date endTime) {
         this.file = file;
         this.show = show;
         this.episodeNum = episodeNum;
         this.startTime = startTime;
         this.endTime = endTime;
+        this.block = block;
     }
 
-    public TSDTVProgram(File file, String show, Date startTime, Date endTime) {
+    public TSDTVProgram(File file, String show, TSDTV.TSDTVBlock block, Date startTime, Date endTime) {
         this.file = file;
         this.show = show;
         this.episodeNum = -1;
         this.startTime = startTime;
         this.endTime = endTime;
+        this.block = block;
     }
 
     public File getFile() {
@@ -53,9 +56,6 @@ public class TSDTVProgram {
     }
 
     public String toPrettyString() {
-//        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm z");
-//        sdf.setTimeZone(TimeZone.getTimeZone("America/New_York"));
-//        return sdf.format(startTime) + " - " + show + ": " + file.getName();
         return show + ": " + file.getName();
     }
 

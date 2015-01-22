@@ -114,6 +114,27 @@ public class TSDTV implements Persistable {
         }
     }
 
+    public TreeMap<Date, TSDTVBlock> getRemainingBlocks(boolean todayOnly) throws SchedulerException {
+        GregorianCalendar endOfToday = new GregorianCalendar();
+        endOfToday.setTimeZone(timeZone);
+        endOfToday.set(Calendar.HOUR_OF_DAY, dayBoundaryHour);
+        if(endOfToday.get(Calendar.HOUR_OF_DAY) >= dayBoundaryHour)
+            endOfToday.add(Calendar.DATE, 1);
+
+        Set<JobKey> keys = scheduler.getJobKeys(GroupMatcher.<JobKey>groupEquals(SchedulerConstants.TSDTV_GROUP_ID));
+        TreeMap<Date, TSDTVBlock> jobMap = new TreeMap<>();
+        for(JobKey key : keys) {
+            List<Trigger> triggers = (List<Trigger>) scheduler.getTriggersOfJob(key);
+            if(!triggers.isEmpty()) {
+                Date nextFireTime = triggers.get(0).getNextFireTime();
+                if((!todayOnly) || nextFireTime.before(endOfToday.getTime()))
+                    jobMap.put(nextFireTime, new TSDTVBlock(scheduler.getJobDetail(key).getJobDataMap()));
+            }
+        }
+
+        return jobMap;
+    }
+
     public TSDTVStream getNowPlaying() {
         return runningStream;
     }
@@ -237,11 +258,11 @@ public class TSDTV implements Persistable {
         File movie = matchedFiles.get(0);
         Date[] startEndDates = getStartEndDatesForVOD(movie);
         if(isRunning()) {
-            TSDTVProgram program = new TSDTVProgram(movie, show, startEndDates[0], startEndDates[1]);
+            TSDTVProgram program = new TSDTVProgram(movie, show, null, startEndDates[0], startEndDates[1]);
             queue.addLast(program);
             bot.sendMessage(channel, "There is already a stream running. Your show has been enqueued");
         } else {
-            TSDTVProgram program = new TSDTVProgram(movie, show, startEndDates[0], startEndDates[1]);
+            TSDTVProgram program = new TSDTVProgram(movie, show, null, startEndDates[0], startEndDates[1]);
             play(program);
         }
 
@@ -256,7 +277,7 @@ public class TSDTV implements Persistable {
         File movie = new File(showDir.getAbsolutePath() + "/" + fileName);
 
         Date[] startEndDates = getStartEndDatesForVOD(movie);
-        TSDTVProgram program = new TSDTVProgram(movie, show, startEndDates[0], startEndDates[1]);
+        TSDTVProgram program = new TSDTVProgram(movie, show, null, startEndDates[0], startEndDates[1]);
         if(isRunning()) {
             queue.addLast(program);
             bot.broadcast("[TSDTV] A show has been enqueued via web: " + show + " - " + fileName);
@@ -286,7 +307,7 @@ public class TSDTV implements Persistable {
         if(blockIntro != null) {
             Date startTime = calendar.getTime();
             Date endTime = getEndDateForVideo(calendar, blockIntro);
-            queue.addLast(new TSDTVProgram(blockIntro, TSDTVConstants.INTRO_DIR_NAME, startTime, endTime));
+            queue.addLast(new TSDTVProgram(blockIntro, TSDTVConstants.INTRO_DIR_NAME, blockInfo, startTime, endTime));
         }
 
         // use dynamic map to get correct episode numbers for repeating shows
@@ -303,7 +324,7 @@ public class TSDTV implements Persistable {
                 if(movie != null) {
                     Date startTime = calendar.getTime();
                     Date endTime = getEndDateForVideo(calendar, movie);
-                    queue.addLast(new TSDTVProgram(movie, show, startTime, endTime));
+                    queue.addLast(new TSDTVProgram(movie, show, blockInfo, startTime, endTime));
                     logger.info("Added {} to queue", movie);
                 } else {
                     logger.error("Could not find any movies in {}", showDir.getAbsolutePath());
@@ -315,7 +336,7 @@ public class TSDTV implements Persistable {
                 if(intro != null) {
                     Date introStartTime = calendar.getTime();
                     Date introEndTime = getEndDateForVideo(calendar, intro);
-                    queue.addLast(new TSDTVProgram(intro, TSDTVConstants.INTRO_DIR_NAME, introStartTime, introEndTime));
+                    queue.addLast(new TSDTVProgram(intro, TSDTVConstants.INTRO_DIR_NAME, blockInfo, introStartTime, introEndTime));
                 }
 
                 int occurrences = Collections.frequency(Arrays.asList(blockInfo.scheduleParts), show);
@@ -340,9 +361,9 @@ public class TSDTV implements Persistable {
                     Date startTime = calendar.getTime();
                     Date endTime = getEndDateForVideo(calendar, episode);
                     if(offset == 0)
-                        queue.addLast(new TSDTVProgram(episode, show, episodeNum, startTime, endTime));
+                        queue.addLast(new TSDTVProgram(episode, show, blockInfo, episodeNum, startTime, endTime));
                     else
-                        queue.addLast(new TSDTVProgram(episode, show, startTime, endTime)); // don't worry about ep if it's a replay
+                        queue.addLast(new TSDTVProgram(episode, show, blockInfo, startTime, endTime)); // don't worry about ep if it's a replay
                     logger.info("Added {} to queue", episode);
                 } else {
                     logger.error("Could not retrieve episode {} of {}", episodeNum, show);
