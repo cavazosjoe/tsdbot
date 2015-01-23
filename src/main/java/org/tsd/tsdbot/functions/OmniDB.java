@@ -270,7 +270,14 @@ public class OmniDB extends MainFunction implements Persistable {
                 bot.sendMessage(channel, msg);
             }
 
-            bot.sendMessage(channel, "Finished deleting entry " + itemId);
+            try {
+                connection.commit();
+                bot.sendMessage(channel, "Finished deleting entry " + itemId);
+            } catch (Exception e) {
+                String msg = "Error committing to Omni DB";
+                logger.error(msg, e);
+                bot.sendMessage(channel, msg);
+            }
 
         } else {
             bot.sendMessage(channel, usage);
