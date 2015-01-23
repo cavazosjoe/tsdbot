@@ -253,6 +253,7 @@ public class TSDBotConfigModule extends AbstractModule {
         functionBinder.addBinding().to(Hustle.class);
         functionBinder.addBinding().to(TSDTVFunction.class);
         functionBinder.addBinding().to(Dorj.class);
+        functionBinder.addBinding().to(OmniDB.class);
 
     }
 

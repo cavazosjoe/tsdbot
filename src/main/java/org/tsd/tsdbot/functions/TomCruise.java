@@ -87,7 +87,7 @@ public class TomCruise extends MainFunction implements Persistable {
 
     @Override
     public void initDB() throws SQLException {
-        logger.info("Initializing Tom Cruise database");
+        logger.info("Initializing Tom Cruise database...");
         String tomCruiseTable = "TOMCRUISE";
         Connection connection = connectionProvider.get();
 
