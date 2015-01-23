@@ -264,6 +264,21 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
         TSDBot.blunderCount++;
     }
 
+    public void delete(String channel, long id) {
+        try {
+            Status deleted = twitter.destroyStatus(id);
+            if(deleted != null) {
+                bot.sendMessage(channel, "Successfully deleted status");
+            } else {
+                bot.sendMessage(channel, "Couldn't delete status for some reason");
+            }
+        } catch (TwitterException e) {
+            String msg = "Error deleting status " + id;
+            logger.error(msg, e);
+            bot.sendMessage(channel, msg);
+        }
+    }
+
     public LinkedList<String> getFollowing() throws TwitterException {
         LinkedList<String> ret = new LinkedList<>();
         for(Long id : following.keySet()) {

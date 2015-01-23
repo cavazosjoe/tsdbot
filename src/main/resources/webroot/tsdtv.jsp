@@ -14,6 +14,7 @@
 
         setInterval(schedule_call, interval);
     </script>
+    <
 </head>
 <body style="background-color: midnightblue; color: white">
     <div style="width: 75%; float: left;">

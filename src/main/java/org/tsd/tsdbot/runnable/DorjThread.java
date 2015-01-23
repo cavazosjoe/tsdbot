@@ -26,6 +26,7 @@ public class DorjThread extends IRCListenerThread {
     private static final Logger logger = LoggerFactory.getLogger(DorjThread.class);
 
     private static final int duration = 3; //minutes
+    private static final String deejHandle = "@DeeJ_BNG";
 
     private InjectableMsgFilterStrategyFactory msgFilterFact;
     private HistoryBuff historyBuff;
@@ -33,6 +34,7 @@ public class DorjThread extends IRCListenerThread {
     private Random random;
     private String starter; //ident of first summoner
     private HashSet<String> summoners = new HashSet<>(); //idents of all summoners
+    private boolean opHasSummoned = false;
 
     private LinkedList<String> dorjFormats = new LinkedList<>();
 
@@ -60,17 +62,20 @@ public class DorjThread extends IRCListenerThread {
 
     @Override
     protected void handleStart() {
-        bot.sendMessage(channel, "Dorj system starting ... [ \u000303ONLINE\u0003 ] ... standing by ...");
+        bot.sendMessage(channel, "D.O.R.J. system starting ... [ \u000303ONLINE\u0003 ] ... standing by ...");
     }
 
     // User object doesn't have ident?
     public void addSummoner(User user, String ident) throws DuplicateSummonerException, OpRequiredException {
 
-        if(summoners.size() == 3 && !user.hasPriv(User.Priv.HALFOP))
+        if(summoners.size() == 3 && (!opHasSummoned) && !user.hasPriv(User.Priv.HALFOP))
             throw new OpRequiredException();
 
         if (!summoners.add(ident))
             throw new DuplicateSummonerException();
+
+        if(user.hasPriv(User.Priv.HALFOP))
+            opHasSummoned = true;
 
         StringBuilder sb = new StringBuilder();
 
@@ -92,9 +97,11 @@ public class DorjThread extends IRCListenerThread {
             sb.append(String.format(dorjFormats.remove(random.nextInt(dorjFormats.size())), dorj));
 
             if(summoners.size() == 3) {
-                sb.append(" Call in an op to summon the final dorj!");
+                sb.append(" \u000304[WARNING!]\u0003 Dorj imminent!");
+                if(!opHasSummoned)
+                    sb.append(" Call in an op to summon the final Dorj!");
             } else if(summoners.size() == 4) {
-                sb.append(" I can't believe it! It's \u0002happennninnnngggg!!!!!\u0002");
+                sb.append(" I can't believe it! It's \u0002happening!!!!!\u0002");
                 synchronized (mutex) {
                     mutex.notify();
                 }
@@ -111,14 +118,14 @@ public class DorjThread extends IRCListenerThread {
             NoCommandsStrategy strat = new NoCommandsStrategy();
             msgFilterFact.injectStrategy(strat);
             HistoryBuff.Message m = historyBuff.getRandomFilteredMessage(channel, null, MessageFilter.create().addFilter(strat));
-            Status tweet = twitterManager.postTweet("@DeeJ_BNG " + m.text);
-            bot.sendMessage(channel, "Dorj assembled and deployed: " + "https://twitter.com/TSD_IRC/status/" + tweet.getId());
+            Status tweet = twitterManager.postTweet(deejHandle + " " + m.text);
+            bot.sendMessage(channel, "https://twitter.com/TSD_IRC/status/" + tweet.getId());
         } catch (Exception e ) {
             logger.error("Error sending dorj", e);
             bot.sendMessage(channel, "Failed to send the Dorj due to error :(");
         } else {
             // unsuccessful
-            bot.sendMessage(channel, "Failed to summon the Dorj.");
+            bot.sendMessage(channel, "(the air goes quiet and the ground still as the Dorj returns to slumber)");
         }
     }
 
@@ -135,7 +142,7 @@ public class DorjThread extends IRCListenerThread {
         } catch (DuplicateSummonerException e) {
             bot.sendMessage(channel, "You can only assume one part of the Dorj, " + sender);
         } catch (OpRequiredException e) {
-            bot.sendMessage(channel, "An op is required to complete the Dorj");
+            bot.sendMessage(channel, "At least one op must be involved when summoning the Dorj");
         }
     }
 
@@ -166,10 +173,10 @@ public class DorjThread extends IRCListenerThread {
     public class OpRequiredException extends Exception {}
 
     private static final String [] fmts = new String[]{
-            "(lights go dim as the %s Dorj hums to life)",
-            "%s Dorj ONLINE...",
-            "Bringing %s Dorj online ... [ \u000303OK\u0003 ]",
-            "Initiating %s Dorj subsystems...",
-            "%s Dorj primed and ready!"
+            "(lights go dim as the \u0002%s Dorj\u0002 hums to life)",
+            "\u0002%s Dorj\u0002 ONLINE...",
+            "Bringing \u0002%s Dorj\u0002 online ... [ \u000303OK\u0003 ]",
+            "Initiating \u0002%s Dorj\u0002 subsystems...",
+            "\u0002%s Dorj\u0002 primed and ready!"
     };
 }

@@ -27,6 +27,9 @@ public class OmniDB extends MainFunction implements Persistable {
 
     private static final Logger logger = LoggerFactory.getLogger(OmniDB.class);
 
+    private static final String OMNIDB_TABLE_NAME = "OMNIDB";
+    private static final String OMNIDB_TAG_TABLE_NAME = "OMNIDB_TAG";
+
     private DBConnectionProvider connectionProvider;
     private Random random;
 
@@ -34,7 +37,7 @@ public class OmniDB extends MainFunction implements Persistable {
     public OmniDB(TSDBot bot, DBConnectionProvider connectionProvider, Random random) throws SQLException {
         super(bot);
         this.description = "Use the patented TSD Omni Database";
-        this.usage = "USAGE: .odb [ add -tag1 -tag2 <item> | get -tag1 -tag2 ]";
+        this.usage = "USAGE: .odb [ add #tag1 #tag2 <item> | get tag1 tag2 ]";
         this.connectionProvider = connectionProvider;
         this.random = random;
         initDB();
@@ -46,35 +49,33 @@ public class OmniDB extends MainFunction implements Persistable {
         logger.info("Initializing Omni Database...");
         Connection connection = connectionProvider.get();
 
-        String itemTable = "OMNIDB";
-        if(!DatabaseLogic.tableExists(connection, itemTable)) {
+        if(!DatabaseLogic.tableExists(connection, OMNIDB_TABLE_NAME)) {
 
-            logger.info("Table {} does NOT exist, creating...", itemTable);
+            logger.info("Table {} does NOT exist, creating...", OMNIDB_TABLE_NAME);
 
             String create = String.format("create table if not exists %s (" +
                     "id varchar not null," +
                     "data clob," +
-                    "primary key (id))", itemTable);
+                    "primary key (id))", OMNIDB_TABLE_NAME);
 
             try(PreparedStatement ps = connection.prepareStatement(create)) {
-                logger.info("{}: {}", itemTable, create);
+                logger.info("{}: {}", OMNIDB_TABLE_NAME, create);
                 ps.executeUpdate();
             }
 
         }
 
-        String tagTable = "OMNIDB_TAG";
-        if(!DatabaseLogic.tableExists(connection, tagTable)) {
+        if(!DatabaseLogic.tableExists(connection, OMNIDB_TAG_TABLE_NAME)) {
 
-            logger.info("Table {} does NOT exist, creating...", tagTable);
+            logger.info("Table {} does NOT exist, creating...", OMNIDB_TAG_TABLE_NAME);
 
             String create = String.format("create table if not exists %s (" +
                     "itemId varchar not null," +
                     "tag varchar," +
-                    "foreign key (itemId) references OMNIDB(id))", tagTable);
+                    "foreign key (itemId) references OMNIDB(id))", OMNIDB_TAG_TABLE_NAME);
 
             try(PreparedStatement ps = connection.prepareStatement(create)) {
-                logger.info("{}: {}", tagTable, create);
+                logger.info("{}: {}", OMNIDB_TAG_TABLE_NAME, create);
                 ps.executeUpdate();
             }
 
@@ -103,7 +104,7 @@ public class OmniDB extends MainFunction implements Persistable {
             }
 
             List<String> tags = new LinkedList<>();
-            String item = null, word;
+            String item, word;
             StringBuilder itemBuilder = new StringBuilder();
             for(int i=2 ; i < cmdParts.length ; i++) {
                 word = cmdParts[i];
@@ -111,9 +112,12 @@ public class OmniDB extends MainFunction implements Persistable {
                     // we are currently capturing
                     itemBuilder.append(word).append(" ");
                 } else {
-                    if (word.startsWith("-")) {
-                        // this is a tag
-                        tags.add(word);
+                    // we are not capturing, keep looking for tags
+                    if(word.startsWith("#")) {
+                        if(word.length() > 1) {
+                            // this is a tag
+                            tags.add(word.substring(1));
+                        }
                     } else {
                         // this is the start of item, start recording
                         itemBuilder.append(word).append(" ");
@@ -131,7 +135,7 @@ public class OmniDB extends MainFunction implements Persistable {
             Connection connection = connectionProvider.get();
 
             String itemId = MiscUtils.getRandomString();
-            String addItem = "insert into OMNIDB (id, data) values (?,?)";
+            String addItem = String.format("insert into %s (id, data) values (?,?)", OMNIDB_TABLE_NAME);
             try(PreparedStatement ps = connection.prepareStatement(addItem)) {
                 ps.setString(1, itemId);
                 ps.setString(2, item);
@@ -142,7 +146,7 @@ public class OmniDB extends MainFunction implements Persistable {
                 return;
             }
 
-            String addTag = "insert into OMNIDB_TAG (itemId, tag) values (?,?)";
+            String addTag = String.format("insert into %s (itemId, tag) values (?,?)", OMNIDB_TAG_TABLE_NAME);
             for(String tag : tags) try(PreparedStatement ps = connection.prepareStatement(addTag)) {
                 ps.setString(1, itemId);
                 ps.setString(2, tag);
@@ -170,7 +174,7 @@ public class OmniDB extends MainFunction implements Persistable {
             if(cmdParts.length == 2) {
 
                 // empty get query, just return random data
-                String q = "select data from OMNIDB order by rand() limit 1";
+                String q = String.format("select data from %s order by rand() limit 1", OMNIDB_TABLE_NAME);
                 try(PreparedStatement ps = connection.prepareStatement(q)) {
                     try (ResultSet rs = ps.executeQuery()) {
                         if (rs.next()) {
@@ -187,10 +191,12 @@ public class OmniDB extends MainFunction implements Persistable {
 
                 List<String> tags = new LinkedList<>();
                 String word;
+                // add all words as tags, but help them out if they prefix with hashtags by stripping them
                 for (int i = 2; i < cmdParts.length; i++) {
                     word = cmdParts[i];
-                    if (word.startsWith("-")) {
-                        // this is a tag
+                    if (word.startsWith("#") && word.length() > 1) {
+                        tags.add(word.substring(1));
+                    } else if(!word.startsWith("#")) {
                         tags.add(word);
                     }
                 }
@@ -200,12 +206,14 @@ public class OmniDB extends MainFunction implements Persistable {
                     return;
                 }
 
+                String tagQueryPart = String.format("? in (select tag from %s where itemId = odb.id)", OMNIDB_TAG_TABLE_NAME);
+
                 StringBuilder queryBuilder = new StringBuilder();
-                queryBuilder.append("select odb.data from OMNIDB odb where ");
+                queryBuilder.append(String.format("select odb.data from %s odb where ", OMNIDB_TABLE_NAME));
                 for(int i=0 ; i < tags.size() ; i++) {
                     if(i > 0)
                         queryBuilder.append(" and ");
-                    queryBuilder.append("? in (select tag from OMNIDB_TAG where itemId = odb.id)");
+                    queryBuilder.append(tagQueryPart);
                 }
                 queryBuilder.append(" order by rand() limit 1");
 
@@ -250,7 +258,7 @@ public class OmniDB extends MainFunction implements Persistable {
             Connection connection = connectionProvider.get();
             String itemId = cmdParts[2];
 
-            String deleteTags = "delete from OMNIDB_TAG where itemId = ?";
+            String deleteTags = String.format("delete from %s where itemId = ?", OMNIDB_TAG_TABLE_NAME);
             try(PreparedStatement ps = connection.prepareStatement(deleteTags)) {
                 ps.setString(1, itemId);
                 ps.executeUpdate();
@@ -260,7 +268,7 @@ public class OmniDB extends MainFunction implements Persistable {
                 bot.sendMessage(channel, msg);
             }
 
-            String deleteItem = "delete from OMNIDB where id = ?";
+            String deleteItem = String.format("delete from %s where id = ?", OMNIDB_TABLE_NAME);
             try(PreparedStatement ps = connection.prepareStatement(deleteItem)) {
                 ps.setString(1, itemId);
                 ps.executeUpdate();

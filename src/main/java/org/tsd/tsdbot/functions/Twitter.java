@@ -168,6 +168,17 @@ public class Twitter extends MainFunction {
                     twitterManager.throttle(channel, cmdParts[2]);
                     logger.info("[TWITTER] Throttled {}", cmdParts[2]);
 
+                } else if(subCmd.equals("delete")){
+
+                    if(!isOp) {
+                        bot.sendMessage(channel, "Only ops can use .tw delete");
+                        return;
+                    }
+
+                    long statusToDelete = Long.parseLong(cmdParts[2]);
+                    twitterManager.delete(channel, statusToDelete);
+                    logger.info("[TWITTER] Deleted {}", statusToDelete);
+
                 } else if(subCmd.equals("propose")) {
 
                     TweetPoll currentPoll = (TweetPoll) threadManager.getIrcThread(ThreadType.TWEETPOLL, channel);
