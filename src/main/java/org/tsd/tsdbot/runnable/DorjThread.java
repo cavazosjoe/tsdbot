@@ -12,12 +12,15 @@ import org.tsd.tsdbot.history.InjectableMsgFilterStrategyFactory;
 import org.tsd.tsdbot.history.MessageFilter;
 import org.tsd.tsdbot.history.NoCommandsStrategy;
 import org.tsd.tsdbot.notifications.TwitterManager;
+import org.tsd.tsdbot.util.IRCUtil;
 import twitter4j.Status;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Random;
+
+import static org.tsd.tsdbot.util.IRCUtil.*;
 
 /**
  * Created by Joe on 1/15/2015.
@@ -65,7 +68,7 @@ public class DorjThread extends IRCListenerThread {
 
     @Override
     protected void handleStart() {
-        bot.sendMessage(channel, "D.O.R.J. system starting ... [ \u000303ONLINE\u0003 ] ... standing by ...");
+        bot.sendMessage(channel, "D.O.R.J. system starting ... [ " + color("ONLINE", IRCColor.green) + " ] ... standing by ...");
     }
 
     // User object doesn't have ident?
@@ -100,11 +103,11 @@ public class DorjThread extends IRCListenerThread {
             sb.append(String.format(dorjFormats.remove(random.nextInt(dorjFormats.size())), dorj));
 
             if(summoners.size() == 3) {
-                sb.append(" \u000304[WARNING!]\u0003 Dorj imminent!");
+                sb.append(" [ ").append(color("WARNING!", IRCColor.red)).append(" ] Dorj imminent!");
                 if(!opHasSummoned)
                     sb.append(" Call in an op to summon the final Dorj!");
             } else if(summoners.size() == 4) {
-                sb.append(" I can't believe it! It's \u0002happening!!!!!\u0002");
+                sb.append(" I can't believe it! It's ").append(bold("happening!!!"));
                 synchronized (mutex) {
                     mutex.notify();
                 }
@@ -177,10 +180,10 @@ public class DorjThread extends IRCListenerThread {
     public class OpRequiredException extends Exception {}
 
     private static final String [] fmts = new String[]{
-            "(lights go dim as the \u0002%s Dorj\u0002 hums to life)",
-            "\u0002%s Dorj\u0002 ONLINE...",
-            "Bringing \u0002%s Dorj\u0002 online ... [ \u000303OK\u0003 ]",
-            "Initiating \u0002%s Dorj\u0002 subsystems...",
-            "\u0002%s Dorj\u0002 primed and ready!"
+            "(lights go dim as the " + bold("%s Dorj") + " hums to " + color("life", IRCColor.green) + ")",
+            bold("%s Dorj") + " " + color("ONLINE", IRCColor.green) + "...",
+            "Bringing " + bold("%s Dorj") + " online ... [ " + color("OK", IRCColor.green) + " ]",
+            "Initiating " + bold("%s Dorj") + " subsystems... [ " + color("ONLINE", IRCColor.green) + " ]",
+            bold("%s Dorj") + " primed and " + color("ready", IRCColor.green) + "!"
     };
 }

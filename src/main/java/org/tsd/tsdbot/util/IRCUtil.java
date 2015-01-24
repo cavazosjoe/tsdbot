@@ -17,6 +17,7 @@ public class IRCUtil {
 
     public static final String LINE_SEPARATOR = System.getProperty("line.separator");
     public static final String BOLD_CHAR = "\u0002";
+    public static final String COLOR_CHAR = "\u0003";
 
     private static final int MAX_MSG_LEN = 510;
 
@@ -88,6 +89,52 @@ public class IRCUtil {
         public static String applyRandom(String input) {
             Random rand = new Random();
             return values()[rand.nextInt(values().length)].apply(input);
+        }
+    }
+
+    public static String bold(String s) {
+        return BOLD_CHAR + s + BOLD_CHAR;
+    }
+
+    public static String color(String s, IRCColor fg, IRCColor bg) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(COLOR_CHAR).append(fg.getCode());
+        if(bg != null)
+            sb.append(",").append(bg.getCode());
+        sb.append(s).append(COLOR_CHAR);
+        return sb.toString();
+    }
+
+    public static String color(String s, IRCColor fg) {
+        return color(s, fg, null);
+    }
+
+    public enum IRCColor {
+        white   ("00"),
+        black   ("01"),
+        blue    ("02"),
+        green   ("03"),
+        red     ("04"),
+        brown   ("05"),
+        purple  ("06"),
+        orange  ("07"),
+        yellow  ("08"),
+        light_green ("09"),
+        teal    ("10"),
+        cyan    ("11"),
+        light_blue ("12"),
+        pink    ("13"),
+        gray    ("14"),
+        light_gray ("15");
+
+        private String code;
+
+        IRCColor(String code) {
+            this.code = code;
+        }
+
+        public String getCode() {
+            return code;
         }
     }
 
