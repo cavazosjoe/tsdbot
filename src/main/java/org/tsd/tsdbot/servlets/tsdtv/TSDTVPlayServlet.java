@@ -5,7 +5,6 @@ import com.google.inject.Singleton;
 import org.tsd.tsdbot.tsdtv.ShowNotFoundException;
 import org.tsd.tsdbot.tsdtv.TSDTV;
 import org.tsd.tsdbot.tsdtv.TSDTVProgram;
-import org.tsd.tsdbot.tsdtv.TSDTVStream;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;

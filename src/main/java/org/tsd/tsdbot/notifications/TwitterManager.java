@@ -270,7 +270,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
             if(deleted != null) {
                 bot.sendMessage(channel, "Successfully deleted status");
             } else {
-                bot.sendMessage(channel, "Couldn't delete status for some reason");
+                bot.sendMessage(channel, "Couldn't delete status. Maybe it doesn't exist?");
             }
         } catch (TwitterException e) {
             String msg = "Error deleting status " + id;

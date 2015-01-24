@@ -1,9 +1,7 @@
 package org.tsd.tsdbot.tsdtv;
 
 import java.io.File;
-import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.TimeZone;
 
 /**
  * Created by Joe on 3/17/14.

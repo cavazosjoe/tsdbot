@@ -127,61 +127,25 @@ public class OmniDB extends MainFunction implements Persistable {
 
             if(itemBuilder.length() == 0) {
                 bot.sendMessage(channel, "Must provide something to add");
-                return;
-            } else {
+            } else try {
                 item = itemBuilder.toString().trim();
-            }
-
-            Connection connection = connectionProvider.get();
-
-            String itemId = MiscUtils.getRandomString();
-            String addItem = String.format("insert into %s (id, data) values (?,?)", OMNIDB_TABLE_NAME);
-            try(PreparedStatement ps = connection.prepareStatement(addItem)) {
-                ps.setString(1, itemId);
-                ps.setString(2, item);
-                ps.executeUpdate();
-            } catch (Exception e) {
-                logger.error("Error adding {} to omnidb", item, e);
-                bot.sendMessage(channel, "Error adding item to Omni DB");
-                return;
-            }
-
-            String addTag = String.format("insert into %s (itemId, tag) values (?,?)", OMNIDB_TAG_TABLE_NAME);
-            for(String tag : tags) try(PreparedStatement ps = connection.prepareStatement(addTag)) {
-                ps.setString(1, itemId);
-                ps.setString(2, tag);
-                ps.executeUpdate();
-            } catch (Exception e) {
-                logger.error("Error adding tag {} for itemId {}", new Object[]{tag, itemId}, e);
-                bot.sendMessage(channel, "Error adding tag " + tag + " to Omni DB");
-            }
-
-            try {
-                connection.commit();
+                String itemId = addItem(item, tags);
                 bot.sendMessage(channel, "Successfully added item to the Omni DB (" + itemId + ")");
             } catch (Exception e) {
-                String msg = "Error committing to Omni DB";
+                String msg = "Error adding to Omni DB";
                 logger.error(msg, e);
                 bot.sendMessage(channel, msg);
             }
 
         } else if(subCmd.equals("get")) {
 
-            Connection connection = connectionProvider.get();
-
             String item = null;
 
             if(cmdParts.length == 2) {
 
-                // empty get query, just return random data
-                String q = String.format("select data from %s order by rand() limit 1", OMNIDB_TABLE_NAME);
-                try(PreparedStatement ps = connection.prepareStatement(q)) {
-                    try (ResultSet rs = ps.executeQuery()) {
-                        if (rs.next()) {
-                            item = rs.getString(1);
-                        }
-                    }
-                } catch(Exception e) {
+                try {
+                    item = getAnyItem();
+                } catch (Exception e) {
                     String msg = "Error retrieving from Omni DB";
                     logger.error(msg, e);
                     bot.sendMessage(channel, msg);
@@ -206,29 +170,8 @@ public class OmniDB extends MainFunction implements Persistable {
                     return;
                 }
 
-                String tagQueryPart = String.format("? in (select tag from %s where itemId = odb.id)", OMNIDB_TAG_TABLE_NAME);
-
-                StringBuilder queryBuilder = new StringBuilder();
-                queryBuilder.append(String.format("select odb.data from %s odb where ", OMNIDB_TABLE_NAME));
-                for(int i=0 ; i < tags.size() ; i++) {
-                    if(i > 0)
-                        queryBuilder.append(" and ");
-                    queryBuilder.append(tagQueryPart);
-                }
-                queryBuilder.append(" order by rand() limit 1");
-
-                try(PreparedStatement ps = connection.prepareStatement(queryBuilder.toString())) {
-
-                    for(int i=0 ; i < tags.size() ; i++) {
-                        ps.setString(i+1, tags.get(i));
-                    }
-
-                    try (ResultSet rs = ps.executeQuery()) {
-                        if (rs.next()) {
-                            item = rs.getString(1);
-                        }
-                    }
-
+                try {
+                    item = getTaggedItem(tags);
                 } catch (Exception e) {
                     String msg = "Error retrieving from Omni DB";
                     logger.error(msg, e);
@@ -255,38 +198,11 @@ public class OmniDB extends MainFunction implements Persistable {
                 return;
             }
 
-            Connection connection = connectionProvider.get();
             String itemId = cmdParts[2];
+            deleteItem(channel, itemId);
 
-            String deleteTags = String.format("delete from %s where itemId = ?", OMNIDB_TAG_TABLE_NAME);
-            try(PreparedStatement ps = connection.prepareStatement(deleteTags)) {
-                ps.setString(1, itemId);
-                ps.executeUpdate();
-            } catch (Exception e) {
-                String msg = "Error deleting Omni DB tags";
-                logger.error(msg, e);
-                bot.sendMessage(channel, msg);
-            }
-
-            String deleteItem = String.format("delete from %s where id = ?", OMNIDB_TABLE_NAME);
-            try(PreparedStatement ps = connection.prepareStatement(deleteItem)) {
-                ps.setString(1, itemId);
-                ps.executeUpdate();
-            } catch (Exception e) {
-                String msg = "Error deleting Omni DB entry";
-                logger.error(msg, e);
-                bot.sendMessage(channel, msg);
-            }
-
-            try {
-                connection.commit();
-                bot.sendMessage(channel, "Finished deleting entry " + itemId);
-            } catch (Exception e) {
-                String msg = "Error committing to Omni DB";
-                logger.error(msg, e);
-                bot.sendMessage(channel, msg);
-            }
-
+        } else if(subCmd.equals("size")){
+            printSize(channel);
         } else {
             bot.sendMessage(channel, usage);
         }
@@ -295,5 +211,139 @@ public class OmniDB extends MainFunction implements Persistable {
     @Override
     public String getRegex() {
         return "^\\.odb.*";
+    }
+
+    private String addItem(String item, List<String> tags) throws SQLException {
+        Connection connection = connectionProvider.get();
+
+        String itemId = MiscUtils.getRandomString();
+        String addItem = String.format("insert into %s (id, data) values (?,?)", OMNIDB_TABLE_NAME);
+        try(PreparedStatement ps = connection.prepareStatement(addItem)) {
+            ps.setString(1, itemId);
+            ps.setString(2, item);
+            ps.executeUpdate();
+        } catch (Exception e) {
+            logger.error("Error adding {} to omnidb", item, e);
+            throw e;
+        }
+
+        String addTag = String.format("insert into %s (itemId, tag) values (?,?)", OMNIDB_TAG_TABLE_NAME);
+        for(String tag : tags) try(PreparedStatement ps = connection.prepareStatement(addTag)) {
+            ps.setString(1, itemId);
+            ps.setString(2, tag);
+            ps.executeUpdate();
+        } catch (Exception e) {
+            logger.error("Error adding tag {} for itemId {}", new Object[]{tag, itemId}, e);
+            throw e;
+        }
+
+        connection.commit();
+
+        return itemId;
+    }
+
+    private String getAnyItem() throws SQLException {
+        Connection connection = connectionProvider.get();
+        // empty get query, just return random data
+        String q = String.format("select data from %s order by rand() limit 1", OMNIDB_TABLE_NAME);
+        try(PreparedStatement ps = connection.prepareStatement(q)) {
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString(1);
+                }
+            }
+        }
+        return null;
+    }
+
+    private String getTaggedItem(List<String> tags) throws SQLException {
+        Connection connection = connectionProvider.get();
+        String tagQueryPart = String.format("? in (select tag from %s where itemId = odb.id)", OMNIDB_TAG_TABLE_NAME);
+        StringBuilder queryBuilder = new StringBuilder();
+        queryBuilder.append(String.format("select odb.data from %s odb where ", OMNIDB_TABLE_NAME));
+        for(int i=0 ; i < tags.size() ; i++) {
+            if(i > 0)
+                queryBuilder.append(" and ");
+            queryBuilder.append(tagQueryPart);
+        }
+        queryBuilder.append(" order by rand() limit 1");
+
+        try(PreparedStatement ps = connection.prepareStatement(queryBuilder.toString())) {
+            for(int i=0 ; i < tags.size() ; i++) {
+                ps.setString(i+1, tags.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString(1);
+                }
+            }
+        }
+        return null;
+    }
+
+    private void deleteItem(String channel, String itemId) {
+        Connection connection = connectionProvider.get();
+        String deleteTags = String.format("delete from %s where itemId = ?", OMNIDB_TAG_TABLE_NAME);
+        try(PreparedStatement ps = connection.prepareStatement(deleteTags)) {
+            ps.setString(1, itemId);
+            ps.executeUpdate();
+        } catch (Exception e) {
+            String msg = "Error deleting Omni DB tags";
+            logger.error(msg, e);
+            bot.sendMessage(channel, msg);
+        }
+
+        String deleteItem = String.format("delete from %s where id = ?", OMNIDB_TABLE_NAME);
+        try(PreparedStatement ps = connection.prepareStatement(deleteItem)) {
+            ps.setString(1, itemId);
+            ps.executeUpdate();
+        } catch (Exception e) {
+            String msg = "Error deleting Omni DB entry";
+            logger.error(msg, e);
+            bot.sendMessage(channel, msg);
+        }
+
+        try {
+            connection.commit();
+            bot.sendMessage(channel, "Finished deleting entry " + itemId);
+        } catch (Exception e) {
+            String msg = "Error committing to Omni DB";
+            logger.error(msg, e);
+            bot.sendMessage(channel, msg);
+        }
+    }
+
+    private void printSize(String channel) {
+        Connection connection = connectionProvider.get();
+
+        int numItems = 0;
+        String itemSizeQ = String.format("select count(*) from %s", OMNIDB_TABLE_NAME);
+        try(PreparedStatement ps = connection.prepareStatement(itemSizeQ)) {
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    numItems = rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            String msg = "Error retrieving size of item table";
+            logger.error(msg, e);
+            bot.sendMessage(channel, msg);
+        }
+
+        int numTags = 0;
+        String numTagsQ = String.format("select count(*) from %s", OMNIDB_TAG_TABLE_NAME);
+        try(PreparedStatement ps = connection.prepareStatement(numTagsQ)) {
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    numTags = rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            String msg = "Error retrieving size of tag table";
+            logger.error(msg, e);
+            bot.sendMessage(channel, msg);
+        }
+
+        bot.sendMessage(channel, String.format("Currently %s items and %s tags in the Omni DB", numItems, numTags));
     }
 }

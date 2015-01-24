@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.ThreadType;
+import org.tsd.tsdbot.functions.Dorj;
 import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.history.InjectableMsgFilterStrategyFactory;
 import org.tsd.tsdbot.history.MessageFilter;
@@ -35,11 +36,12 @@ public class DorjThread extends IRCListenerThread {
     private String starter; //ident of first summoner
     private HashSet<String> summoners = new HashSet<>(); //idents of all summoners
     private boolean opHasSummoned = false;
+    private Dorj dorjFunction; // function where we store the tweet id of the last dorj
 
     private LinkedList<String> dorjFormats = new LinkedList<>();
 
     @Inject
-    public DorjThread(TSDBot bot, ThreadManager threadManager, Random random,
+    public DorjThread(TSDBot bot, Dorj dorj, ThreadManager threadManager, Random random,
                       TwitterManager twitterManager, HistoryBuff historyBuff,
                       InjectableMsgFilterStrategyFactory msgFilterFact) throws Exception {
         super(bot, threadManager);
@@ -52,6 +54,7 @@ public class DorjThread extends IRCListenerThread {
         this.listeningRegex = "^\\.dorj$";
         this.historyBuff = historyBuff;
         this.msgFilterFact = msgFilterFact;
+        this.dorjFunction = dorj;
         dorjFormats.addAll(Arrays.asList(fmts));
     }
 
@@ -120,6 +123,7 @@ public class DorjThread extends IRCListenerThread {
             HistoryBuff.Message m = historyBuff.getRandomFilteredMessage(channel, null, MessageFilter.create().addFilter(strat));
             Status tweet = twitterManager.postTweet(deejHandle + " " + m.text);
             bot.sendMessage(channel, "https://twitter.com/TSD_IRC/status/" + tweet.getId());
+            dorjFunction.setSuccessfulDorj(tweet.getId());
         } catch (Exception e ) {
             logger.error("Error sending dorj", e);
             bot.sendMessage(channel, "Failed to send the Dorj due to error :(");

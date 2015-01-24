@@ -11,7 +11,6 @@ import org.tsd.tsdbot.functions.Archivist;
 import org.tsd.tsdbot.functions.Hustle;
 import org.tsd.tsdbot.functions.MainFunction;
 import org.tsd.tsdbot.history.HistoryBuff;
-import org.tsd.tsdbot.notifications.NotificationManager;
 import org.tsd.tsdbot.runnable.IRCListenerThread;
 import org.tsd.tsdbot.runnable.ThreadManager;
 import org.tsd.tsdbot.stats.Stats;
@@ -19,7 +18,6 @@ import org.tsd.tsdbot.util.ArchivistUtil;
 import org.tsd.tsdbot.util.FuzzyLogic;
 
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
 

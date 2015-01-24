@@ -3,10 +3,12 @@ package org.tsd.tsdbot.functions;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.tsd.tsdbot.TSDBot;
-import org.tsd.tsdbot.history.*;
+import org.tsd.tsdbot.history.HistoryBuff;
+import org.tsd.tsdbot.history.InjectableMsgFilterStrategyFactory;
+import org.tsd.tsdbot.history.MessageFilter;
+import org.tsd.tsdbot.history.NoCommandsStrategy;
 
 import java.util.Random;
-import java.util.Set;
 
 /**
  * Created by Joe on 5/24/14.

@@ -9,7 +9,6 @@ import org.tsd.tsdbot.util.IRCUtil;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Random;
-import java.util.Set;
 
 /**
  * Created by Joe on 5/24/14.

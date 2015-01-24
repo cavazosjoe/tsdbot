@@ -1,8 +1,5 @@
 package org.tsd.tsdbot;
 
-import org.tsd.tsdbot.notifications.*;
-import org.tsd.tsdbot.rss.RssFeedManager;
-
 /**
  * Created by Joe on 1/13/2015.
  */

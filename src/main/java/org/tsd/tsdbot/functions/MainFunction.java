@@ -1,6 +1,5 @@
 package org.tsd.tsdbot.functions;
 
-import com.google.inject.Inject;
 import org.jibble.pircbot.User;
 import org.tsd.tsdbot.TSDBot;
 
