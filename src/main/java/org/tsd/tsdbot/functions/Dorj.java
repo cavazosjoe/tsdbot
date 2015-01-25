@@ -11,6 +11,7 @@ import org.tsd.tsdbot.notifications.TwitterManager;
 import org.tsd.tsdbot.runnable.DorjThread;
 import org.tsd.tsdbot.runnable.InjectableIRCThreadFactory;
 import org.tsd.tsdbot.runnable.ThreadManager;
+import org.tsd.tsdbot.util.IRCUtil;
 
 /**
  * Created by Joe on 5/24/14.
@@ -45,6 +46,10 @@ public class Dorj extends MainFunction {
 
             DorjThread existingThread = (DorjThread) threadManager.getIrcThread(ThreadType.DORJ, channel);
             if (existingThread == null) try {
+                if(IRCUtil.detectBot(sender)) {
+                    bot.sendMessage(channel, "A robot cannot control another robot");
+                    return;
+                }
                 existingThread = threadFactory.newDorjThread(channel, ident);
                 threadManager.addThread(existingThread);
             } catch (Exception e) {

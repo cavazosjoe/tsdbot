@@ -1,6 +1,7 @@
 package org.tsd.tsdbot.util;
 
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.jibble.pircbot.User;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -92,6 +93,14 @@ public class IRCUtil {
         }
     }
 
+    public static boolean detectBot(String nick) {
+        for(String bot : knownBots) {
+            if(nick.equalsIgnoreCase(bot))
+                return true;
+        }
+        return false;
+    }
+
     public static String bold(String s) {
         return BOLD_CHAR + s + BOLD_CHAR;
     }
@@ -137,5 +146,15 @@ public class IRCUtil {
             return code;
         }
     }
+
+    private static final String[] knownBots = new String[]{
+            "bonk-bot",
+            "bonkbot",
+            "blunderwearbot-py",
+            "tipsfedora",
+            "doc",
+            "kanbot",
+            "schooly_b"
+    };
 
 }

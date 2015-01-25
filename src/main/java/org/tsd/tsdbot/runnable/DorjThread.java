@@ -72,7 +72,10 @@ public class DorjThread extends IRCListenerThread {
     }
 
     // User object doesn't have ident?
-    public void addSummoner(User user, String ident) throws DuplicateSummonerException, OpRequiredException {
+    public void addSummoner(User user, String ident) throws DuplicateSummonerException, OpRequiredException, BotDetectedException {
+
+        if(IRCUtil.detectBot(user.getNick()))
+            throw new BotDetectedException();
 
         if(summoners.size() == 3 && (!opHasSummoned) && !user.hasPriv(User.Priv.HALFOP))
             throw new OpRequiredException();
@@ -150,6 +153,8 @@ public class DorjThread extends IRCListenerThread {
             bot.sendMessage(channel, "You can only assume one part of the Dorj, " + sender);
         } catch (OpRequiredException e) {
             bot.sendMessage(channel, "At least one op must be involved when summoning the Dorj");
+        } catch (BotDetectedException e) {
+            bot.sendMessage(channel, "A robot cannot control another robot");
         }
     }
 
@@ -178,6 +183,7 @@ public class DorjThread extends IRCListenerThread {
 
     public class DuplicateSummonerException extends Exception {}
     public class OpRequiredException extends Exception {}
+    public class BotDetectedException extends Exception {};
 
     private static final String [] fmts = new String[]{
             "(lights go dim as the " + bold("%s Dorj") + " hums to " + color("life", IRCColor.green) + ")",
