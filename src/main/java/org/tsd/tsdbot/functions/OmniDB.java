@@ -15,9 +15,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * Created by Joe on 1/22/2015.
@@ -130,7 +128,7 @@ public class OmniDB extends MainFunction implements Persistable {
             } else try {
                 item = itemBuilder.toString().trim();
                 String itemId = addItem(item, tags);
-                bot.sendMessage(channel, "Successfully added item to the Omni DB (" + itemId + ")");
+                bot.sendMessage(channel, "Successfully added item to the Omni DB ( " + itemId + " )");
             } catch (Exception e) {
                 String msg = "Error adding to Omni DB";
                 logger.error(msg, e);
@@ -139,12 +137,14 @@ public class OmniDB extends MainFunction implements Persistable {
 
         } else if(subCmd.equals("get")) {
 
-            String item = null;
+            Item item = null;
+            boolean includeTags = false;
 
             if(cmdParts.length == 2) {
 
                 try {
                     item = getAnyItem();
+                    includeTags = true;
                 } catch (Exception e) {
                     String msg = "Error retrieving from Omni DB";
                     logger.error(msg, e);
@@ -180,8 +180,19 @@ public class OmniDB extends MainFunction implements Persistable {
 
             }
 
-            if(item != null) {
-                bot.sendMessage(channel, "ODB: " + item);
+            if(item != null) try {
+                StringBuilder sb = new StringBuilder();
+                sb.append("ODB: ").append(item.item);
+                if(includeTags) {
+                    for(String tag : getTagsForItem(item.itemId)) {
+                        sb.append(" #").append(tag);
+                    }
+                }
+                bot.sendMessage(channel, sb.toString());
+            } catch (Exception e) {
+                String msg = "Error getting tags for item";
+                logger.error(msg, e);
+                bot.sendMessage(channel, msg);
             } else {
                 bot.sendMessage(channel, "Couldn't find anything in Omni DB matching those tags");
             }
@@ -242,25 +253,25 @@ public class OmniDB extends MainFunction implements Persistable {
         return itemId;
     }
 
-    private String getAnyItem() throws SQLException {
+    private Item getAnyItem() throws SQLException {
         Connection connection = connectionProvider.get();
         // empty get query, just return random data
-        String q = String.format("select data from %s order by rand() limit 1", OMNIDB_TABLE_NAME);
+        String q = String.format("select id, data from %s order by rand() limit 1", OMNIDB_TABLE_NAME);
         try(PreparedStatement ps = connection.prepareStatement(q)) {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getString(1);
+                    return new Item(rs.getString(1), rs.getString(2));
                 }
             }
         }
         return null;
     }
 
-    private String getTaggedItem(List<String> tags) throws SQLException {
+    private Item getTaggedItem(List<String> tags) throws SQLException {
         Connection connection = connectionProvider.get();
         String tagQueryPart = String.format("? in (select tag from %s where itemId = odb.id)", OMNIDB_TAG_TABLE_NAME);
         StringBuilder queryBuilder = new StringBuilder();
-        queryBuilder.append(String.format("select odb.data from %s odb where ", OMNIDB_TABLE_NAME));
+        queryBuilder.append(String.format("select odb.id, odb.data from %s odb where ", OMNIDB_TABLE_NAME));
         for(int i=0 ; i < tags.size() ; i++) {
             if(i > 0)
                 queryBuilder.append(" and ");
@@ -274,7 +285,7 @@ public class OmniDB extends MainFunction implements Persistable {
             }
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getString(1);
+                    return new Item(rs.getString(1), rs.getString(2));
                 }
             }
         }
@@ -313,6 +324,20 @@ public class OmniDB extends MainFunction implements Persistable {
         }
     }
 
+    private Set<String> getTagsForItem(String itemId) throws SQLException {
+        String getTags = String.format("select tag from %s where itemId = ?", OMNIDB_TAG_TABLE_NAME);
+        Set<String> tags = new HashSet<>();
+        try(PreparedStatement ps = connectionProvider.get().prepareStatement(getTags)) {
+            ps.setString(1, itemId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    tags.add(rs.getString(1));
+                }
+            }
+        }
+        return tags;
+    }
+
     private void printSize(String channel) {
         Connection connection = connectionProvider.get();
 
@@ -345,5 +370,15 @@ public class OmniDB extends MainFunction implements Persistable {
         }
 
         bot.sendMessage(channel, String.format("Currently %s items and %s tags in the Omni DB", numItems, numTags));
+    }
+
+    static class Item {
+        public String itemId;
+        public String item;
+
+        Item(String itemId, String item) {
+            this.itemId = itemId;
+            this.item = item;
+        }
     }
 }

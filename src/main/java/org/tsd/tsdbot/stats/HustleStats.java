@@ -87,7 +87,7 @@ public class HustleStats implements Stats {
             return;
         else msgCnt = 0;
 
-        log.info("Sending latest message for sentiment analysis...");
+        log.debug("Sending latest message for sentiment analysis...");
 
         HttpPost post = null;
         try {
@@ -107,10 +107,10 @@ public class HustleStats implements Stats {
                     double confidence = Double.parseDouble(json.getJSONObject(key).getString("confidence"));
                     Sentiment sentiment = Sentiment.fromString(json.getJSONObject(key).getString("sentiment"));
                     DataPoint dataPoint = new DataPoint(message, sentiment, confidence);
-                    log.info("Analysis result: {}, Confidence {} -> Score = {}", new Object[]{sentiment, confidence, dataPoint.getScore()});
+                    log.debug("Analysis result: {}, Confidence {} -> Score = {}", new Object[]{sentiment, confidence, dataPoint.getScore()});
                     hustleBuffer.add(dataPoint);
                     dataPoint.newHhr = calculateCurrentHhr();
-                    log.info("New HHR: {}", dataPoint.newHhr);
+                    log.debug("New HHR: {}", dataPoint.newHhr);
                 }
             }
 
@@ -132,7 +132,7 @@ public class HustleStats implements Stats {
 
     private void generateChart() {
 
-        log.info("Generating hustle chart...");
+        log.debug("Generating hustle chart...");
 
         TreeSet<DataPoint> orderedByScore = new TreeSet<>(new Comparator<DataPoint>() {
             @Override
@@ -175,7 +175,7 @@ public class HustleStats implements Stats {
         for(DataPoint dp : orderedByScore.descendingSet()) {
             if(i++ > limit)
                 break;
-            log.info("Adding annotation, hhr = {}, score = {}", dp.newHhr, dp.getScore());
+            log.debug("Adding annotation, hhr = {}, score = {}", dp.newHhr, dp.getScore());
             TimeSeriesDataItem importantItem = timeSeries.getDataItem(new Second(dp.date));
             double x = importantItem.getPeriod().getFirstMillisecond();
             double y = importantItem.getValue().doubleValue();
@@ -189,7 +189,7 @@ public class HustleStats implements Stats {
         }
 
         this.chart = chart;
-        log.info("Hustle chart generated successfully");
+        log.debug("Hustle chart generated successfully");
     }
 
     private double calculateCurrentHhr() {

@@ -17,7 +17,7 @@ public class InjectableStreamFactory {
     @Inject
     protected Injector injector;
 
-    public TSDTVStream newStream(String videoFilter, TSDTVProgram movie) {
+    public TSDTVStream newStream(String videoFilter, TSDTVQueueItem movie) {
         logger.info("Creating TSDTVStream, {}", movie);
         TSDTVStream stream = injector.getInstance(TSDTVStream.class);
         stream.init(videoFilter, movie);

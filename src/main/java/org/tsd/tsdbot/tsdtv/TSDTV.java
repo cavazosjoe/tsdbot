@@ -12,9 +12,8 @@ import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.Persistable;
 import org.tsd.tsdbot.scheduled.SchedulerConstants;
+import org.tsd.tsdbot.tsdtv.model.*;
 import org.tsd.tsdbot.util.FuzzyLogic;
-import org.tsd.tsdbot.util.IRCUtil;
-import org.tsd.tsdbot.util.TSDTVUtil;
 
 import java.io.*;
 import java.sql.Connection;
@@ -30,6 +29,7 @@ import java.util.regex.Pattern;
 import static org.quartz.CronScheduleBuilder.cronSchedule;
 import static org.quartz.JobBuilder.newJob;
 import static org.quartz.TriggerBuilder.newTrigger;
+import static org.tsd.tsdbot.util.IRCUtil.*;
 
 /**
  * Created by Joe on 3/9/14.
@@ -41,33 +41,39 @@ public class TSDTV implements Persistable {
 
     private static final int dayBoundaryHour = 4; // 4:00 AM
     private static final TimeZone timeZone = TimeZone.getTimeZone("America/New_York");
-    private static final Pattern durationPattern = Pattern.compile("(\\d+):(\\d+):(\\d+)\\.(\\d+)");
+
 
     private TSDBot bot;
 
-    private DBConnectionProvider connectionProvider;
+    private TSDTVLibrary library;
+
     private Random random;
+    private DBConnectionProvider connectionProvider;
     private InjectableStreamFactory streamFactory;
     private Scheduler scheduler;
-    private String catalogPath;
     private String scheduleLoc;
     private String serverUrl;
+    private String ffmpegExec;
+    private String tsdtvDirect;
 
-    private LinkedList<TSDTVProgram> queue = new LinkedList<>(); // file paths
+    private LinkedList<TSDTVQueueItem> queue = new LinkedList<>(); // file paths
     private TSDTVStream runningStream;
 
     @Inject
-    public TSDTV(TSDBot bot, Properties prop, Scheduler scheduler,
+    public TSDTV(TSDBot bot, TSDTVLibrary library, Properties prop, Scheduler scheduler,
                  DBConnectionProvider connectionProvider, InjectableStreamFactory streamFactory,
-                 Random random, @Named("serverUrl") String serverUrl) throws SQLException {
+                 Random random, @Named("serverUrl") String serverUrl,
+                 @Named("ffmpegExec") String ffmpegExec, @Named("tsdtvDirect") String tsdtvDirect) throws SQLException {
         this.bot = bot;
         this.random = random;
-        this.catalogPath = prop.getProperty("tsdtv.catalog");
+        this.library = library;
         this.scheduleLoc = prop.getProperty("tsdtv.schedule");
         this.scheduler = scheduler;
         this.connectionProvider = connectionProvider;
         this.streamFactory = streamFactory;
         this.serverUrl = serverUrl;
+        this.ffmpegExec = ffmpegExec;
+        this.tsdtvDirect = tsdtvDirect;
         initDB();
         buildSchedule();
     }
@@ -90,25 +96,22 @@ public class TSDTV implements Persistable {
             ps.executeUpdate();
         }
 
-        File catalogDir = new File(catalogPath);
-        logger.info("Building TSDTV_SHOW table from directory {}", catalogDir.getAbsolutePath());
-        for(File f : catalogDir.listFiles()) {
-            if(f.isDirectory()) {
-                String q = String.format("select count(*) from %s where name = '%s'", showsTable, f.getName());
-                try(PreparedStatement ps = connection.prepareStatement(q) ; ResultSet result = ps.executeQuery()) {
-                    result.next();
-                    if(result.getInt(1) == 0) { // show does not exist in db, add it
-                        logger.info("Could not find show {} in DB, adding...", f.getName());
-                        String insertShow = String.format(
-                                "insert into %s (name, currentEpisode) values ('%s',1)",
-                                showsTable,
-                                f.getName());
-                        try(PreparedStatement ps1 = connection.prepareCall(insertShow)) {
-                            ps1.executeUpdate();
-                        }
-                    } else {
-                        logger.info("Show {} already exists in DB, skipping...", f.getName());
+        logger.info("Building TSDTV_SHOW table...");
+        for(TSDTVShow show : library.getAllShows()) {
+            String q = String.format("select count(*) from %s where name = '%s'", showsTable, show.getRawName());
+            try(PreparedStatement ps = connection.prepareStatement(q) ; ResultSet result = ps.executeQuery()) {
+                result.next();
+                if(result.getInt(1) == 0) { // show does not exist in db, add it
+                    logger.info("Could not find show {} in DB, adding...", show.getRawName());
+                    String insertShow = String.format(
+                            "insert into %s (name, currentEpisode) values ('%s',1)",
+                            showsTable,
+                            show.getRawName());
+                    try(PreparedStatement ps1 = connection.prepareCall(insertShow)) {
+                        ps1.executeUpdate();
                     }
+                } else {
+                    logger.info("Show {} already exists in DB, skipping...", show.getRawName());
                 }
             }
         }
@@ -139,75 +142,48 @@ public class TSDTV implements Persistable {
         return runningStream;
     }
 
-    public LinkedList<TSDTVProgram> getQueue() {
+    public LinkedList<TSDTVQueueItem> getQueue() {
         return queue;
     }
 
-    public File getCatalogDir() {
-        return new File(catalogPath);
-    }
-
-    public File getShowDir(String show) throws ShowNotFoundException {
-        return getFuzzyShow(show);
-    }
-
     public ShowInfo getPrevAndNextEpisodeNums(String showQuery) throws ShowNotFoundException, SQLException {
-        File show = getFuzzyShow(showQuery);
-        int nextEpisode = getCurrentEpisode(show.getName());
-        if(nextEpisode > getNumberOfEpisodes(show.getName()))
+        TSDTVShow show = library.getShow(showQuery);
+        int nextEpisode = getCurrentEpisode(show);
+        if(nextEpisode > show.getAllEpisodes().size())
             nextEpisode = 1;
 
-        int prevEpisode = getCurrentEpisode(show.getName()) - 1;
+        int prevEpisode = getCurrentEpisode(show) - 1;
         if(prevEpisode < 1)
-            prevEpisode = getNumberOfEpisodes(show.getName());
+            prevEpisode = show.getAllEpisodes().size();
 
-        return new ShowInfo(show.getName(), prevEpisode, nextEpisode);
+        return new ShowInfo(show.getRawName(), prevEpisode, nextEpisode);
     }
 
     public boolean isRunning() {
         return runningStream != null;
     }
 
-    public void catalog(String requester, String subdir) throws Exception {
-        File printingDir;
-        if(subdir == null)
-            printingDir = new File(catalogPath);
-        else
-            printingDir = getFuzzyShow(subdir);
-
-        boolean first = true;
-        StringBuilder catalogBuilder = new StringBuilder();
-        for(File f : printingDir.listFiles()) {
-            if(!first)catalogBuilder.append(" || ");
-            catalogBuilder.append(f.getName());
-            if(f.isDirectory()) catalogBuilder.append(" (DIR)");
-            first = false;
-        }
-
-        bot.sendMessages(requester, IRCUtil.splitLongString(catalogBuilder.toString()));
-
-    }
-
-    private void play(TSDTVProgram program) {
+    private void play(TSDTVQueueItem program) {
 
         // determine if we have subtitles for this
         StringBuilder videoFilter = new StringBuilder();
         videoFilter.append("yadif");
-        if(hasSubtitles(program.file))
-            videoFilter.append(",subtitles=").append(program.file);
+        if(hasSubtitles(program.video))
+            videoFilter.append(",subtitles=").append(program.video.getFile().getAbsolutePath());
 
         runningStream = streamFactory.newStream(videoFilter.toString(), program);
         runningStream.start();
 
-        if(program.show != null && program.episodeNum > 0) {
+        if(program.scheduled && program.video.getEpisodeNumber() > 0) {
             try {
+                TSDTVShow show = ((TSDTVEpisode)program.video).getShow();
                 Connection dbConn = connectionProvider.get();
                 String update = "update TSDTV_SHOW set currentEpisode = ? where name = ?";
                 try(PreparedStatement ps = dbConn.prepareStatement(update)) {
                     // loop to episode 1 if we're playing the last episode of the show
-                    int newEpNumber = (getNumberOfEpisodes(program.show) <= program.episodeNum) ? 1 : program.episodeNum+1;
+                    int newEpNumber = (show.getAllEpisodes().size() <= program.video.getEpisodeNumber()) ? 1 : program.video.getEpisodeNumber()+1;
                     ps.setInt(1, newEpNumber);
-                    ps.setString(2, program.show);
+                    ps.setString(2, show.getRawName());
                     ps.executeUpdate();
                 }
             } catch (Exception e) {
@@ -215,54 +191,34 @@ public class TSDTV implements Persistable {
             }
         }
 
-        if(!program.show.startsWith(".")) { // skip commercials and bumps
-            HashMap<String,String> metadata = getVideoMetadata(program.file);
+        if(program.video.isBroadcastable()) {
+            HashMap<String,String> metadata = program.video.getMetadata(ffmpegExec);
             String artist = metadata.get(TSDTVConstants.METADATA_ARTIST_FIELD);
-            if(artist == null) artist = program.show;
             String title = metadata.get(TSDTVConstants.METADATA_TITLE_FIELD);
-            if(title == null) title = program.file.getName();
 
-            String msg = "[TSDTV] NOW PLAYING: " + artist + ": " + title + " -- " + getLinks(false);
-            bot.broadcast(msg.replaceAll("_"," "));
+            StringBuilder sb = new StringBuilder();
+            sb.append(color("[TSDTV]", IRCColor.blue)).append(" [NOW PLAYING]: ");
+            if(artist == null || title == null)
+                sb.append(program.video.toString());
+            else
+                sb.append(artist).append(": ").append(title);
+            sb.append(" -- ").append(getLinks(false));
+
+            bot.broadcast(sb.toString());
         }
     }
 
-    public void prepareOnDemand(String channel, String dir, String query) throws Exception {
+    public void prepareOnDemand(String channel, String dir, String query) throws ShowNotFoundException {
 
-        File searchingDir = getFuzzyShow(dir);
-        String show = searchingDir.getName();
+        TSDTVShow show = library.getShow(dir);
+        TSDTVEpisode episode = (TSDTVConstants.RANDOM_QUERY.equals(query)) ?
+                show.getRandomEpisode(random) : show.getEpisode(query);
 
-        LinkedList<File> matchedFiles = new LinkedList<>();
-        if(TSDTVConstants.RANDOM_QUERY.equals(query)) {
-            matchedFiles.add(getRandomFileFromDirectory(searchingDir));
-        } else {
-            matchedFiles = FuzzyLogic.fuzzySubset(query, Arrays.asList(searchingDir.listFiles()), new FuzzyLogic.FuzzyVisitor<File>() {
-                @Override
-                public String visit(File o1) {
-                    return o1.getName();
-                }
-            });
-        }
-
-        if(matchedFiles.size() == 0) {
-            throw new Exception("Could not find movie that matches " + query);
-        } else if(matchedFiles.size() > 1) {
-            StringBuilder ex = new StringBuilder();
-            ex.append("Found multiple matching movies: ");
-            for(File match : matchedFiles)
-                ex.append(match.getName()).append(" ");
-            throw new Exception(ex.toString());
-        }
-
-
-        File movie = matchedFiles.get(0);
-        Date[] startEndDates = getStartEndDatesForVOD(movie);
+        TSDTVQueueItem program = new TSDTVQueueItem(episode, null, false, getStartDateForQueueItem(), ffmpegExec);
         if(isRunning()) {
-            TSDTVProgram program = new TSDTVProgram(movie, show, null, startEndDates[0], startEndDates[1]);
             queue.addLast(program);
             bot.sendMessage(channel, "There is already a stream running. Your show has been enqueued");
         } else {
-            TSDTVProgram program = new TSDTVProgram(movie, show, null, startEndDates[0], startEndDates[1]);
             play(program);
         }
 
@@ -272,19 +228,14 @@ public class TSDTV implements Persistable {
      * method to play a movie from the webpage catalog
      * returns TRUE if it will play immediately, FALSE if it's queued
      */
-    public boolean playFromCatalog(String fileName, String show) throws ShowNotFoundException {
-        File showDir = getShowDir(show);
-        File movie = new File(showDir.getAbsolutePath() + "/" + fileName);
-
-        Date[] startEndDates = getStartEndDatesForVOD(movie);
-        TSDTVProgram program = new TSDTVProgram(movie, show, null, startEndDates[0], startEndDates[1]);
+    public void playFromCatalog(TSDTVEpisode episode) throws ShowNotFoundException {
+        TSDTVQueueItem program = new TSDTVQueueItem(episode, null, false, getStartDateForQueueItem(), ffmpegExec);
         if(isRunning()) {
             queue.addLast(program);
-            bot.broadcast("[TSDTV] A show has been enqueued via web: " + show + " - " + fileName);
-            return false;
+            bot.broadcast(color("[TSDTV]", IRCColor.blue)
+                    + " A show has been enqueued via web: " + episode.getShow().getPrettyName() + " - " + episode.getPrettyName());
         } else {
             play(program);
-            return true;
         }
     }
 
@@ -299,48 +250,50 @@ public class TSDTV implements Persistable {
 
         queue.clear();
 
-        // use rolling calendar to handle start/end times
-        Calendar calendar = Calendar.getInstance();
+        boolean scheduled = (offset == 0);
 
         // prepare the block intro if it exists
-        File blockIntro = getBlockIntro(blockInfo.id);
+        TSDTVFiller blockIntro = library.getFiller(FillerType.block_intro, blockInfo.id);
         if(blockIntro != null) {
-            Date startTime = calendar.getTime();
-            Date endTime = getEndDateForVideo(calendar, blockIntro);
-            queue.addLast(new TSDTVProgram(blockIntro, TSDTVConstants.INTRO_DIR_NAME, blockInfo, startTime, endTime));
+            queue.addLast(new TSDTVQueueItem(blockIntro, blockInfo, scheduled, getStartDateForQueueItem(), ffmpegExec));
         }
 
         // use dynamic map to get correct episode numbers for repeating shows
         // use offset to handle replays/reruns
-        HashMap<String, Integer> episodeNums = new HashMap<>(); // show -> episode num
-        for(String show : blockInfo.scheduleParts) {
+        HashMap<TSDTVShow, Integer> episodeNums = new HashMap<>(); // show -> episode num
+        for(String showName : blockInfo.scheduleParts) {
 
             HashMap<String, String> metadata = null;
 
-            if(show.startsWith(".")) { // commercial or bump, grab random
-
-                File showDir = new File(catalogPath + "/" + show);
-                File movie = getRandomFilePathFromDirectory(showDir);
-                if(movie != null) {
-                    Date startTime = calendar.getTime();
-                    Date endTime = getEndDateForVideo(calendar, movie);
-                    queue.addLast(new TSDTVProgram(movie, show, blockInfo, startTime, endTime));
-                    logger.info("Added {} to queue", movie);
+            FillerType fillerType = FillerType.fromSchedule(showName);
+            if(fillerType != null) {
+                // this is filler, e.g. bump or commercial
+                TSDTVFiller filler = library.getFiller(fillerType, null);
+                if(filler != null) {
+                    queue.addLast(new TSDTVQueueItem(filler, blockInfo, scheduled, getStartDateForQueueItem(), ffmpegExec));
+                    logger.info("Added {} to queue", filler.getFile().getAbsolutePath());
                 } else {
-                    logger.error("Could not find any movies in {}", showDir.getAbsolutePath());
+                    logger.error("Could not find any filler of type {}", fillerType);
                 }
-
             } else {
 
-                File intro = getShowIntro(show);
-                if(intro != null) {
-                    Date introStartTime = calendar.getTime();
-                    Date introEndTime = getEndDateForVideo(calendar, intro);
-                    queue.addLast(new TSDTVProgram(intro, TSDTVConstants.INTRO_DIR_NAME, blockInfo, introStartTime, introEndTime));
+                // this isn't filler, it must be a TSDTVShow
+                TSDTVShow show;
+                try {
+                    show = library.getShow(showName);
+                } catch (ShowNotFoundException e) {
+                    logger.error("Could not find show", e);
+                    continue;
                 }
 
-                int occurrences = Collections.frequency(Arrays.asList(blockInfo.scheduleParts), show);
-                int episodeNum = 0;
+                // add the intro for this show, if it exists
+                TSDTVFiller intro = library.getFiller(FillerType.show_intro, showName);
+                if(intro != null) {
+                    queue.addLast(new TSDTVQueueItem(intro, blockInfo, scheduled, getStartDateForQueueItem(), ffmpegExec));
+                }
+
+                int occurrences = Collections.frequency(Arrays.asList(blockInfo.scheduleParts), showName);
+                int episodeNum;
                 if(!episodeNums.containsKey(show)) {
                     // this show hasn't appeared in the block yet -- get current episode num from DB
                     episodeNum = getCurrentEpisode(show) + (occurrences * offset);
@@ -350,30 +303,38 @@ public class TSDTV implements Persistable {
                         logger.error("Could not find current episode for {}", show);
                 } else {
                     // this show has appeared in the block -- increment episode num
-                    if(episodeNums.get(show)+1 > getNumberOfEpisodes(show)) episodeNum = 1; // wrap if we reached the end
-                    else episodeNum = episodeNums.get(show)+1;
+                    if(episodeNums.get(show)+1 > show.getAllEpisodes().size())
+                        episodeNum = 1; // wrap if we reached the end
+                    else
+                        episodeNum = episodeNums.get(show)+1;
                     episodeNums.put(show,episodeNum);
                 }
 
-                logger.info("Looking for episode {} of {}", episodeNum, show);
-                File episode = getEpisode(show, episodeNum);
-                if(episode != null) {
-                    Date startTime = calendar.getTime();
-                    Date endTime = getEndDateForVideo(calendar, episode);
-                    if(offset == 0)
-                        queue.addLast(new TSDTVProgram(episode, show, blockInfo, episodeNum, startTime, endTime));
-                    else
-                        queue.addLast(new TSDTVProgram(episode, show, blockInfo, startTime, endTime)); // don't worry about ep if it's a replay
-                    logger.info("Added {} to queue", episode);
-                } else {
-                    logger.error("Could not retrieve episode {} of {}", episodeNum, show);
+                logger.info("Looking for episode {} of {}", episodeNum, show.getRawName());
+                TSDTVEpisode episode;
+                try {
+                    episode = show.getEpisode(episodeNum);
+                } catch (ShowNotFoundException e) {
+                    logger.error("Could not find episode", e);
+                    continue;
                 }
+
+                queue.addLast(new TSDTVQueueItem(episode, blockInfo, scheduled, getStartDateForQueueItem(), ffmpegExec));
+
+                logger.info("Added {} to queue", episode.getRawName());
 
             }
         }
 
+        // prepare the block outro if it exists
+        TSDTVFiller blockOutro = library.getFiller(FillerType.block_outro, blockInfo.id);
+        if(blockOutro != null) {
+            queue.addLast(new TSDTVQueueItem(blockOutro, blockInfo, scheduled, getStartDateForQueueItem(), ffmpegExec));
+        }
+
         StringBuilder broadcastBuilder = new StringBuilder();
-        broadcastBuilder.append("[TSDTV] \"").append(blockInfo.name).append("\" block now starting. Lined up: ");
+        broadcastBuilder.append(color("[TSDTV]", IRCColor.blue)).append(" \"")
+                .append(blockInfo.name).append("\" block now starting. Lined up: ");
 
         String lastProgram = "";
         boolean first = true;
@@ -394,8 +355,10 @@ public class TSDTV implements Persistable {
             bot.broadcast(getLinks(false));
         }
 
-        if(!queue.isEmpty()) play(queue.pop());
-        else logger.error("Could not find any shows for block...");
+        if(!queue.isEmpty())
+            play(queue.pop());
+        else
+            logger.error("Could not find any shows for block...");
     }
 
     public void prepareBlockReplay(String channel, String blockQuery) {
@@ -457,25 +420,21 @@ public class TSDTV implements Persistable {
         HashMap<String, String> metadata;
 
         if(runningStream != null) {
-            metadata = getVideoMetadata(runningStream.getMovie().file);
-            String artist = metadata.get(TSDTVConstants.METADATA_ARTIST_FIELD);
-            String title = metadata.get(TSDTVConstants.METADATA_TITLE_FIELD);
-
-            String np = (artist == null || title == null) ?
-                    runningStream.getMovie().file.getName() : artist + " - " + title;
-
-            bot.sendMessage(channel, "NOW PLAYING: " + np);
+            bot.sendMessage(channel, "NOW PLAYING: " + runningStream.getMovie().video.toString());
         }
 
         if(!queue.isEmpty()) {
             StringBuilder sb = new StringBuilder();
             sb.append("On deck: ");
             boolean first = true;
-            for(TSDTVProgram program : queue) {
-                if(program.show.startsWith(".")) continue;
-                if(!first) sb.append(", ");
-                sb.append(program.show);
-                first = false;
+            for(TSDTVQueueItem program : queue) {
+                if(program.video.isBroadcastable()) {
+                    TSDTVShow show = ((TSDTVEpisode)program.video).getShow();
+                    if(!first)
+                        sb.append(", ");
+                    sb.append(show.getPrettyName());
+                    first = false;
+                }
             }
             bot.sendMessage(channel, sb.toString());
         }
@@ -601,79 +560,9 @@ public class TSDTV implements Persistable {
         }
     }
 
-    private File getFuzzyShow(String query) throws ShowNotFoundException {
-        // return the File object, use it to getName or getPath
-        List<File> matchingDirs = FuzzyLogic.fuzzySubset(
-                query,
-                Arrays.asList(new File(catalogPath).listFiles()),
-                new FuzzyLogic.FuzzyVisitor<File>() {
-                    @Override
-                    public String visit(File o1) {
-                        return o1.getName();
-                    }
-        });
-
-        if(matchingDirs.size() == 0)
-            throw new ShowNotFoundException("Could not find directory matching \"" + query + "\"");
-        else if(matchingDirs.size() > 1) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("Found multiple directories matching for \"").append(query).append("\":");
-            for(File f : matchingDirs)
-                sb.append(" ").append(f.getName());
-            throw new ShowNotFoundException(sb.toString());
-        } else {
-            return matchingDirs.get(0);
-        }
-    }
-
-    private File getEpisode(String show, int episodeNumber) {
-        File showDir = new File(catalogPath + "/" + show);
-        java.util.regex.Matcher epNumMatcher;
-        if(showDir.exists()) {
-            for(File f : showDir.listFiles()) try {
-                int epNum = TSDTVUtil.getEpisodeNumberFromFilename(f.getName());
-                if(epNum == episodeNumber) {
-                    return f;
-                }
-            } catch (Exception e) {
-                logger.warn("Failed to parse episode number from file {}, skipping...", f.getName());
-            }
-        } else {
-            logger.error("Could not find show directory: {}", catalogPath + "/" + show);
-        }
-
-        return null;
-    }
-
-    private File getShowIntro(String show) {
-        File introDir = new File(catalogPath + "/" + show + "/" + TSDTVConstants.INTRO_DIR_NAME);
-        return getRandomFilePathFromDirectory(introDir);
-    }
-
-    private File getBlockIntro(String blockId) {
-        File introDir = new File(catalogPath + "/"
-                + TSDTVConstants.BLOCKS_DIR_NAME + "/" + blockId + "/" + TSDTVConstants.INTRO_DIR_NAME);
-        return getRandomFilePathFromDirectory(introDir);
-    }
-
-    private File getRandomFileFromDirectory(File dir) {
-        if(dir.exists()) {
-            File[] files = dir.listFiles();
-            if(files == null || files.length == 0)
-                return null;
-            return files[random.nextInt(files.length)];
-        }
-        return null;
-    }
-
-    private File getRandomFilePathFromDirectory(File dir) {
-        File f = getRandomFileFromDirectory(dir);
-        return f;
-    }
-
-    private int getCurrentEpisode(String show) throws SQLException {
+    private int getCurrentEpisode(TSDTVShow show) throws SQLException {
         Connection dbConn = connectionProvider.get();
-        String q = String.format("select currentEpisode from TSDTV_SHOW where name = '%s'", show);
+        String q = String.format("select currentEpisode from TSDTV_SHOW where name = '%s'", show.getRawName());
         try(PreparedStatement ps = dbConn.prepareStatement(q) ; ResultSet result = ps.executeQuery()) {
             if(result.next()) {
                 return result.getInt("currentEpisode");
@@ -686,11 +575,11 @@ public class TSDTV implements Persistable {
 
         //TODO: extend this to match connections with chat users
 
-        String matchString = "^ffserver.*192\\.168\\.1\\.100:8090->.*\\(ESTABLISHED\\)$";
+        String matchString = "^nginx.*192\\.168\\.1\\.100:1935->.*\\(ESTABLISHED\\)$";
         int viewerCount = 0;
 
         try {
-            ProcessBuilder pb = new ProcessBuilder("lsof", "-n", "-i", "tcp:8090");
+            ProcessBuilder pb = new ProcessBuilder("lsof", "-n", "-i", "tcp:1935");
             Process p = pb.start();
             p.waitFor();
             InputStream out = p.getInputStream();
@@ -698,33 +587,31 @@ public class TSDTV implements Persistable {
             BufferedReader br = new BufferedReader(reader);
             String line;
             while( (line = br.readLine()) != null ) {
-                logger.info(line);
                 if(line.trim().matches(matchString))
                     viewerCount++;
             }
         } catch (IOException | InterruptedException e) {
-            logger.error("Error retrieving viewer count", e);
             return -1;
         }
 
         return viewerCount;
     }
 
-    public String getLinks(boolean includeVlc) {
+    public String getLinks(boolean includeDirect) {
         StringBuilder sb = new StringBuilder();
-        sb.append("http://irc.teamschoolyd.org/tsdtv.html");
-        if(includeVlc)
-            sb.append(" -- VLC: http://irc.teamschoolyd.org:8090/tsdtv.flv");
+        sb.append(serverUrl).append("/tsdtv");
+        if(includeDirect)
+            sb.append(" -- DIRECT: ").append(tsdtvDirect);
         return sb.toString();
     }
 
-    private HashMap<Integer, StreamType> getVideoStreams(File movie) {
+    private HashMap<Integer, StreamType> getVideoStreams(Streamable video) {
 
         Pattern trackPattern = Pattern.compile("^Track ID\\s+(\\d+):\\s+(\\w+)\\s+\\(.*\\)$", Pattern.DOTALL);
         HashMap<Integer, StreamType> streams = new HashMap<>();
 
         try {
-            ProcessBuilder pb = new ProcessBuilder("mkvmerge", "-i", movie.getAbsolutePath());
+            ProcessBuilder pb = new ProcessBuilder("mkvmerge", "-i", video.getFile().getAbsolutePath());
             Process p = pb.start();
             p.waitFor();
             InputStream out = p.getInputStream();
@@ -751,58 +638,8 @@ public class TSDTV implements Persistable {
         return streams;
     }
 
-    private HashMap<String, String> getVideoMetadata(File movie) {
-
-        logger.info("Retrieving metadata for {}", movie.getAbsolutePath());
-        HashMap<String, String> metadata = new HashMap<>();
-
-        try {
-            ProcessBuilder pb = new ProcessBuilder("ffmpeg", "-i", movie.getAbsolutePath());
-            Process p = pb.start();
-            p.waitFor();
-            InputStream out = p.getErrorStream();
-            InputStreamReader reader = new InputStreamReader(out);
-            BufferedReader br = new BufferedReader(reader);
-            String line;
-            while( (line = br.readLine()) != null ) {
-                if(line.contains("Metadata")) {
-                    while( (line = br.readLine()) != null && (!line.contains("Duration")) ) {
-                        String[] parts = line.split(":",2);
-                        if(parts.length == 2)
-                            metadata.put(parts[0].trim(), parts[1].trim());
-                    }
-                    // now get the duration
-                    // Duration: 00:00:00.0, start=0000blahblah
-                    String duration = line.substring(line.indexOf(":") + 1, line.indexOf(","));
-                    metadata.put(TSDTVConstants.METADATA_DURATION_FIELD, duration);
-                    break;
-                }
-            }
-
-        } catch (InterruptedException | IOException e) {
-            logger.error("Error getting video metadata", e);
-        }
-
-        return metadata;
-
-    }
-
-    private int getNumberOfEpisodes(String show) {
-        int count = 0;
-        File showDir = new File(catalogPath + "/" + show);
-        if(showDir.exists()) {
-            for(File f : showDir.listFiles()) {
-                if(f.isFile()) count++;
-            }
-        } else {
-            logger.error("Could not find show directory: {}", catalogPath + "/" + show);
-        }
-
-        return count;
-    }
-
-    private boolean hasSubtitles(File movie) {
-        HashMap<Integer, StreamType> streams = getVideoStreams(movie);
+    private boolean hasSubtitles(Streamable video) {
+        HashMap<Integer, StreamType> streams = getVideoStreams(video);
         for(Integer streamNum : streams.keySet()) {
             if(streams.get(streamNum).equals(StreamType.SUBTITLES)) {
                 return true;
@@ -811,60 +648,24 @@ public class TSDTV implements Persistable {
         return false;
     }
 
-    private Date getEndDateForVideo(Calendar cal, File f) {
-        HashMap<String, String> metadata = getVideoMetadata(f);
-        Matcher m = durationPattern.matcher(metadata.get(TSDTVConstants.METADATA_DURATION_FIELD));
-        while(m.find()) {
-            cal.add(Calendar.HOUR, Integer.parseInt(m.group(1)));
-            cal.add(Calendar.MINUTE, Integer.parseInt(m.group(2)));
-            cal.add(Calendar.SECOND, Integer.parseInt(m.group(3)));
-        }
-        return cal.getTime();
-    }
-
-    private Date[] getStartEndDatesForVOD(File movie) {
-        Calendar cal = Calendar.getInstance();
-        Date startTime;
-        Date endTime;
+    private Date getStartDateForQueueItem() {
         if(isRunning()) {
             if(!queue.isEmpty()) {
-                cal.setTime(queue.getLast().endTime);
+                return queue.getLast().endTime;
             } else {
-                cal.setTime(runningStream.getMovie().endTime);
+                return runningStream.getMovie().endTime;
             }
-            startTime = cal.getTime();
-            endTime = getEndDateForVideo(cal, movie);
-            return new Date[]{startTime, endTime};
         } else {
-            endTime = getEndDateForVideo(cal, movie);
-            return new Date[]{cal.getTime(), endTime};
+            return new Date();
         }
     }
-
-//    static class ThreadStream {
-//        public Thread thread;
-//        public TSDTVStream stream;
-//
-//        public ThreadStream(Thread thread, TSDTVStream stream) {
-//            this.thread = thread;
-//            this.stream = stream;
-//        }
-//
-//        public void begin() {
-//            thread.start();
-//            logger.info("TSDTV Thread started");
-//        }
-//
-//        public void kill() {
-//            thread.interrupt();
-//        }
-//    }
 
     public static class TSDTVBlock {
         public String id;
         public String name;
         public String[] scheduleParts;
 
+        @Deprecated
         private TSDTVBlock() {}
 
         public TSDTVBlock(JobDataMap jobDataMap) {

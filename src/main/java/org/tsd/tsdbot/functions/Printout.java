@@ -114,6 +114,7 @@ public class Printout extends MainFunction {
             builder.addParameter(   "userip",  TSDBOT_IP            );
             URL url = new URL(builder.toString());
             URLConnection connection = url.openConnection();
+            connection.setConnectTimeout(1000 * 20); // 20 seconds
             connection.addRequestProperty("Referer", GIS_REFERRER);
 
             String line;

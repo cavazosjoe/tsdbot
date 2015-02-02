@@ -38,6 +38,7 @@ import org.tsd.tsdbot.stats.Stats;
 import org.tsd.tsdbot.stats.SystemStats;
 import org.tsd.tsdbot.tsdtv.InjectableStreamFactory;
 import org.tsd.tsdbot.tsdtv.TSDTV;
+import org.tsd.tsdbot.tsdtv.TSDTVLibrary;
 import twitter4j.Twitter;
 import twitter4j.TwitterFactory;
 
@@ -120,8 +121,9 @@ public class TSDBotConfigModule extends AbstractModule {
         urlBuilder.append("http://").append(hostname);
         if(port != 80)
             urlBuilder.append(":").append(port);
+        String serverUrl = urlBuilder.toString();
         bind(String.class).annotatedWith(Names.named("serverUrl"))
-                .toInstance(urlBuilder.toString());
+                .toInstance(serverUrl);
 
         bind(Stage.class).toInstance(stage);
 
@@ -177,39 +179,30 @@ public class TSDBotConfigModule extends AbstractModule {
 
         bind(Random.class).toInstance(new Random());
 
-        requestInjection(new InjectableStreamFactory());
-        String ffmpegExec = properties.getProperty("tsdtv.ffmpeg");
-        String[] ffmpegParts = new String[]{
-                ffmpegExec,
-                "-re",
-                "-y",
-                "-i",       "%s",           // %s -> path to file, to be formatted later
-
-                "-override_ffserver",       // passing stream parameters via this command, not in ffserver.conf
-                "-c:v",     "libx264",      // video codec (always use libx264)
-                "-r",       "20",           // framerate
-                "-b:v",     "1200k",        // video bitrate
-                "-maxrate", "1700k",        // max bitrate
-                "-bufsize", "2560k",        // buffer size (used when averaging bitrate)
-                "-preset",  "superfast",    // processing speed (ultrafast = least CPU, worst vid quality)
-                "-profile:v","baseline",    // something for Apple devices or VLC or something
-                "-pix_fmt", "yuv420p",      // something for Apple devices or VLC or something
-                "-flags:v", "+global_header",//something that seems to work
-                "-vf",      "%s",           // %s -> video filter, to be formatted later (used for subs)
-                                            // see TSDTV.play()
-
-                "-c:a",     "aac",          // vv audio junk, who cares lol vv
-                "-b:a",     "128k",
-                "-ar",      "44100",
-                "-strict",  "experimental",
-                "-flags:a", "+global_header",
-
-                "http://localhost:8090/feed1.ffm"
-        };
-        String ffmpeg = StringUtils.join(ffmpegParts, " ");
+        // path to ffmpeg executable
         bind(String.class)
-                .annotatedWith(Names.named("ffmpeg"))
-                .toInstance(ffmpeg);
+                .annotatedWith(Names.named("ffmpegExec"))
+                .toInstance(properties.getProperty("tsdtv.ffmpegExec"));
+
+        // arguments to ffmpeg commands
+        bind(String.class)
+                .annotatedWith(Names.named("ffmpegArgs"))
+                .toInstance(properties.getProperty("tsdtv.ffmpegArgs"));
+
+        // output of ffmpeg commands
+        bind(String.class)
+                .annotatedWith(Names.named("ffmpegOut"))
+                .toInstance(properties.getProperty("tsdtv.ffmpegOut"));
+
+        // direct link to TSDTV stream (to be opened in video players)
+        bind(String.class)
+                .annotatedWith(Names.named("tsdtvDirect"))
+                .toInstance(properties.getProperty("tsdtv.directLink"));
+
+        bind(File.class)
+                .annotatedWith(Names.named("tsdtvLibrary"))
+                .toInstance(new File(properties.getProperty("tsdtv.catalog")));
+        bind(TSDTVLibrary.class).asEagerSingleton();
 
         bind(TSDTV.class).asEagerSingleton();
 

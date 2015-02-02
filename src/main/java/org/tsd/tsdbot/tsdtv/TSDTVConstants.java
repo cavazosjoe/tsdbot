@@ -14,5 +14,5 @@ public class TSDTVConstants {
     public static final String INTRO_DIR_NAME = ".intros";
     public static final String OUTRO_DIR_NAME = ".outros";
 
-    public static final String SUBTITLES_LOCATION = "/tmp/subtitles.srt";
+    public static final String SHOW_IMG_NAME = ".img";
 }

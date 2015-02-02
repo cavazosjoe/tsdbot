@@ -10,6 +10,8 @@ import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.tsdtv.ShowInfo;
 import org.tsd.tsdbot.tsdtv.ShowNotFoundException;
 import org.tsd.tsdbot.tsdtv.TSDTV;
+import org.tsd.tsdbot.tsdtv.TSDTVLibrary;
+import org.tsd.tsdbot.tsdtv.model.TSDTVShow;
 
 import java.io.File;
 import java.sql.SQLException;
@@ -23,10 +25,11 @@ public class TSDTVFunction extends MainFunction {
     private static final Logger logger = LoggerFactory.getLogger(TSDTVFunction.class);
 
     private TSDTV tsdtv;
+    private TSDTVLibrary library;
     private String serverUrl;
 
     @Inject
-    public TSDTVFunction(TSDBot bot, TSDTV tsdtv, @Named("serverUrl") String serverUrl) {
+    public TSDTVFunction(TSDBot bot, TSDTV tsdtv, TSDTVLibrary library, @Named("serverUrl") String serverUrl) {
         super(bot);
         this.description = "The TSDTV Streaming Entertainment Value Service";
         this.usage = "USAGE: .tsdtv [ catalog [<directory>] | play [<movie-name> | <directory> <movie-name>] ]";
@@ -46,19 +49,7 @@ public class TSDTVFunction extends MainFunction {
         String subCmd = cmdParts[1];
 
         if(subCmd.equals("catalog")) {
-
-            try {
-                if(cmdParts.length > 2) {
-                    String showDirString = cmdParts[2].replaceAll("/","");
-                    File showDir = tsdtv.getShowDir(showDirString);
-                    bot.sendMessage(channel, serverUrl + "/tsdtv/catalog?show=" + showDir.getName());
-                } else {
-                    bot.sendMessage(channel, serverUrl + "/tsdtv/catalog");
-                }
-            } catch (ShowNotFoundException snfe) {
-                bot.sendMessage(channel, "Error retrieving catalog: " + snfe.getMessage());
-            }
-
+            bot.sendMessage(channel, serverUrl + "/tsdtv");
         } else if(subCmd.equals("replay")) {
 
             if(cmdParts.length < 3) {

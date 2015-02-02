@@ -22,23 +22,32 @@ public class TSDTVStream extends Thread {
     @Inject
     protected Properties properties;
 
-    @Inject @Named(value = "ffmpeg")
-    private String ffmpegFormat;
+    @Inject @Named(value = "ffmpegExec")
+    private String ffmpegExec;
 
-    private TSDTVProgram movie = null;
+    @Inject @Named(value = "ffmpegArgs")
+    private String ffmpegArgs;
+
+    @Inject @Named(value = "ffmpegOut")
+    private String ffmpegOut;
+
+    private String ffmpegCommand;
+
+    private TSDTVQueueItem movie = null;
 
     private File logFile = null;
 
     @Deprecated
     public TSDTVStream() {}
 
-    public void init(String videoFilter, TSDTVProgram program) {
+    public void init(String videoFilter, TSDTVQueueItem program) {
         this.movie = program;
         this.logFile = new File(properties.getProperty("tsdtv.log"));
-        this.ffmpegFormat = String.format(ffmpegFormat, program.file.getAbsolutePath(), videoFilter);
+        this.ffmpegCommand = ffmpegExec + " " + ffmpegArgs + " " + ffmpegOut;
+        this.ffmpegCommand = String.format(ffmpegCommand, movie.video.getFile().getAbsolutePath(), videoFilter);
     }
 
-    public TSDTVProgram getMovie() {
+    public TSDTVQueueItem getMovie() {
         return movie;
     }
 
@@ -51,8 +60,8 @@ public class TSDTVStream extends Thread {
             tsdtv.finishStream(false);
             return;
         }
-        logger.info("[TSDTV] preparing movie {} using command {}", movie.file.getAbsolutePath(), ffmpegFormat);
-        ProcessBuilder pb = new ProcessBuilder(ffmpegFormat.split("\\s+"));
+        logger.info("[TSDTV] preparing movie {} using command {}", movie.video.getFile().getAbsolutePath(), ffmpegCommand);
+        ProcessBuilder pb = new ProcessBuilder(ffmpegCommand.split("\\s+"));
         pb.redirectErrorStream(true);
         pb.redirectOutput(logFile);
         boolean playNext = true;

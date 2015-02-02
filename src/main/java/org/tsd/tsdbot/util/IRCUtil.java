@@ -94,6 +94,8 @@ public class IRCUtil {
     }
 
     public static boolean detectBot(String nick) {
+        if(nick.toLowerCase().contains("bot"))
+            return true;
         for(String bot : knownBots) {
             if(nick.equalsIgnoreCase(bot))
                 return true;

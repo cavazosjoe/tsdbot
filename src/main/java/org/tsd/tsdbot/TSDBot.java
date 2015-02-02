@@ -68,12 +68,14 @@ public class TSDBot extends PircBot {
     @Override
     public synchronized void sendMessage(String target, String text) {
         super.sendMessage(target, text);
-        archivist.log(target, ArchivistUtil.getRawMessage(
-                System.currentTimeMillis(),
-                getNick(),
-                getLogin(),
-                text
-        ));
+        if(archivist != null) {
+            archivist.log(target, ArchivistUtil.getRawMessage(
+                    System.currentTimeMillis(),
+                    getNick(),
+                    getLogin(),
+                    text
+            ));
+        }
     }
 
     @Override protected synchronized void onUserList(String channel, User[] users) {}

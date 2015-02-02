@@ -4,10 +4,7 @@ import com.google.inject.servlet.ServletModule;
 import org.tsd.tsdbot.servlets.StatusServlet;
 import org.tsd.tsdbot.servlets.hustle.HustleChartServlet;
 import org.tsd.tsdbot.servlets.hustle.HustleServlet;
-import org.tsd.tsdbot.servlets.tsdtv.TSDTVCatalogServlet;
-import org.tsd.tsdbot.servlets.tsdtv.TSDTVNowPlayingServlet;
-import org.tsd.tsdbot.servlets.tsdtv.TSDTVPlayServlet;
-import org.tsd.tsdbot.servlets.tsdtv.TSDTVServlet;
+import org.tsd.tsdbot.servlets.tsdtv.*;
 
 /**
  * Created by Joe on 1/11/2015.
@@ -31,9 +28,6 @@ public class TSDBotServletModule extends ServletModule {
          */
         bind(TSDTVServlet.class);
         serve("/tsdtv").with(TSDTVServlet.class);
-
-        bind(TSDTVCatalogServlet.class);
-        serve("/tsdtv/catalog").with(TSDTVCatalogServlet.class);
 
         bind(TSDTVPlayServlet.class);
         serve("/tsdtv/play").with(TSDTVPlayServlet.class);

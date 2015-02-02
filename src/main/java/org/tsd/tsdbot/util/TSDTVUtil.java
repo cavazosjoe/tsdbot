@@ -1,5 +1,7 @@
 package org.tsd.tsdbot.util;
 
+import java.io.File;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -16,4 +18,15 @@ public class TSDTVUtil {
         }
         throw new Exception("Could not parse episode number from String " + fileName);
     }
+
+    public static File getRandomFileFromDirectory(Random random, File dir) {
+        if(dir.exists()) {
+            File[] files = dir.listFiles();
+            if(files == null || files.length == 0)
+                return null;
+            return files[random.nextInt(files.length)];
+        }
+        return null;
+    }
+
 }

@@ -199,6 +199,7 @@ public class XboxLive extends MainFunction {
         URIBuilder builder = new URIBuilder(String.format(target, args));
         URL url = new URL(builder.toString());
         URLConnection connection = url.openConnection();
+        connection.setConnectTimeout(1000 * 20);
         connection.addRequestProperty("X-AUTH", xblApiKey);
         String line;
         StringBuilder sb = new StringBuilder();
