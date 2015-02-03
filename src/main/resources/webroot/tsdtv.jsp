@@ -26,6 +26,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
     <!-- Include all compiled plugins (below), or include individual files as needed -->
     <script src="js/bootstrap.min.js"></script>
+    <script src="js/jquery.bootstrap-growl.min.js"></script>
 
     <%--video.js--%>
     <link href="//vjs.zencdn.net/4.11/video-js.css" rel="stylesheet">
@@ -68,7 +69,6 @@
         $(function() {
             var form = $('.playEpisode');
             $(form).submit(function (event) {
-                console.error("event triggered!");
                 $.ajax({
                     type: "POST",
                     url: "/tsdtv/play", //process to mail
@@ -77,14 +77,16 @@
                         $('#episodePlayModal').modal('show');
                     },
                     error: function(xhr, status, error) {
-                        var err = eval("(" + xhr.responseText + ")");
-                        // Display the error "growl", with a title of "Error",
-                        // the error message as content, and a 20s display time.
-                        $.growlUI('Error', err.Message, 10000);
+                        $.bootstrapGrowl(xhr.responseText, {
+                            type: 'danger',
+                            width: 'auto',
+                            allow_dismiss: true
+                        });
                     }
                 });
                 event.preventDefault();
             });
+
         });
     </script>
 </head>
@@ -92,13 +94,24 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-md-9">
-            <video id="example_video_1" class="video-js vjs-default-skin"
-                   controls loop preload="auto" width="100%" height="750px"
-                   poster="http://i.imgur.com/4Q7jsCr.jpg"
-                   data-setup='{"autoplay": true}'>
-                <source src="rtmp://irc.teamschoolyd.org/tsdtv/tsdtv" type='rtmp/flv' />
-                <p class="vjs-no-js">To view this video please enable JavaScript, and consider upgrading to a web browser that <a href="http://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a></p>
-            </video>
+            <c:choose>
+                <c:when test="${not empty param.vlc}">
+                    <embed autoplay="yes" target="${directLink}"
+                       loop="true" name="VLC"
+                       type="application/x-vlc-plugin" volume="100" height="750" width="100%" id="vlc">
+                    <a href="/tsdtv">videojs version</a>
+                </c:when>
+                <c:otherwise>
+                    <video id="example_video_1" class="video-js vjs-default-skin"
+                           controls loop preload="auto" width="100%" height="750px"
+                           poster="http://i.imgur.com/4Q7jsCr.jpg"
+                           data-setup='{"autoplay": true}'>
+                        <source src="${directLink}" type='rtmp/mp4' />
+                        <p class="vjs-no-js">To view this video please enable JavaScript, and consider upgrading to a web browser that <a href="http://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a></p>
+                    </video>
+                    <a href="/tsdtv?vlc=yes">VLC version</a>
+                </c:otherwise>
+            </c:choose>
         </div>
         <div class="col-md-3">
 
@@ -191,15 +204,31 @@
         </div>
     </div>
 </div>
-<div class="modal fade" id="episodePlayModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
+<div class="modal fade" id="episodePlayModal" tabindex="-1" role="dialog" aria-labelledby="episodePlayModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="modalLabel">You did it!</h4>
+                <h4 class="modal-title" id="episodePlayModalLabel">You did it!</h4>
             </div>
             <div class="modal-body">
                 Your show has been enqueued :^)
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="episodeKillModal" tabindex="-1" role="dialog" aria-labelledby="episodeKillModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="episodeKillModalLabel">Yes, sir</h4>
+            </div>
+            <div class="modal-body">
+                The kill order has been sent
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>

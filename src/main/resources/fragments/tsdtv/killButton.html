@@ -1,0 +1,24 @@
+<script>
+    var killForm = $('#kill');
+    $(killForm).submit(function (event) {
+        $.ajax({
+            type: "POST",
+            url: "/tsdtv/kill", //process to mail
+            data: "",
+            success: function (msg) {
+                $('#episodeKillModal').modal('show');
+            },
+            error: function(xhr, status, error) {
+                $.bootstrapGrowl(xhr.responseText, {
+                    type: 'danger',
+                    width: 'auto',
+                    allow_dismiss: true
+                });
+            }
+        });
+        event.preventDefault();
+    });
+</script>
+<form class="navbar-right" id="kill" name="kill">
+  <input class="btn btn-sm btn-danger" type="submit" value="Kill">
+</form>

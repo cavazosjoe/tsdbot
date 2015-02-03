@@ -208,28 +208,25 @@ public class TSDTV implements Persistable {
         }
     }
 
-    public void prepareOnDemand(String channel, String dir, String query) throws ShowNotFoundException {
-
-        TSDTVShow show = library.getShow(dir);
-        TSDTVEpisode episode = (TSDTVConstants.RANDOM_QUERY.equals(query)) ?
-                show.getRandomEpisode(random) : show.getEpisode(query);
-
-        TSDTVQueueItem program = new TSDTVQueueItem(episode, null, false, getStartDateForQueueItem(), ffmpegExec);
+    /**
+     * method to play a movie from the chat. returns true if playing immediately, false if queued
+     */
+    public boolean playFromChat(TSDTVEpisode episode, String ident) throws ShowNotFoundException {
+        TSDTVQueueItem program = new TSDTVQueueItem(episode, null, false, getStartDateForQueueItem(), ffmpegExec, ident);
         if(isRunning()) {
             queue.addLast(program);
-            bot.sendMessage(channel, "There is already a stream running. Your show has been enqueued");
+            return false;
         } else {
             play(program);
+            return true;
         }
-
     }
 
     /**
      * method to play a movie from the webpage catalog
-     * returns TRUE if it will play immediately, FALSE if it's queued
      */
-    public void playFromCatalog(TSDTVEpisode episode) throws ShowNotFoundException {
-        TSDTVQueueItem program = new TSDTVQueueItem(episode, null, false, getStartDateForQueueItem(), ffmpegExec);
+    public void playFromCatalog(TSDTVEpisode episode, String ipAddr) throws ShowNotFoundException {
+        TSDTVQueueItem program = new TSDTVQueueItem(episode, null, false, getStartDateForQueueItem(), ffmpegExec, ipAddr);
         if(isRunning()) {
             queue.addLast(program);
             bot.broadcast(color("[TSDTV]", IRCColor.blue)
@@ -255,7 +252,7 @@ public class TSDTV implements Persistable {
         // prepare the block intro if it exists
         TSDTVFiller blockIntro = library.getFiller(FillerType.block_intro, blockInfo.id);
         if(blockIntro != null) {
-            queue.addLast(new TSDTVQueueItem(blockIntro, blockInfo, scheduled, getStartDateForQueueItem(), ffmpegExec));
+            queue.addLast(new TSDTVQueueItem(blockIntro, blockInfo, scheduled, getStartDateForQueueItem(), ffmpegExec, null));
         }
 
         // use dynamic map to get correct episode numbers for repeating shows
@@ -270,7 +267,7 @@ public class TSDTV implements Persistable {
                 // this is filler, e.g. bump or commercial
                 TSDTVFiller filler = library.getFiller(fillerType, null);
                 if(filler != null) {
-                    queue.addLast(new TSDTVQueueItem(filler, blockInfo, scheduled, getStartDateForQueueItem(), ffmpegExec));
+                    queue.addLast(new TSDTVQueueItem(filler, blockInfo, scheduled, getStartDateForQueueItem(), ffmpegExec, null));
                     logger.info("Added {} to queue", filler.getFile().getAbsolutePath());
                 } else {
                     logger.error("Could not find any filler of type {}", fillerType);
@@ -289,7 +286,7 @@ public class TSDTV implements Persistable {
                 // add the intro for this show, if it exists
                 TSDTVFiller intro = library.getFiller(FillerType.show_intro, showName);
                 if(intro != null) {
-                    queue.addLast(new TSDTVQueueItem(intro, blockInfo, scheduled, getStartDateForQueueItem(), ffmpegExec));
+                    queue.addLast(new TSDTVQueueItem(intro, blockInfo, scheduled, getStartDateForQueueItem(), ffmpegExec, null));
                 }
 
                 int occurrences = Collections.frequency(Arrays.asList(blockInfo.scheduleParts), showName);
@@ -319,7 +316,7 @@ public class TSDTV implements Persistable {
                     continue;
                 }
 
-                queue.addLast(new TSDTVQueueItem(episode, blockInfo, scheduled, getStartDateForQueueItem(), ffmpegExec));
+                queue.addLast(new TSDTVQueueItem(episode, blockInfo, scheduled, getStartDateForQueueItem(), ffmpegExec, null));
 
                 logger.info("Added {} to queue", episode.getRawName());
 
@@ -329,7 +326,7 @@ public class TSDTV implements Persistable {
         // prepare the block outro if it exists
         TSDTVFiller blockOutro = library.getFiller(FillerType.block_outro, blockInfo.id);
         if(blockOutro != null) {
-            queue.addLast(new TSDTVQueueItem(blockOutro, blockInfo, scheduled, getStartDateForQueueItem(), ffmpegExec));
+            queue.addLast(new TSDTVQueueItem(blockOutro, blockInfo, scheduled, getStartDateForQueueItem(), ffmpegExec, null));
         }
 
         StringBuilder broadcastBuilder = new StringBuilder();
@@ -544,10 +541,10 @@ public class TSDTV implements Persistable {
         }
     }
 
-    public void kill() {
+    public void kill(boolean playNext) {
         logger.info("Received kill signal...");
         if(runningStream != null) {
-            runningStream.interrupt();
+            runningStream.kill(playNext);
         }
     }
 

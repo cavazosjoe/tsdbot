@@ -6,8 +6,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.tsdtv.TSDTV;
 import org.tsd.tsdbot.tsdtv.TSDTVLibrary;
+import org.tsd.tsdbot.util.ServletUtils;
 import org.tsd.tsdbot.util.TSDTVUtil;
 
+import javax.inject.Named;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -29,9 +31,13 @@ public class TSDTVServlet extends HttpServlet {
     @Inject
     private TSDTVLibrary library;
 
+    @Inject @Named("tsdtvDirect")
+    private String tsdtvDirectLink;
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         req.setAttribute("catalog", library.getCatalog());
+        req.setAttribute("directLink", tsdtvDirectLink);
         req.getRequestDispatcher("/tsdtv.jsp").forward(req, resp);
     }
 }

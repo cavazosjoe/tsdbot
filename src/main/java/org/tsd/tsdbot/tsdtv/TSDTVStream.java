@@ -37,6 +37,8 @@ public class TSDTVStream extends Thread {
 
     private File logFile = null;
 
+    private boolean playNext = true;
+
     @Deprecated
     public TSDTVStream() {}
 
@@ -49,6 +51,11 @@ public class TSDTVStream extends Thread {
 
     public TSDTVQueueItem getMovie() {
         return movie;
+    }
+
+    public void kill(boolean playNext) {
+        this.playNext = playNext;
+        this.interrupt();
     }
 
     @Override
@@ -64,7 +71,6 @@ public class TSDTVStream extends Thread {
         ProcessBuilder pb = new ProcessBuilder(ffmpegCommand.split("\\s+"));
         pb.redirectErrorStream(true);
         pb.redirectOutput(logFile);
-        boolean playNext = true;
         try {
             Process p = pb.start();
             try {
@@ -73,7 +79,6 @@ public class TSDTVStream extends Thread {
                 logger.info("TSDTV stream ended normally");
             } catch (InterruptedException e) {
                 logger.info("TSDTV stream interrupted");
-                playNext = false;
             } finally {
                 p.destroy();
                 logger.info("TSDTV stream destroyed");

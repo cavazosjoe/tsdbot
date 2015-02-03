@@ -13,6 +13,7 @@ import org.tsd.tsdbot.tsdtv.TSDTVQueueItem;
 import org.tsd.tsdbot.tsdtv.model.TSDTVEpisode;
 import org.tsd.tsdbot.tsdtv.model.TSDTVFiller;
 import org.tsd.tsdbot.tsdtv.model.TSDTVShow;
+import org.tsd.tsdbot.util.ServletUtils;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -68,6 +69,11 @@ public class TSDTVNowPlayingServlet extends HttpServlet {
                                         .replaceAll("%%show_name%%", episode.getShow().getPrettyName())
                                         .replaceAll("%%show_episode%%", episode.getPrettyName())
                         );
+                        if(ServletUtils.getIpAddress(req).equals(tsdtv.getNowPlaying().getMovie().owner)) {
+                            // add a kill button if the viewer queued this show
+                            String killButtonTemplate = IOUtils.toString(getClass().getClassLoader().getResourceAsStream("fragments/tsdtv/killButton.html"));
+                            out.append(killButtonTemplate);
+                        }
                     } else {
                         TSDTVFiller filler = (TSDTVFiller) tsdtv.getNowPlaying().getMovie().video;
                         out.append(filler.toString());

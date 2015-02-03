@@ -15,14 +15,18 @@ public class TSDTVQueueItem {
     public boolean scheduled;
     public Date startTime;
     public Date endTime;
+    public String owner;    // the person who started this stream, and the person who can end it
+                            // from chat: ident | from web: ip addr | scheduled: null
 
-    public TSDTVQueueItem(Streamable video, TSDTV.TSDTVBlock block, boolean scheduled, Date startTime, String ffmpegExec) {
+    public TSDTVQueueItem(Streamable video, TSDTV.TSDTVBlock block,
+                          boolean scheduled, Date startTime, String ffmpegExec, String owner) {
         this.video = video;
         this.block = block;
         this.scheduled = scheduled;
         this.startTime = startTime;
         long duration = video.getDuration(ffmpegExec);
         this.endTime = new Date(startTime.getTime() + duration);
+        this.owner = owner;
     }
 
     @Override

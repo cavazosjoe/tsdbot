@@ -8,13 +8,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.tsdtv.ShowInfo;
-import org.tsd.tsdbot.tsdtv.ShowNotFoundException;
 import org.tsd.tsdbot.tsdtv.TSDTV;
+import org.tsd.tsdbot.tsdtv.TSDTVConstants;
 import org.tsd.tsdbot.tsdtv.TSDTVLibrary;
+import org.tsd.tsdbot.tsdtv.model.TSDTVEpisode;
 import org.tsd.tsdbot.tsdtv.model.TSDTVShow;
 
-import java.io.File;
 import java.sql.SQLException;
+import java.util.Random;
 
 /**
  * Created by Joe on 1/12/2015.
@@ -27,14 +28,17 @@ public class TSDTVFunction extends MainFunction {
     private TSDTV tsdtv;
     private TSDTVLibrary library;
     private String serverUrl;
+    private Random random;
 
     @Inject
-    public TSDTVFunction(TSDBot bot, TSDTV tsdtv, TSDTVLibrary library, @Named("serverUrl") String serverUrl) {
+    public TSDTVFunction(TSDBot bot, TSDTV tsdtv, TSDTVLibrary library, @Named("serverUrl") String serverUrl, Random random) {
         super(bot);
         this.description = "The TSDTV Streaming Entertainment Value Service";
         this.usage = "USAGE: .tsdtv [ catalog [<directory>] | play [<movie-name> | <directory> <movie-name>] ]";
         this.tsdtv = tsdtv;
+        this.library = library;
         this.serverUrl = serverUrl;
+        this.random = random;
     }
 
     @Override
@@ -61,29 +65,43 @@ public class TSDTVFunction extends MainFunction {
 
         } else if(subCmd.equals("play")) {
 
-            String subdir = null;
-            String query;
-            if(cmdParts.length > 3) {
-                subdir = cmdParts[2].replaceAll("/","");
-                query = cmdParts[3].replaceAll("/", "");
-            } else {
-                query = cmdParts[2].replaceAll("/","");
+            if(cmdParts.length != 4) {
+                bot.sendMessage(channel, "USAGE: .tsdtv play <show> [ <episode> | random ]");
+                return;
             }
 
             try {
-                tsdtv.prepareOnDemand(channel, subdir, query);
+                TSDTVShow show = library.getShow(cmdParts[2]);
+                TSDTVEpisode episode = (TSDTVConstants.RANDOM_QUERY.equals(cmdParts[3])) ?
+                        show.getRandomEpisode(random) : show.getEpisode(cmdParts[3]);
+                if(!tsdtv.playFromChat(episode, ident)) {
+                    bot.sendMessage(channel, "There is already a stream running. Your show has been enqueued");
+                }
             } catch (Exception e) {
+                logger.error("Error playing from chat", e);
                 bot.sendMessage(channel, "Error: " + e.getMessage());
             }
 
         } else if(subCmd.equals("kill")) {
 
-            if(!bot.getUserFromNick(channel, sender).hasPriv(User.Priv.OP)) {
-                bot.sendMessage(channel, "Only ops can use that");
-                return;
+            boolean isOp = bot.getUserFromNick(channel, sender).hasPriv(User.Priv.OP);
+            if(cmdParts.length == 3 && cmdParts[2].equals("all")) { // kill everything
+                if(isOp) {
+                    tsdtv.kill(false);
+                    bot.sendMessage(channel, "The stream has been nuked");
+                } else {
+                    bot.sendMessage(channel, "Only ops can use that");
+                }
+            } else { // just kill whatever's playing now
+                if(tsdtv.getNowPlaying() == null) {
+                    bot.sendMessage(channel, "There's nothing playing");
+                } else if(isOp || ident.equals(tsdtv.getNowPlaying().getMovie().owner)) {
+                    tsdtv.kill(true);
+                    bot.sendMessage(channel, "The stream has been killed");
+                } else {
+                    bot.sendMessage(channel, "You don't have permission to end the current video");
+                }
             }
-            tsdtv.kill();
-            bot.sendMessage(channel, "The stream has been killed");
 
         } else if(subCmd.equals("reload")) {
 
