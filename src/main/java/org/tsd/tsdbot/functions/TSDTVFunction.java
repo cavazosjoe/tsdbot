@@ -7,10 +7,7 @@ import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
-import org.tsd.tsdbot.tsdtv.ShowInfo;
-import org.tsd.tsdbot.tsdtv.TSDTV;
-import org.tsd.tsdbot.tsdtv.TSDTVConstants;
-import org.tsd.tsdbot.tsdtv.TSDTVLibrary;
+import org.tsd.tsdbot.tsdtv.*;
 import org.tsd.tsdbot.tsdtv.model.TSDTVEpisode;
 import org.tsd.tsdbot.tsdtv.model.TSDTVShow;
 
@@ -50,6 +47,7 @@ public class TSDTVFunction extends MainFunction {
             return;
         }
 
+        boolean isOp = bot.getUserFromNick(channel, sender).hasPriv(User.Priv.OP);
         String subCmd = cmdParts[1];
 
         if(subCmd.equals("catalog")) {
@@ -84,23 +82,54 @@ public class TSDTVFunction extends MainFunction {
 
         } else if(subCmd.equals("kill")) {
 
-            boolean isOp = bot.getUserFromNick(channel, sender).hasPriv(User.Priv.OP);
-            if(cmdParts.length == 3 && cmdParts[2].equals("all")) { // kill everything
-                if(isOp) {
-                    tsdtv.kill(false);
-                    bot.sendMessage(channel, "The stream has been nuked");
-                } else {
-                    bot.sendMessage(channel, "Only ops can use that");
+            try {
+                if (cmdParts.length == 3 && cmdParts[2].equals("all")) { // kill everything
+                    if (isOp) {
+                        tsdtv.kill(false);
+                        bot.sendMessage(channel, "The stream has been nuked");
+                    } else {
+                        bot.sendMessage(channel, "Only ops can use that");
+                    }
+                } else { // just kill whatever's playing now
+                    if (isOp || tsdtv.authorized(ident)) {
+                        tsdtv.kill(true);
+                        bot.sendMessage(channel, "The stream has been killed");
+                    } else {
+                        bot.sendMessage(channel, "You don't have permission to end the current video");
+                    }
                 }
-            } else { // just kill whatever's playing now
-                if(tsdtv.getNowPlaying() == null) {
-                    bot.sendMessage(channel, "There's nothing playing");
-                } else if(isOp || ident.equals(tsdtv.getNowPlaying().getMovie().owner)) {
-                    tsdtv.kill(true);
-                    bot.sendMessage(channel, "The stream has been killed");
+            } catch (NoStreamRunningException nsre) {
+                bot.sendMessage(channel, "There's no stream running");
+            }
+
+        } else if(subCmd.equals("pause")) {
+
+            try {
+                if (isOp || tsdtv.authorized(ident)) {
+                    tsdtv.pause();
+                    bot.sendMessage(channel, "The stream has been paused");
                 } else {
-                    bot.sendMessage(channel, "You don't have permission to end the current video");
+                    bot.sendMessage(channel, "You don't have permission to pause this stream");
                 }
+            } catch (NoStreamRunningException nsre) {
+                bot.sendMessage(channel, "There's no stream running");
+            } catch (IllegalStateException ise) {
+                bot.sendMessage(channel, "Error: " + ise.getMessage());
+            }
+
+        } else if(subCmd.equals("unpause")) {
+
+            try {
+                if (isOp || tsdtv.authorized(ident)) {
+                    tsdtv.unpause();
+                    bot.sendMessage(channel, "The stream has been unpaused");
+                } else {
+                    bot.sendMessage(channel, "You don't have permission to unpause this stream");
+                }
+            } catch (NoStreamRunningException nsre) {
+                bot.sendMessage(channel, "There's no stream running");
+            } catch (IllegalStateException ise) {
+                bot.sendMessage(channel, "Error: " + ise.getMessage());
             }
 
         } else if(subCmd.equals("reload")) {

@@ -106,7 +106,7 @@
                            controls loop preload="auto" width="100%" height="750px"
                            poster="http://i.imgur.com/4Q7jsCr.jpg"
                            data-setup='{"autoplay": true}'>
-                        <source src="${directLink}" type='rtmp/mp4' />
+                        <source src="${directLink}" type='${videoFmt}' />
                         <p class="vjs-no-js">To view this video please enable JavaScript, and consider upgrading to a web browser that <a href="http://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a></p>
                     </video>
                     <a href="/tsdtv?vlc=yes">VLC version</a>
@@ -220,15 +220,15 @@
         </div>
     </div>
 </div>
-<div class="modal fade" id="episodeKillModal" tabindex="-1" role="dialog" aria-labelledby="episodeKillModalLabel" aria-hidden="true">
+<div class="modal fade" id="controlModal" tabindex="-1" role="dialog" aria-labelledby="control-modal-label" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="episodeKillModalLabel">Yes, sir</h4>
+                <h4 class="modal-title" id="control-modal-label">Nothing...</h4>
             </div>
-            <div class="modal-body">
-                The kill order has been sent
+            <div id="control-modal-body" class="modal-body">
+                Nothing...
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>

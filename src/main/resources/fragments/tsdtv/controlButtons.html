@@ -1,0 +1,54 @@
+<script>
+
+    function showCtrlModal(labelMsg, bodyMsg) {
+        $('#control-modal-label').text(labelMsg);
+        $('#control-modal-body').text(bodyMsg);
+        $('#controlModal').modal('show');
+    }
+
+    var killForm = $('#kill');
+    $(killForm).submit(function (event) {
+        $.ajax({
+            type: "POST",
+            url: "/tsdtv/control", //process to mail
+            data: { type: "kill" },
+            success: function (msg) {
+                showCtrlModal('Yes, sir', 'The kill order has been sent');
+            },
+            error: function(xhr, status, error) {
+                $.bootstrapGrowl(xhr.responseText, {
+                    type: 'danger',
+                    width: 'auto',
+                    allow_dismiss: true
+                });
+            }
+        });
+        event.preventDefault();
+    });
+
+    var pauseForm = $('#pause');
+    $(pauseForm).submit(function (event) {
+        $.ajax({
+            type: "POST",
+            url: "/tsdtv/control", //process to mail
+            data: { type: "pause" },
+            success: function (msg) {
+                showCtrlModal('Yes, sir', 'The un/pause order has been sent');
+            },
+            error: function(xhr, status, error) {
+                $.bootstrapGrowl(xhr.responseText, {
+                    type: 'danger',
+                    width: 'auto',
+                    allow_dismiss: true
+                });
+            }
+        });
+        event.preventDefault();
+    });
+</script>
+<form class="navbar-right" id="kill" name="kill">
+  <input class="btn btn-sm btn-danger" type="submit" value="Kill">
+</form>
+<form class="navbar-right" id="pause" name="kill">
+    <input class="btn btn-sm btn-warning" type="submit" value="Un/pause">
+</form>

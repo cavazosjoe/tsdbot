@@ -7,6 +7,7 @@ import org.apache.commons.io.IOUtils;
 import org.quartz.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.tsdtv.NoStreamRunningException;
 import org.tsd.tsdbot.tsdtv.TSDTV;
 import org.tsd.tsdbot.tsdtv.TSDTVLibrary;
 import org.tsd.tsdbot.tsdtv.TSDTVQueueItem;
@@ -69,11 +70,13 @@ public class TSDTVNowPlayingServlet extends HttpServlet {
                                         .replaceAll("%%show_name%%", episode.getShow().getPrettyName())
                                         .replaceAll("%%show_episode%%", episode.getPrettyName())
                         );
-                        if(ServletUtils.getIpAddress(req).equals(tsdtv.getNowPlaying().getMovie().owner)) {
-                            // add a kill button if the viewer queued this show
-                            String killButtonTemplate = IOUtils.toString(getClass().getClassLoader().getResourceAsStream("fragments/tsdtv/killButton.html"));
-                            out.append(killButtonTemplate);
-                        }
+                        try {
+                            if(tsdtv.authorized(ServletUtils.getIpAddress(req))) {
+                                // add some controls if this user owns this stream
+                                String controlButtonsTemplate = IOUtils.toString(getClass().getClassLoader().getResourceAsStream("fragments/tsdtv/controlButtons.html"));
+                                out.append(controlButtonsTemplate);
+                            }
+                        } catch (NoStreamRunningException nsre) {logger.error("NSRE", nsre);} // shouldn't happen
                     } else {
                         TSDTVFiller filler = (TSDTVFiller) tsdtv.getNowPlaying().getMovie().video;
                         out.append(filler.toString());

@@ -32,12 +32,13 @@ public class TSDTVStream extends Thread {
     private String ffmpegOut;
 
     private String ffmpegCommand;
-
     private TSDTVQueueItem movie = null;
-
     private File logFile = null;
-
     private boolean playNext = true;
+
+    private long pauseCooldown = 1000 * 10; // 10 seconds
+    private StreamState streamState = StreamState.created;
+    private long lastPaused = Long.MIN_VALUE;
 
     @Deprecated
     public TSDTVStream() {}
@@ -47,6 +48,11 @@ public class TSDTVStream extends Thread {
         this.logFile = new File(properties.getProperty("tsdtv.log"));
         this.ffmpegCommand = ffmpegExec + " " + ffmpegArgs + " " + ffmpegOut;
         this.ffmpegCommand = String.format(ffmpegCommand, movie.video.getFile().getAbsolutePath(), videoFilter);
+        this.streamState = StreamState.ready;
+    }
+
+    public StreamState getStreamState() {
+        return streamState;
     }
 
     public TSDTVQueueItem getMovie() {
@@ -56,6 +62,44 @@ public class TSDTVStream extends Thread {
     public void kill(boolean playNext) {
         this.playNext = playNext;
         this.interrupt();
+    }
+
+    public void pauseStream() throws IllegalStateException {
+        if(!streamState.equals(StreamState.running))
+            throw new IllegalStateException("Trying to pause a " + streamState + " stream");
+
+        if(System.currentTimeMillis() - lastPaused < pauseCooldown)
+            throw new IllegalStateException("Must wait 10 seconds between un/pauses");
+
+        ProcessBuilder pb = new ProcessBuilder("pkill", "-STOP", "-f", "ffmpeg");
+        try {
+            Process p = pb.start();
+            p.waitFor();
+            p.destroy();
+            this.streamState = StreamState.paused;
+            this.lastPaused = System.currentTimeMillis();
+        } catch (Exception e) {
+            logger.error("Error pausing stream", e);
+        }
+    }
+
+    public void resumeStream() throws IllegalStateException {
+        if(!streamState.equals(StreamState.paused))
+            throw new IllegalStateException("Trying to unpause a " + streamState + " stream");
+
+        if(System.currentTimeMillis() - lastPaused < pauseCooldown)
+            throw new IllegalStateException("Must wait 20 seconds between un/pauses");
+
+        ProcessBuilder pb = new ProcessBuilder("pkill", "-CONT", "-f", "ffmpeg");
+        try {
+            Process p = pb.start();
+            p.waitFor();
+            p.destroy();
+            this.streamState = StreamState.running;
+            this.lastPaused = System.currentTimeMillis();
+        } catch (Exception e) {
+            logger.error("Error unpausing stream", e);
+        }
     }
 
     @Override
@@ -75,6 +119,7 @@ public class TSDTVStream extends Thread {
             Process p = pb.start();
             try {
                 logger.info("TSDTV stream started, waiting...");
+                this.streamState = StreamState.running;
                 p.waitFor();
                 logger.info("TSDTV stream ended normally");
             } catch (InterruptedException e) {
@@ -85,9 +130,10 @@ public class TSDTVStream extends Thread {
             }
         } catch (IOException e) {
             logger.error("IOException", e);
+        } finally {
+            this.streamState = StreamState.ded;
         }
 
         tsdtv.finishStream(playNext);
     }
-
 }

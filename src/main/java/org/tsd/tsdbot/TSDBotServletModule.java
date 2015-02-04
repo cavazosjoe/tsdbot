@@ -32,8 +32,8 @@ public class TSDBotServletModule extends ServletModule {
         bind(TSDTVPlayServlet.class);
         serve("/tsdtv/play").with(TSDTVPlayServlet.class);
 
-        bind(TSDTVKillServlet.class);
-        serve("/tsdtv/kill").with(TSDTVKillServlet.class);
+        bind(TSDTVControlServlet.class);
+        serve("/tsdtv/control").with(TSDTVControlServlet.class);
 
         bind(TSDTVNowPlayingServlet.class);
         serve("/tsdtv/np").with(TSDTVNowPlayingServlet.class);

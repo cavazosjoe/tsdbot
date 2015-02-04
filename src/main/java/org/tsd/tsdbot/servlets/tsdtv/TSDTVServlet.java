@@ -34,10 +34,14 @@ public class TSDTVServlet extends HttpServlet {
     @Inject @Named("tsdtvDirect")
     private String tsdtvDirectLink;
 
+    @Inject @Named("videoFmt")
+    private String videoFmt;
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         req.setAttribute("catalog", library.getCatalog());
         req.setAttribute("directLink", tsdtvDirectLink);
+        req.setAttribute("videoFmt", videoFmt);
         req.getRequestDispatcher("/tsdtv.jsp").forward(req, resp);
     }
 }

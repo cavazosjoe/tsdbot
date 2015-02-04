@@ -199,6 +199,11 @@ public class TSDBotConfigModule extends AbstractModule {
                 .annotatedWith(Names.named("tsdtvDirect"))
                 .toInstance(properties.getProperty("tsdtv.directLink"));
 
+        // video format used by web player
+        bind(String.class)
+                .annotatedWith(Names.named("videoFmt"))
+                .toInstance(properties.getProperty("tsdtv.videoFmt"));
+
         bind(File.class)
                 .annotatedWith(Names.named("tsdtvLibrary"))
                 .toInstance(new File(properties.getProperty("tsdtv.catalog")));

@@ -15,6 +15,7 @@ import org.tsd.tsdbot.scheduled.SchedulerConstants;
 import org.tsd.tsdbot.tsdtv.model.*;
 import org.tsd.tsdbot.util.FuzzyLogic;
 
+import javax.naming.AuthenticationException;
 import java.io.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -541,11 +542,32 @@ public class TSDTV implements Persistable {
         }
     }
 
-    public void kill(boolean playNext) {
-        logger.info("Received kill signal...");
-        if(runningStream != null) {
+    public boolean authorized(String userId) throws NoStreamRunningException {
+        if(runningStream != null)
+            return userId.equalsIgnoreCase(runningStream.getMovie().owner);
+        else
+            throw new NoStreamRunningException();
+    }
+
+    public void kill(boolean playNext) throws NoStreamRunningException {
+        if(runningStream != null)
             runningStream.kill(playNext);
-        }
+        else
+            throw new NoStreamRunningException();
+    }
+
+    public void pause() throws NoStreamRunningException, IllegalStateException {
+        if(runningStream != null)
+            runningStream.pauseStream();
+        else
+            throw new NoStreamRunningException();
+    }
+
+    public void unpause() throws NoStreamRunningException, IllegalStateException {
+        if(runningStream != null)
+            runningStream.resumeStream();
+        else
+            throw new NoStreamRunningException();
     }
 
     public void finishStream(boolean playNext) {
@@ -555,6 +577,12 @@ public class TSDTV implements Persistable {
         } else {
             queue.clear();
         }
+    }
+
+    public StreamState getState() throws NoStreamRunningException {
+        if(runningStream == null)
+            throw new NoStreamRunningException();
+        return runningStream.getStreamState();
     }
 
     private int getCurrentEpisode(TSDTVShow show) throws SQLException {
