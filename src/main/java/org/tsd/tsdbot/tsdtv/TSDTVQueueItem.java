@@ -2,7 +2,6 @@ package org.tsd.tsdbot.tsdtv;
 
 import org.tsd.tsdbot.tsdtv.model.Streamable;
 
-import java.io.File;
 import java.util.Date;
 
 /**
@@ -15,11 +14,11 @@ public class TSDTVQueueItem {
     public boolean scheduled;
     public Date startTime;
     public Date endTime;
-    public String owner;    // the person who started this stream, and the person who can end it
-                            // from chat: ident | from web: ip addr | scheduled: null
+    public TSDTVUser owner;   // the person who started this stream, and the person who can end it
+                                    // web page -> InetAddress ;; chat -> nick
 
     public TSDTVQueueItem(Streamable video, TSDTV.TSDTVBlock block,
-                          boolean scheduled, Date startTime, String ffmpegExec, String owner) {
+                          boolean scheduled, Date startTime, String ffmpegExec, TSDTVUser owner) {
         this.video = video;
         this.block = block;
         this.scheduled = scheduled;

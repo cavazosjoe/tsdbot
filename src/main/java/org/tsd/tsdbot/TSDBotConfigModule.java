@@ -1,10 +1,12 @@
 package org.tsd.tsdbot;
 
 import com.gargoylesoftware.htmlunit.BrowserVersion;
+import com.gargoylesoftware.htmlunit.NicelyResynchronizingAjaxController;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -26,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.DBConnectionString;
+import org.tsd.tsdbot.database.JdbcConnectionProvider;
 import org.tsd.tsdbot.functions.*;
 import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.notifications.*;
@@ -119,8 +122,10 @@ public class TSDBotConfigModule extends AbstractModule {
 
         StringBuilder urlBuilder = new StringBuilder();
         urlBuilder.append("http://").append(hostname);
-        if(port != 80)
-            urlBuilder.append(":").append(port);
+        // I have an iptables entry that directs requests on the port specified in properties to port 80
+        // uncomment if you don't
+        //if(port != 80)
+        //    urlBuilder.append(":").append(port);
         String serverUrl = urlBuilder.toString();
         bind(String.class).annotatedWith(Names.named("serverUrl"))
                 .toInstance(serverUrl);
@@ -130,6 +135,8 @@ public class TSDBotConfigModule extends AbstractModule {
         bind(TSDBot.class).toInstance(bot);
 
         bind(Properties.class).toInstance(properties);
+
+        bind(PrintoutLibrary.class).asEagerSingleton();
 
         bind(HistoryBuff.class).asEagerSingleton();
         bind(Archivist.class).asEagerSingleton();
@@ -156,7 +163,8 @@ public class TSDBotConfigModule extends AbstractModule {
         bind(PoolingHttpClientConnectionManager.class).toInstance(poolingManager);
         bind(HttpClient.class).toInstance(httpClient);
 
-        WebClient webClient = new WebClient(BrowserVersion.CHROME);
+        WebClient webClient = new WebClient(BrowserVersion.FIREFOX_24);
+        webClient.setAjaxController(new NicelyResynchronizingAjaxController());
         webClient.getCookieManager().setCookiesEnabled(true);
         bind(WebClient.class).toInstance(webClient);
 
@@ -175,7 +183,9 @@ public class TSDBotConfigModule extends AbstractModule {
         bind(String.class)
                 .annotatedWith(DBConnectionString.class)
                 .toInstance(properties.getProperty("db.connstring"));
+
         bind(Connection.class).toProvider(DBConnectionProvider.class);
+        bind(JdbcConnectionSource.class).toProvider(JdbcConnectionProvider.class);
 
         bind(Random.class).toInstance(new Random());
 
@@ -251,7 +261,7 @@ public class TSDBotConfigModule extends AbstractModule {
         functionBinder.addBinding().to(TSDTVFunction.class);
         functionBinder.addBinding().to(Dorj.class);
         functionBinder.addBinding().to(OmniDB.class);
-
+        functionBinder.addBinding().to(DboFireteamFunction.class);
     }
 
     private void bindNotifiers() {

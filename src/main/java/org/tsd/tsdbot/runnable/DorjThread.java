@@ -58,7 +58,7 @@ public class DorjThread extends IRCListenerThread {
         this.historyBuff = historyBuff;
         this.msgFilterFact = msgFilterFact;
         this.dorjFunction = dorj;
-        dorjFormats.addAll(Arrays.asList(fmts));
+        dorjFormats.addAll(Arrays.asList(summoningFormats));
     }
 
     public void init(String channel, String senderIdent) {
@@ -68,7 +68,8 @@ public class DorjThread extends IRCListenerThread {
 
     @Override
     protected void handleStart() {
-        bot.sendMessage(channel, "D.O.R.J. system starting ... [ " + color("ONLINE", IRCColor.green) + " ] ... standing by ...");
+        String vid = IRCUtil.shortenUrl(startingVideos[random.nextInt(startingVideos.length)]);
+        bot.sendMessage(channel, "D.O.R.J. system starting ... [ " + color("ONLINE", IRCColor.green) + " ] " + vid);
     }
 
     // User object doesn't have ident?
@@ -135,7 +136,8 @@ public class DorjThread extends IRCListenerThread {
             bot.sendMessage(channel, "Failed to send the Dorj due to error :(");
         } else {
             // unsuccessful
-            bot.sendMessage(channel, "(the air goes quiet and the ground still as the Dorj returns to slumber)");
+            String vid = IRCUtil.shortenUrl(failureVideos[random.nextInt(failureVideos.length)]);
+            bot.sendMessage(channel, "(the air goes quiet and the ground still as the Dorj returns to slumber) " + vid);
         }
     }
 
@@ -185,11 +187,24 @@ public class DorjThread extends IRCListenerThread {
     public class OpRequiredException extends Exception {}
     public class BotDetectedException extends Exception {};
 
-    private static final String [] fmts = new String[]{
+    private static final String[] summoningFormats = new String[]{
             "(lights go dim as the " + bold("%s Dorj") + " hums to " + color("life", IRCColor.green) + ")",
             bold("%s Dorj") + " " + color("ONLINE", IRCColor.green) + "...",
             "Bringing " + bold("%s Dorj") + " online ... [ " + color("OK", IRCColor.green) + " ]",
             "Initiating " + bold("%s Dorj") + " subsystems... [ " + color("ONLINE", IRCColor.green) + " ]",
             bold("%s Dorj") + " primed and " + color("ready", IRCColor.green) + "!"
+    };
+
+    private static final String[] startingVideos = new String[]{
+            "https://www.youtube.com/watch?v=7OlcJzin3LE",  // big o - sure promise
+            "https://www.youtube.com/watch?v=52BcC9Qzl-Q",  // big o - stand a chance
+            "https://www.youtube.com/watch?v=MvsHNN0inzs",  // big o - stoning
+    };
+
+    private static final String[] failureVideos = new String[]{
+            "https://www.youtube.com/watch?v=o5brIeXY1U0",  // big o - evolution
+            "https://www.youtube.com/watch?v=2VPwmFPp9Kk",  // big o - sleep my dear
+            "https://www.youtube.com/watch?v=CilZSMpxboQ",  // big o - apologize
+            "https://www.youtube.com/watch?v=XH2KdaPpeZg"   // big o - name of god (choral)
     };
 }

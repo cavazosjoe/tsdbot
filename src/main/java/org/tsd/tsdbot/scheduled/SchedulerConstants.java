@@ -13,6 +13,7 @@ public class SchedulerConstants {
     public static final JobKey RECAP_JOB_KEY = new JobKey("recap-job");
     public static final JobKey PRINTOUT_JOB_KEY = new JobKey("printout-job");
     public static final JobKey NOTIFICATION_JOB_KEY = new JobKey("notify-job");
+    public static final JobKey DBO_FIRETEAM_JOB_KEY = new JobKey("dboft-job");
 
     //TSDTVBlockJob
     public static final String TSDTV_BLOCK_ID_FIELD = "id";

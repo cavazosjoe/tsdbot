@@ -3,7 +3,9 @@ package org.tsd.tsdbot.tsdtv;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
+import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import org.apache.commons.lang3.StringUtils;
+import org.jibble.pircbot.User;
 import org.quartz.*;
 import org.quartz.impl.matchers.GroupMatcher;
 import org.slf4j.Logger;
@@ -17,6 +19,7 @@ import org.tsd.tsdbot.util.FuzzyLogic;
 
 import javax.naming.AuthenticationException;
 import java.io.*;
+import java.net.InetAddress;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -48,7 +51,6 @@ public class TSDTV implements Persistable {
 
     private TSDTVLibrary library;
 
-    private Random random;
     private DBConnectionProvider connectionProvider;
     private InjectableStreamFactory streamFactory;
     private Scheduler scheduler;
@@ -57,16 +59,22 @@ public class TSDTV implements Persistable {
     private String ffmpegExec;
     private String tsdtvDirect;
 
+    private LockdownMode lockdownMode = LockdownMode.open;
+
     private LinkedList<TSDTVQueueItem> queue = new LinkedList<>(); // file paths
     private TSDTVStream runningStream;
 
     @Inject
-    public TSDTV(TSDBot bot, TSDTVLibrary library, Properties prop, Scheduler scheduler,
-                 DBConnectionProvider connectionProvider, InjectableStreamFactory streamFactory,
-                 Random random, @Named("serverUrl") String serverUrl,
-                 @Named("ffmpegExec") String ffmpegExec, @Named("tsdtvDirect") String tsdtvDirect) throws SQLException {
+    public TSDTV(TSDBot bot,
+                 TSDTVLibrary library,
+                 Properties prop,
+                 Scheduler scheduler,
+                 DBConnectionProvider connectionProvider,
+                 InjectableStreamFactory streamFactory,
+                 @Named("serverUrl") String serverUrl,
+                 @Named("ffmpegExec") String ffmpegExec,
+                 @Named("tsdtvDirect") String tsdtvDirect) throws SQLException {
         this.bot = bot;
-        this.random = random;
         this.library = library;
         this.scheduleLoc = prop.getProperty("tsdtv.schedule");
         this.scheduler = scheduler;
@@ -118,6 +126,11 @@ public class TSDTV implements Persistable {
         }
     }
 
+    @Override
+    public void initDB2(JdbcConnectionSource connectionSource) {
+
+    }
+
     public TreeMap<Date, TSDTVBlock> getRemainingBlocks(boolean todayOnly) throws SchedulerException {
         GregorianCalendar endOfToday = new GregorianCalendar();
         endOfToday.setTimeZone(timeZone);
@@ -137,6 +150,10 @@ public class TSDTV implements Persistable {
         }
 
         return jobMap;
+    }
+
+    public void setLockdownMode(LockdownMode lockdownMode) {
+        this.lockdownMode = lockdownMode;
     }
 
     public TSDTVStream getNowPlaying() {
@@ -212,28 +229,90 @@ public class TSDTV implements Persistable {
     /**
      * method to play a movie from the chat. returns true if playing immediately, false if queued
      */
-    public boolean playFromChat(TSDTVEpisode episode, String ident) throws ShowNotFoundException {
-        TSDTVQueueItem program = new TSDTVQueueItem(episode, null, false, getStartDateForQueueItem(), ffmpegExec, ident);
-        if(isRunning()) {
-            queue.addLast(program);
-            return false;
+    public boolean playFromChat(TSDTVEpisode episode, User user) throws StreamLockedException {
+        if(user.hasPriv(User.Priv.OP) || !lockdownMode.equals(LockdownMode.locked)) {
+            TSDTVUser tsdtvUser = new TSDTVChatUser(user);
+            TSDTVQueueItem program = new TSDTVQueueItem(episode, null, false, getStartDateForQueueItem(), ffmpegExec, tsdtvUser);
+            if (isRunning()) {
+                queue.addLast(program);
+                return false;
+            } else {
+                play(program);
+                return true;
+            }
         } else {
-            play(program);
-            return true;
+            throw new StreamLockedException("The stream is currently locked down");
         }
     }
 
     /**
      * method to play a movie from the webpage catalog
      */
-    public void playFromCatalog(TSDTVEpisode episode, String ipAddr) throws ShowNotFoundException {
-        TSDTVQueueItem program = new TSDTVQueueItem(episode, null, false, getStartDateForQueueItem(), ffmpegExec, ipAddr);
-        if(isRunning()) {
-            queue.addLast(program);
-            bot.broadcast(color("[TSDTV]", IRCColor.blue)
-                    + " A show has been enqueued via web: " + episode.getShow().getPrettyName() + " - " + episode.getPrettyName());
+    public void playFromWeb(TSDTVEpisode episode, InetAddress inetAddress) throws StreamLockedException {
+        if(lockdownMode.equals(LockdownMode.open)) {
+            TSDTVUser tsdtvUser = new TSDTVWebUser(inetAddress);
+            TSDTVQueueItem program = new TSDTVQueueItem(episode, null, false, getStartDateForQueueItem(), ffmpegExec, tsdtvUser);
+            if (isRunning()) {
+                queue.addLast(program);
+                bot.broadcast(color("[TSDTV]", IRCColor.blue)
+                        + " A show has been enqueued via web: " + episode.getShow().getPrettyName() + " - " + episode.getPrettyName());
+            } else {
+                play(program);
+            }
         } else {
-            play(program);
+            throw new StreamLockedException("The stream is locked from web access");
+        }
+    }
+
+    public boolean authorized(TSDTVUser tsdtvUser) throws NoStreamRunningException {
+        if(runningStream != null) {
+            return tsdtvUser.isOp() || tsdtvUser.equals(runningStream.getMovie().owner);
+        } else {
+            throw new NoStreamRunningException();
+        }
+    }
+
+    public void kill(TSDTVUser user) throws NoStreamRunningException, AuthenticationException {
+        if(runningStream != null) {
+            if(authorized(user))
+                runningStream.kill(true);
+            else
+                throw new AuthenticationException();
+        } else {
+            throw new NoStreamRunningException();
+        }
+    }
+
+    public void killAll(TSDTVUser user) throws AuthenticationException, NoStreamRunningException {
+        if(runningStream != null) {
+            if(user.isOp())
+                runningStream.kill(true);
+            else
+                throw new AuthenticationException();
+        } else {
+            throw new NoStreamRunningException();
+        }
+    }
+
+    public void pause(TSDTVUser user) throws NoStreamRunningException, IllegalStateException, AuthenticationException {
+        if(runningStream != null) {
+            if(authorized(user))
+                runningStream.pauseStream();
+            else
+                throw new AuthenticationException();
+        } else {
+            throw new NoStreamRunningException();
+        }
+    }
+
+    public void unpause(TSDTVUser user) throws NoStreamRunningException, IllegalStateException, AuthenticationException {
+        if(runningStream != null) {
+            if(authorized(user))
+                runningStream.resumeStream();
+            else
+                throw new AuthenticationException();
+        } else {
+            throw new NoStreamRunningException();
         }
     }
 
@@ -260,8 +339,6 @@ public class TSDTV implements Persistable {
         // use offset to handle replays/reruns
         HashMap<TSDTVShow, Integer> episodeNums = new HashMap<>(); // show -> episode num
         for(String showName : blockInfo.scheduleParts) {
-
-            HashMap<String, String> metadata = null;
 
             FillerType fillerType = FillerType.fromSchedule(showName);
             if(fillerType != null) {
@@ -305,7 +382,7 @@ public class TSDTV implements Persistable {
                         episodeNum = 1; // wrap if we reached the end
                     else
                         episodeNum = episodeNums.get(show)+1;
-                    episodeNums.put(show,episodeNum);
+                    episodeNums.put(show, episodeNum);
                 }
 
                 logger.info("Looking for episode {} of {}", episodeNum, show.getRawName());
@@ -512,7 +589,8 @@ public class TSDTV implements Persistable {
 
                         LinkedList<String> shows = new LinkedList<>();
                         while(!(line = br.readLine()).equals("ENDBLOCK")) {
-                            shows.add(line);
+                            if(!line.startsWith("#"))
+                                shows.add(line);
                         }
 
                         String prettySchedule = StringUtils.join(shows, SchedulerConstants.TSDTV_BLOCK_SCHEDULE_DELIMITER);
@@ -540,34 +618,6 @@ public class TSDTV implements Persistable {
         } catch (Exception e) {
             logger.error("Error building TSDTV schedule", e);
         }
-    }
-
-    public boolean authorized(String userId) throws NoStreamRunningException {
-        if(runningStream != null)
-            return userId.equalsIgnoreCase(runningStream.getMovie().owner);
-        else
-            throw new NoStreamRunningException();
-    }
-
-    public void kill(boolean playNext) throws NoStreamRunningException {
-        if(runningStream != null)
-            runningStream.kill(playNext);
-        else
-            throw new NoStreamRunningException();
-    }
-
-    public void pause() throws NoStreamRunningException, IllegalStateException {
-        if(runningStream != null)
-            runningStream.pauseStream();
-        else
-            throw new NoStreamRunningException();
-    }
-
-    public void unpause() throws NoStreamRunningException, IllegalStateException {
-        if(runningStream != null)
-            runningStream.resumeStream();
-        else
-            throw new NoStreamRunningException();
     }
 
     public void finishStream(boolean playNext) {
@@ -622,6 +672,11 @@ public class TSDTV implements Persistable {
         return viewerCount;
     }
 
+    /**
+     * Produces links to the TSDTV web player and direct stream (optional)
+     * @param includeDirect include the direct stream link
+     * @return the links
+     */
     public String getLinks(boolean includeDirect) {
         StringBuilder sb = new StringBuilder();
         sb.append(serverUrl).append("/tsdtv");
@@ -630,6 +685,11 @@ public class TSDTV implements Persistable {
         return sb.toString();
     }
 
+    /**
+     * Gets the audio, video, and subtitle streams contained in a video
+     * @param video the video in question
+     * @return a mapping of track number to stream type
+     */
     private HashMap<Integer, StreamType> getVideoStreams(Streamable video) {
 
         Pattern trackPattern = Pattern.compile("^Track ID\\s+(\\d+):\\s+(\\w+)\\s+\\(.*\\)$", Pattern.DOTALL);
@@ -644,7 +704,6 @@ public class TSDTV implements Persistable {
             BufferedReader br = new BufferedReader(reader);
             String line;
             while( (line = br.readLine()) != null ) {
-                logger.info(line);
                 if(line.contains("Chapters")) break;
                 if(line.contains("Track ID")) {
                     Matcher m = trackPattern.matcher(line);
@@ -663,6 +722,11 @@ public class TSDTV implements Persistable {
         return streams;
     }
 
+    /**
+     * Determines whether or not a video has a stream with subtitles
+     * @param video the video in question
+     * @return true if the video has subtitles
+     */
     private boolean hasSubtitles(Streamable video) {
         HashMap<Integer, StreamType> streams = getVideoStreams(video);
         for(Integer streamNum : streams.keySet()) {
@@ -673,15 +737,18 @@ public class TSDTV implements Persistable {
         return false;
     }
 
+    /**
+     * Finds the starting time for a video being played or added to the queue
+     * @return the time the video will start
+     */
     private Date getStartDateForQueueItem() {
-        if(isRunning()) {
-            if(!queue.isEmpty()) {
-                return queue.getLast().endTime;
-            } else {
+        if(queue.isEmpty()) {
+            if(isRunning())
                 return runningStream.getMovie().endTime;
-            }
+            else
+                return new Date();
         } else {
-            return new Date();
+            return queue.getLast().endTime;
         }
     }
 
@@ -714,4 +781,5 @@ public class TSDTV implements Persistable {
             return null;
         }
     }
+
 }

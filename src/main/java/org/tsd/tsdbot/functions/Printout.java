@@ -2,6 +2,7 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.google.inject.name.Named;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.imgscalr.Scalr;
@@ -9,6 +10,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.PrintoutLibrary;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.ImageUtils;
 import org.tsd.tsdbot.util.MiscUtils;
@@ -18,14 +20,12 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Properties;
-import java.util.Random;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -48,20 +48,26 @@ public class Printout extends MainFunction {
     private static final String TSDBOT_IP = "23.252.62.178";
     private static final String GIS_REFERRER = "http://www.teamschoolyd.org";
 
+    private String serverUrl;
     private Random random;
-    private String printoutDir;
+    private PrintoutLibrary printoutLibrary;
 
     // set of people who can trigger a printout with a deliberate repitition
     // e.g. "TSDBot printout of two bears" -> "Not Computing." -> "Two. Bears." -> [img]
     private HashSet<String> notComputing = new HashSet<>();
 
     @Inject
-    public Printout(TSDBot bot, Random random, Properties properties) {
+    public Printout(
+            TSDBot bot,
+            Random random,
+            PrintoutLibrary library,
+            @Named("serverUrl") String serverUrl) {
         super(bot);
         this.random = random;
+        this.serverUrl = serverUrl;
+        this.printoutLibrary = library;
         this.description = "Get a printout";
         this.usage = "USAGE: TSDBot can you get me a printout of [query]";
-        this.printoutDir = properties.getProperty("printout.dir");
     }
 
     @Override
@@ -169,11 +175,13 @@ public class Printout extends MainFunction {
 
                 BufferedImage overlayedImage = ImageUtils.overlayImages(bg, resizedImage);
 
-                if (overlayedImage != null){
-                    String fileName = MiscUtils.getRandomString() + "."+outputFileType;
-                    ImageIO.write(overlayedImage, outputFileType, new File(printoutDir + fileName));
-                    bot.sendMessage(channel, "http://irc.teamschoolyd.org/printouts/" + fileName);
-                    return;
+                if (overlayedImage != null) {
+                    try(ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                        String id = MiscUtils.getRandomString();
+                        ImageIO.write(overlayedImage, outputFileType, baos);
+                        printoutLibrary.addPrintout(id, baos.toByteArray());
+                        bot.sendMessage(channel, serverUrl + "/printouts/" + id);
+                    }
                 } else {
                     throw new Exception("Could not generate image for an unknown reason");
                 }

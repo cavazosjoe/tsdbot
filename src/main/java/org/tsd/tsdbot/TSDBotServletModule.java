@@ -1,6 +1,7 @@
 package org.tsd.tsdbot;
 
 import com.google.inject.servlet.ServletModule;
+import org.tsd.tsdbot.servlets.PrintoutServlet;
 import org.tsd.tsdbot.servlets.StatusServlet;
 import org.tsd.tsdbot.servlets.hustle.HustleChartServlet;
 import org.tsd.tsdbot.servlets.hustle.HustleServlet;
@@ -38,6 +39,12 @@ public class TSDBotServletModule extends ServletModule {
         bind(TSDTVNowPlayingServlet.class);
         serve("/tsdtv/np").with(TSDTVNowPlayingServlet.class);
 
+
+        /**
+         * Printouts
+         */
+        bind(PrintoutServlet.class);
+        serve("/printouts/*").with(PrintoutServlet.class);
 
         /**
          * Status

@@ -11,6 +11,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.InetAddress;
 
 /**
  * Created by Joe on 1/12/2015.
@@ -33,9 +34,12 @@ public class TSDTVPlayServlet extends HttpServlet {
         String show = req.getParameter("show");
         try {
             TSDTVEpisode episode = library.getShow(show).getEpisode(fileName);
-            tsdtv.playFromCatalog(episode, ServletUtils.getIpAddress(req));
+            InetAddress inetAddress = InetAddress.getByName(ServletUtils.getIpAddress(req));
+            tsdtv.playFromWeb(episode, inetAddress);
         } catch (ShowNotFoundException snfe) {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Could not find file matching show " + show + " and episode " + fileName);
+        } catch (StreamLockedException e) {
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "The stream is currently locked from web access");
         }
     }
 }

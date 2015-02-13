@@ -7,10 +7,7 @@ import org.apache.commons.io.IOUtils;
 import org.quartz.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.tsdtv.NoStreamRunningException;
-import org.tsd.tsdbot.tsdtv.TSDTV;
-import org.tsd.tsdbot.tsdtv.TSDTVLibrary;
-import org.tsd.tsdbot.tsdtv.TSDTVQueueItem;
+import org.tsd.tsdbot.tsdtv.*;
 import org.tsd.tsdbot.tsdtv.model.TSDTVEpisode;
 import org.tsd.tsdbot.tsdtv.model.TSDTVFiller;
 import org.tsd.tsdbot.tsdtv.model.TSDTVShow;
@@ -23,6 +20,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -71,7 +70,7 @@ public class TSDTVNowPlayingServlet extends HttpServlet {
                                         .replaceAll("%%show_episode%%", episode.getPrettyName())
                         );
                         try {
-                            if(tsdtv.authorized(ServletUtils.getIpAddress(req))) {
+                            if(tsdtv.authorized(new TSDTVWebUser(InetAddress.getByName(ServletUtils.getIpAddress(req))))) {
                                 // add some controls if this user owns this stream
                                 String controlButtonsTemplate = IOUtils.toString(getClass().getClassLoader().getResourceAsStream("fragments/tsdtv/controlButtons.html"));
                                 out.append(controlButtonsTemplate);

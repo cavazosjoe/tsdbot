@@ -56,6 +56,19 @@
       <name>tsdbot-local</name>
       <url>file:${project.basedir}/repo</url>
     </repository>
+    <repository>
+      <snapshots>
+        <enabled>true</enabled>
+        <updatePolicy>always</updatePolicy>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <id>sonatype-nexus-snapshots</id>
+      <name>Sonatype Nexus Snapshots</name>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      <layout>default</layout>
+    </repository>
   </repositories>
 
   <dependencies>
@@ -64,6 +77,18 @@
       <groupId>it.sauronsoftware</groupId>
       <artifactId>feed4j</artifactId>
       <version>1.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.j256.ormlite</groupId>
+      <artifactId>ormlite-jdbc</artifactId>
+      <version>4.48</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.reflections</groupId>
+      <artifactId>reflections</artifactId>
+      <version>0.9.9</version>
     </dependency>
 
     <!--begin jetty stuff-->
@@ -151,7 +176,7 @@
     <dependency>
       <groupId>net.sourceforge.htmlunit</groupId>
       <artifactId>htmlunit</artifactId>
-      <version>2.15</version>
+      <version>2.16-SNAPSHOT</version>
     </dependency>
 
     <dependency>

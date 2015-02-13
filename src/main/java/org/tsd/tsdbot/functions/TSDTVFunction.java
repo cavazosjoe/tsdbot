@@ -11,8 +11,11 @@ import org.tsd.tsdbot.tsdtv.*;
 import org.tsd.tsdbot.tsdtv.model.TSDTVEpisode;
 import org.tsd.tsdbot.tsdtv.model.TSDTVShow;
 
+import javax.naming.AuthenticationException;
 import java.sql.SQLException;
 import java.util.Random;
+
+import static org.tsd.tsdbot.util.IRCUtil.*;
 
 /**
  * Created by Joe on 1/12/2015.
@@ -47,6 +50,8 @@ public class TSDTVFunction extends MainFunction {
             return;
         }
 
+        User user = bot.getUserFromNick(channel, sender);
+
         boolean isOp = bot.getUserFromNick(channel, sender).hasPriv(User.Priv.OP);
         String subCmd = cmdParts[1];
 
@@ -72,8 +77,12 @@ public class TSDTVFunction extends MainFunction {
                 TSDTVShow show = library.getShow(cmdParts[2]);
                 TSDTVEpisode episode = (TSDTVConstants.RANDOM_QUERY.equals(cmdParts[3])) ?
                         show.getRandomEpisode(random) : show.getEpisode(cmdParts[3]);
-                if(!tsdtv.playFromChat(episode, ident)) {
-                    bot.sendMessage(channel, "There is already a stream running. Your show has been enqueued");
+                try {
+                    if (!tsdtv.playFromChat(episode, user)) {
+                        bot.sendMessage(channel, "There is already a stream running. Your show has been enqueued");
+                    }
+                } catch (StreamLockedException sle) {
+                    bot.sendMessage(channel, "The stream is currently locked down");
                 }
             } catch (Exception e) {
                 logger.error("Error playing from chat", e);
@@ -84,17 +93,17 @@ public class TSDTVFunction extends MainFunction {
 
             try {
                 if (cmdParts.length == 3 && cmdParts[2].equals("all")) { // kill everything
-                    if (isOp) {
-                        tsdtv.kill(false);
+                    try {
+                        tsdtv.killAll(new TSDTVChatUser(user));
                         bot.sendMessage(channel, "The stream has been nuked");
-                    } else {
+                    } catch (AuthenticationException e) {
                         bot.sendMessage(channel, "Only ops can use that");
                     }
                 } else { // just kill whatever's playing now
-                    if (isOp || tsdtv.authorized(ident)) {
-                        tsdtv.kill(true);
-                        bot.sendMessage(channel, "The stream has been killed");
-                    } else {
+                    try {
+                        tsdtv.kill(new TSDTVChatUser(user));
+                        bot.sendMessage(channel, "The current video has been killed");
+                    } catch (AuthenticationException e) {
                         bot.sendMessage(channel, "You don't have permission to end the current video");
                     }
                 }
@@ -105,11 +114,11 @@ public class TSDTVFunction extends MainFunction {
         } else if(subCmd.equals("pause")) {
 
             try {
-                if (isOp || tsdtv.authorized(ident)) {
-                    tsdtv.pause();
-                    bot.sendMessage(channel, "The stream has been paused");
-                } else {
-                    bot.sendMessage(channel, "You don't have permission to pause this stream");
+                try {
+                    tsdtv.pause(new TSDTVChatUser(user));
+                    bot.sendMessage(channel, "The stream has been paused. \".tsdtv unpause\" to resume");
+                } catch (AuthenticationException e) {
+                    bot.sendMessage(channel, "You don't have permission to pause the current stream");
                 }
             } catch (NoStreamRunningException nsre) {
                 bot.sendMessage(channel, "There's no stream running");
@@ -117,19 +126,39 @@ public class TSDTVFunction extends MainFunction {
                 bot.sendMessage(channel, "Error: " + ise.getMessage());
             }
 
-        } else if(subCmd.equals("unpause")) {
+        } else if(subCmd.equals("unpause") || subCmd.equals("resume")) {
 
             try {
-                if (isOp || tsdtv.authorized(ident)) {
-                    tsdtv.unpause();
-                    bot.sendMessage(channel, "The stream has been unpaused");
-                } else {
-                    bot.sendMessage(channel, "You don't have permission to unpause this stream");
+                try {
+                    tsdtv.unpause(new TSDTVChatUser(user));
+                    bot.sendMessage(channel, "The stream has been resumed");
+                } catch (AuthenticationException e) {
+                    bot.sendMessage(channel, "You don't have permission to resume the current stream");
                 }
             } catch (NoStreamRunningException nsre) {
                 bot.sendMessage(channel, "There's no stream running");
             } catch (IllegalStateException ise) {
                 bot.sendMessage(channel, "Error: " + ise.getMessage());
+            }
+
+        } else if(subCmd.equals("lock") || subCmd.equals("unlock")) {
+
+            if(!user.hasPriv(User.Priv.OP)) {
+                bot.sendMessage(channel, "Only ops can use that");
+                return;
+            }
+
+            if(subCmd.equals("unlock")) {
+                tsdtv.setLockdownMode(LockdownMode.open);
+                bot.sendMessage(channel, "Unlocking stream ... [ " + color("UNLOCKED", IRCColor.green) + " ]");
+            } else {
+                if(cmdParts.length == 3 && cmdParts[2].equals("all")) {
+                    tsdtv.setLockdownMode(LockdownMode.locked);
+                    bot.sendMessage(channel, "Locking stream ... [ " + color("LOCKED", IRCColor.red) + " ] ");
+                } else {
+                    tsdtv.setLockdownMode(LockdownMode.chat_only);
+                    bot.sendMessage(channel, "Web access: [" + color("LOCKED", IRCColor.red) + "] | Chat access: [" + color("UNLOCKED", IRCColor.green) + "]");
+                }
             }
 
         } else if(subCmd.equals("reload")) {

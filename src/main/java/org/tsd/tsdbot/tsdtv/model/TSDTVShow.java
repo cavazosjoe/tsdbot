@@ -93,6 +93,23 @@ public class TSDTVShow implements Comparable<TSDTVShow> {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        TSDTVShow tsdtvShow = (TSDTVShow) o;
+
+        if (!directory.equals(tsdtvShow.directory)) return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return directory.hashCode();
+    }
+
+    @Override
     public int compareTo(TSDTVShow o) {
         return getRawName().compareToIgnoreCase(o.getRawName());
     }

@@ -175,6 +175,10 @@ public class TSDBotLauncher {
                     .withIdentity(SchedulerConstants.NOTIFICATION_JOB_KEY)
                     .build();
 
+            JobDetail fireteamJob = newJob(DboFireteamSweeperJob.class)
+                    .withIdentity(SchedulerConstants.DBO_FIRETEAM_JOB_KEY)
+                    .build();
+
             CronTrigger logCleanerTrigger = newTrigger()
                     .withSchedule(cronSchedule("0 0 4 ? * MON")) //4AM every monday
                     .build();
@@ -191,10 +195,15 @@ public class TSDBotLauncher {
                     .withSchedule(cronSchedule("0 0/5 * * * ?")) //every 5 minutes
                     .build();
 
+            CronTrigger fireteamTrigger = newTrigger()
+                    .withSchedule(cronSchedule("0 0/7 * * * ?"))
+                    .build();
+
             scheduler.scheduleJob(logCleanerJob, logCleanerTrigger);
             scheduler.scheduleJob(recapCleanerJob, recapCleanerTrigger);
             scheduler.scheduleJob(printoutCleanerJob, printoutCleanerTrigger);
             scheduler.scheduleJob(notificationJob, notifyTrigger);
+            scheduler.scheduleJob(fireteamJob, fireteamTrigger);
 
             scheduler.start();
 
@@ -202,22 +211,4 @@ public class TSDBotLauncher {
             log.error("ERROR INITIALIZING SCHEDULED SERVICES", e);
         }
     }
-
-//    private static void writeCommandList(Properties properties) {
-//        String cmdListLoc = properties.getProperty("commandList");
-//        log.info("Writing command list to {}...", cmdListLoc);
-//        try(BufferedWriter commandListWriter = new BufferedWriter(new FileWriter(cmdListLoc))) {
-//            boolean first = true;
-//            for(Command cmd : Command.values()) {
-//                if(cmd.getDesc() != null) {
-//                    if(!first) commandListWriter.write("-----------------------------------------\n");
-//                    commandListWriter.write(cmd.getDesc() + "\n");
-//                    commandListWriter.write(cmd.getUsage() + "\n");
-//                    first = false;
-//                }
-//            }
-//        } catch (Exception e) {
-//            log.error("ERROR PRINTING COMMAND LIST", e);
-//        }
-//    }
 }
