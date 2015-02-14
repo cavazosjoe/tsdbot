@@ -19,12 +19,15 @@ import org.tsd.tsdbot.notifications.TwitterManager;
 import org.tsd.tsdbot.runnable.InjectableIRCThreadFactory;
 import org.tsd.tsdbot.runnable.ThreadManager;
 import org.tsd.tsdbot.runnable.TweetPoll;
+import org.tsd.tsdbot.util.IRCUtil;
 import twitter4j.Query;
 import twitter4j.QueryResult;
 import twitter4j.Status;
 import twitter4j.TwitterException;
 
+import java.util.Collections;
 import java.util.LinkedList;
+import java.util.Random;
 
 /**
  * Created by Joe on 5/24/14.
@@ -38,9 +41,10 @@ public class Twitter extends MainFunction {
     private InjectableIRCThreadFactory threadFactory;
     private TwitterManager twitterManager;
     private String mashapeKey;
+    private Random random;
 
     @Inject
-    public Twitter(TSDBot bot, TwitterManager mgr, ThreadManager threadManager,
+    public Twitter(TSDBot bot, TwitterManager mgr, ThreadManager threadManager, Random random,
                    InjectableIRCThreadFactory threadFactory, @Named("mashapeKey") String mashapeKey) {
         super(bot);
         this.description = "Twitter utility: send and receive tweets from our exclusive @TSD_IRC Twitter account! " +
@@ -51,6 +55,7 @@ public class Twitter extends MainFunction {
         this.threadManager = threadManager;
         this.threadFactory = threadFactory;
         this.mashapeKey = mashapeKey;
+        this.random = random;
     }
 
     @Override
@@ -271,11 +276,15 @@ public class Twitter extends MainFunction {
                     boolean reliable;
 //                    double confidence = 0;
                     int i=0;
+                    LinkedList<Status> tweets = new LinkedList<>(result.getTweets());
+                    Collections.shuffle(tweets);
                     try {
                         while (chosenTweet == null && i < count) {
-                            evaluatingTweet = result.getTweets().get(i);
-                            // discard tweets that are replies
-                            if(evaluatingTweet.getInReplyToUserId() < 0 && evaluatingTweet.getInReplyToStatusId() < 0) {
+                            evaluatingTweet = tweets.get(i);
+                            // discard tweets that are replies or retweets
+                            if(evaluatingTweet.getInReplyToUserId() < 0
+                                    && evaluatingTweet.getInReplyToStatusId() < 0
+                                    && !evaluatingTweet.isRetweet()) {
                                 response = Unirest.post("https://community-language-detection.p.mashape.com/detect?key=8de41710a3d110c42095b6b87ee7ad5e")
                                         .header("X-Mashape-Key", mashapeKey)
                                         .header("Content-Type", "application/x-www-form-urlencoded")
@@ -296,12 +305,17 @@ public class Twitter extends MainFunction {
                         if(chosenTweet == null) {
                             bot.sendMessage(channel, "Searched " + i + " tweets but couldn't find any English ones");
                         } else {
+
+                            StringBuilder urlBuilder = new StringBuilder();
+                            urlBuilder.append("http://twitter.com/").append(chosenTweet.getUser().getScreenName())
+                                    .append("/status/").append(chosenTweet.getId());
+                            String shortUrl = IRCUtil.shortenUrl(urlBuilder.toString());
+
                             StringBuilder twBuilder = new StringBuilder();
                             twBuilder.append("@").append(chosenTweet.getUser().getScreenName())
-                                    .append(": ").append(chosenTweet.getText()).append(" ( ")
-                                    .append("http://twitter.com/").append(chosenTweet.getUser().getScreenName())
-                                    .append("/status/").append(chosenTweet.getId()).append(" )");
-                            bot.sendMessage(channel, "[TWITTER] " + twBuilder.toString());
+                                    .append(": ").append(chosenTweet.getText()).append(" -- ").append(shortUrl);
+
+                            bot.sendMessage(channel, twBuilder.toString());
                         }
 
                     } catch (UnirestException e) {
