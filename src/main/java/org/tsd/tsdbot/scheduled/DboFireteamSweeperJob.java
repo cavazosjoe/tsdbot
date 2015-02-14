@@ -255,6 +255,7 @@ public class DboFireteamSweeperJob implements Job {
                             for(FireteamRSVP r : rsvpsOnSite) {
                                 if(r.equals(rsvpInDb)) {
                                     onSite = r;
+                                    onSite.setId(rsvpInDb.getId());
                                     break;
                                 }
                             }
@@ -498,7 +499,7 @@ public class DboFireteamSweeperJob implements Job {
                 else
                     sb.append(fireteam.getTitle());
 
-                sb.append(" (").append(fireteam.getPlatform().getDisplayString()).append(")");
+                sb.append(" (").append(fireteam.getPlatform().getDisplayString()).append(") ");
                 sb.append(changedRsvp.getGamertag());
 
                 for(String[] change : rsvpChanges.get(changedRsvp)) {
