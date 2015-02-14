@@ -163,6 +163,13 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
         }
     }
 
+    public QueryResult search(String queryString, int limit) throws TwitterException {
+        Query q = new Query(queryString);
+        if(limit > 0)
+            q.setCount(limit);
+        return twitter.search(q);
+    }
+
     public void checkRateLimit() throws TwitterException {
         Map<String, RateLimitStatus> rateLimitStatusMap = twitter.getRateLimitStatus();
         for(String key : rateLimitStatusMap.keySet()) {

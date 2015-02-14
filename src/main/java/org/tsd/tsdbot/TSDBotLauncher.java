@@ -72,9 +72,9 @@ public class TSDBotLauncher {
         log.info("ident={}, nick={}, pass=***, server={}, channels={}, stage={}",
                 new Object[]{ident, nick, server, channels, stage});
 
-        TSDBot bot = new TSDBot(ident, nick, pass, server, channels);
+        TSDBot bot = new TSDBot(ident, nick, pass, server);
 
-        TSDBotConfigModule module = new TSDBotConfigModule(bot, properties, stage);
+        TSDBotConfigModule module = new TSDBotConfigModule(bot, properties, stage, channels);
         TSDBotServletModule servletModule = new TSDBotServletModule();
 
         Injector injector = Guice.createInjector(module, servletModule);
@@ -83,6 +83,11 @@ public class TSDBotLauncher {
 
         log.info("TSDBot loaded successfully. Starting server...");
         initializeJettyServer(injector);
+
+        for(String channel : channels) {
+            bot.joinChannel("#"+channel);
+            log.info("Joined channel {}", channel);
+        }
     }
 
     private static void initializeJettyServer(Injector injector) throws Exception {

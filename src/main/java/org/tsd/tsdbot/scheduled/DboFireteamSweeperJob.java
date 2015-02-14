@@ -14,10 +14,12 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.Stage;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.JdbcConnectionProvider;
 import org.tsd.tsdbot.model.dboft.*;
 import org.tsd.tsdbot.util.HtmlSanitizer;
+import org.tsd.tsdbot.util.IRCUtil;
 
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
@@ -34,10 +36,10 @@ public class DboFireteamSweeperJob implements Job {
 
     private static final Pattern fireteamIdPattern = Pattern.compile("<td class=\"event-name\">.*?href=\"/ftb/(\\d+)\".*?", Pattern.DOTALL);
 
-    // matches if the event has a user-defined title
+    // matches the "subtitle" div if the user DID supply a title -- the event is included in the subtitle
     private static final Pattern withTitlePattern = Pattern.compile("\\((.*?): (Normal|Hard), Level (\\d+)\\)", Pattern.DOTALL);
 
-    // matches if the event has NO title specified
+    // matches the "subtitle" div if the user did NOT supply a title -- the fireteam's title is the event name
     private static final Pattern noTitlePattern = Pattern.compile("\\((Normal|Hard), Level (\\d+)\\)", Pattern.DOTALL);
 
     private static final Pattern platformPattern = Pattern.compile("<span class=\"data platform (\\w+)\"", Pattern.DOTALL);
@@ -62,8 +64,10 @@ public class DboFireteamSweeperJob implements Job {
     @Inject
     protected JdbcConnectionProvider connectionProvider;
 
-//    private String destinyChannel = "#destiny";
-    private String destinyChannel = "#tsd";
+    @Inject
+    protected Stage stage;
+
+    private String destinyChannel;
     private Dao<Fireteam, Integer> fireteamDao;
     private Dao<FireteamRSVP, Integer> rsvpDao;
     private Dao<DboUser, Integer> userDao;
@@ -73,7 +77,7 @@ public class DboFireteamSweeperJob implements Job {
 
     @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
-
+        this.destinyChannel = (this.stage.equals(Stage.dev)) ? "#tsdbot" : "#tsd";
         JdbcConnectionSource connectionSource = null;
         try {
 
@@ -116,7 +120,8 @@ public class DboFireteamSweeperJob implements Job {
                         fireteam.setDeleted(true);
                         fireteamsInDb.remove(fireteam);
                         fireteamDao.update(fireteam);
-                        bot.sendMessage(destinyChannel, "[DBOFT] [EVENT COMPLETE] " + fireteam.toString());
+                        String shortUrl = IRCUtil.shortenUrl(fireteam.getUrl());
+                        bot.sendMessage(destinyChannel, "[DBOFT] [EVENT STARTING] " + fireteam.toString() + " -- " + shortUrl);
                         continue;
                     } else {
                         fireteamsInDb.put(fireteam, true);
@@ -125,29 +130,36 @@ public class DboFireteamSweeperJob implements Job {
 
                 HtmlPage fireteamPage = webClient.getPage("http://destiny.bungie.org/forum/index.php?mode=fireteambuilder&event=" + fireteamId);
 
-                HtmlSpan titleElement = (HtmlSpan) fireteamPage.getByXPath("//span[@class='title']").get(0);
-                HtmlSpan subtitleElement = (HtmlSpan) fireteamPage.getByXPath("//span[@class='subtitle']").get(0);
-
                 String activity = null;
                 Difficulty difficulty = null;
                 Integer level = null;
                 String title = null;
 
-                Matcher noTitleMatcher = noTitlePattern.matcher(subtitleElement.asText());
-                if(noTitleMatcher.matches()) {
-                    while(noTitleMatcher.find()) {
-                        difficulty = Difficulty.fromString(noTitleMatcher.group(1).trim());
-                        level = Integer.parseInt(noTitleMatcher.group(2).trim());
-                        title = titleElement.asText().trim();
-                        activity = title;
+                HtmlSpan titleElement = (HtmlSpan) fireteamPage.getByXPath("//span[@class='title']").get(0);
+
+                HtmlSpan subtitleElement = null;
+                List<HtmlSpan> spans = (List<HtmlSpan>) fireteamPage.getByXPath("//span[@class='subtitle']");
+                if(spans.size() > 0) {
+                    subtitleElement = spans.get(0);
+                    Matcher noTitleMatcher = noTitlePattern.matcher(subtitleElement.asText());
+                    if(noTitleMatcher.matches()) {
+                        while(noTitleMatcher.find()) {
+                            difficulty = Difficulty.fromString(noTitleMatcher.group(1).trim());
+                            level = Integer.parseInt(noTitleMatcher.group(2).trim());
+                            title = titleElement.asText().trim();
+                            activity = title;
+                        }
+                    } else {
+                        Matcher withTitleMatcher = withTitlePattern.matcher(subtitleElement.asText());
+                        while(withTitleMatcher.find()) {
+                            title = titleElement.asText().trim();
+                            activity = withTitleMatcher.group(1).trim();
+                            difficulty = Difficulty.fromString(withTitleMatcher.group(2).trim());
+                            level = Integer.parseInt(withTitleMatcher.group(3).trim());
+                        }
                     }
                 } else {
-                    Matcher withTitleMatcher = withTitlePattern.matcher(subtitleElement.asText());
-                    while(withTitleMatcher.find()) {
-                        activity = withTitleMatcher.group(1).trim();
-                        difficulty = Difficulty.fromString(withTitleMatcher.group(2).trim());
-                        level = Integer.parseInt(withTitleMatcher.group(3).trim());
-                    }
+                    title = titleElement.asText().trim();
                 }
 
                 Platform platform = null;
@@ -207,25 +219,25 @@ public class DboFireteamSweeperJob implements Job {
 
                     // this fireteam already exists, update info and notify of changes
 
-                    String[] ftChange = diffFields("Platform", platform, fireteam.getPlatform());
+                    String[] ftChange = diffFields("Platform", fireteam.getPlatform(), platform);
                     if(ftChange != null) fireteamChanges.add(ftChange);
 
-                    ftChange = diffFields("Activity", activity, fireteam.getActivity());
+                    ftChange = diffFields("Activity", fireteam.getActivity(), activity);
                     if(ftChange != null) fireteamChanges.add(ftChange);
 
-                    ftChange = diffFields("Difficulty", difficulty, fireteam.getDifficulty());
+                    ftChange = diffFields("Difficulty", fireteam.getDifficulty(), difficulty);
                     if(ftChange != null) fireteamChanges.add(ftChange);
 
-                    ftChange = diffFields("Level", level, fireteam.getLevel());
+                    ftChange = diffFields("Level", fireteam.getLevel(), level);
                     if(ftChange != null) fireteamChanges.add(ftChange);
 
-                    ftChange = diffFields("Title", title, fireteam.getTitle());
+                    ftChange = diffFields("Title", fireteam.getTitle(), title);
                     if(ftChange != null) fireteamChanges.add(ftChange);
 
-                    ftChange = diffFields("Event Time", date, fireteam.getEventTime());
+                    ftChange = diffFields("Event Time", fireteam.getEventTime(), date);
                     if(ftChange != null) fireteamChanges.add(ftChange);
 
-                    ftChange = diffFields("Description", description, fireteam.getDescription());
+                    ftChange = diffFields("Description", fireteam.getDescription(), description);
                     if(ftChange != null) fireteamChanges.add(ftChange);
 
                     // analyze changes to RSVPs
@@ -249,25 +261,25 @@ public class DboFireteamSweeperJob implements Job {
 
                             List<String[]> changes = new LinkedList<>();
 
-                            String[] charClassChg = diffFields("Class", onSite.getCharacterClass(), rsvpInDb.getCharacterClass());
+                            String[] charClassChg = diffFields("Class", rsvpInDb.getCharacterClass(), onSite.getCharacterClass());
                             if(charClassChg != null)
                                 changes.add(charClassChg);
 
-                            String[] levelChg = diffFields("Level", onSite.getLevel(), rsvpInDb.getLevel());
+                            String[] levelChg = diffFields("Level", rsvpInDb.getLevel(), onSite.getLevel());
                             if(levelChg != null)
                                 changes.add(levelChg);
 
-                            String[] commentChg = diffFields("Comment", onSite.getComment(), rsvpInDb.getComment());
+                            String[] commentChg = diffFields("Comment", rsvpInDb.getComment(), onSite.getComment());
                             if(commentChg != null)
                                 changes.add(commentChg);
 
-                            String[] tentativeChg = diffFields("Tentative", onSite.isTentative(), rsvpInDb.isTentative());
+                            String[] tentativeChg = diffFields("Tentative", rsvpInDb.isTentative(), onSite.isTentative());
                             if(tentativeChg != null)
                                 changes.add(tentativeChg);
 
                             if(changes.size() > 0) {
                                 logger.info("Recorded {} changes for RSVP {}", changes.size(), onSite.toString());
-                                updatedRsvps.put(rsvpInDb, changes);
+                                updatedRsvps.put(onSite, changes);
                             }
 
                             rsvpsOnSite.remove(rsvpInDb);
@@ -298,7 +310,7 @@ public class DboFireteamSweeperJob implements Job {
 
                 if(!creating) {
                     logger.info("Updating fireteam {}...", fireteam.toString());
-                    fireteamDao.update(fireteam);
+//                    fireteamDao.update(fireteam);
                     for(FireteamRSVP updatedRsvp : updatedRsvps.keySet()) {
                         logger.info("Updating RSVP {}...", updatedRsvp.toString());
                         rsvpDao.update(updatedRsvp);
@@ -306,11 +318,16 @@ public class DboFireteamSweeperJob implements Job {
                     for(FireteamRSVP addedRsvp : addedRsvps) {
                         logger.info("Creating RSVP {}...", addedRsvp.toString());
                         rsvpDao.create(addedRsvp);
+                        if(!fireteam.getRsvps().contains(addedRsvp))
+                            fireteam.getRsvps().add(addedRsvp);
                     }
                     for(FireteamRSVP deletedRsvp : deletedRsvps) {
                         logger.info("Deleting RSVP {}...", deletedRsvp.toString());
                         rsvpDao.delete(deletedRsvp);
+                        if(fireteam.getRsvps().contains(deletedRsvp))
+                            fireteam.getRsvps().remove(deletedRsvp);
                     }
+                    fireteamDao.update(fireteam);
                     notifyFireteamChanges(fireteam, fireteamChanges, updatedRsvps, addedRsvps, deletedRsvps);
                 } else {
                     logger.info("Creating fireteam {}...", fireteam.toString());
@@ -442,7 +459,8 @@ public class DboFireteamSweeperJob implements Job {
     }
 
     private void notifyNewFireteam(Fireteam fireteam) {
-        bot.sendMessage(destinyChannel, "[DBOFT] [NEW FIRETEAM] " + fireteam.toString());
+        String shortUrl = IRCUtil.shortenUrl(fireteam.getUrl());
+        bot.sendMessage(destinyChannel, "[DBOFT] [NEW FIRETEAM] " + fireteam.toString() + " -- " + shortUrl);
     }
 
     private void notifyFireteamChanges(Fireteam fireteam,
@@ -481,6 +499,7 @@ public class DboFireteamSweeperJob implements Job {
                     sb.append(fireteam.getTitle());
 
                 sb.append(" (").append(fireteam.getPlatform().getDisplayString()).append(")");
+                sb.append(changedRsvp.getGamertag());
 
                 for(String[] change : rsvpChanges.get(changedRsvp)) {
                     sb.append(" || ");

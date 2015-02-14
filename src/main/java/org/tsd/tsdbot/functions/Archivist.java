@@ -2,6 +2,7 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.google.inject.name.Named;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
@@ -35,7 +36,7 @@ public class Archivist /*Exedol*/ extends MainFunction {
     private HashMap<String, PrintWriter> writerMap = new HashMap<>();
 
     @Inject
-    public Archivist(TSDBot bot, Properties properties) throws IOException {
+    public Archivist(TSDBot bot, Properties properties, @Named("botChannels") String[] channels) throws IOException {
 
         super(bot);
 
@@ -55,7 +56,8 @@ public class Archivist /*Exedol*/ extends MainFunction {
                 log.warn("Logging directory {} WAS NOT created", archiveDir);
         }
 
-        for(String channel : bot.getChannels()) {
+        // use injected list of channels so this can be initialized before the bot joins any
+        for(String channel : channels) {
             log.info("Adding channel {} to Archivist", channel);
             File f = new File(archiveDir + channel.replace("#","") + ".log");
             if(!f.exists()) {

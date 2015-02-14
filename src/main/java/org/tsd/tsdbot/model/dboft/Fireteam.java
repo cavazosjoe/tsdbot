@@ -6,6 +6,7 @@ import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.field.ForeignCollectionField;
 import com.j256.ormlite.table.DatabaseTable;
 import org.apache.commons.lang3.StringUtils;
+import org.tsd.tsdbot.util.IRCUtil;
 
 import java.sql.ResultSet;
 import java.text.SimpleDateFormat;
@@ -25,14 +26,14 @@ public class Fireteam {
     @DatabaseField(canBeNull = false)
     private Platform platform;
 
-    @DatabaseField(canBeNull = false)
+    @DatabaseField
     private String activity;
 
-    @DatabaseField(canBeNull = false)
+    @DatabaseField
     private Difficulty difficulty;
 
-    @DatabaseField(canBeNull = false)
-    private int level;
+    @DatabaseField
+    private Integer level;
 
     @DatabaseField
     private String title;
@@ -75,11 +76,11 @@ public class Fireteam {
         this.difficulty = difficulty;
     }
 
-    public int getLevel() {
+    public Integer getLevel() {
         return level;
     }
 
-    public void setLevel(int level) {
+    public void setLevel(Integer level) {
         this.level = level;
     }
 
@@ -173,20 +174,35 @@ public class Fireteam {
         SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd HH:mm z");
         sdf.setTimeZone(TimeZone.getTimeZone("America/New_York"));
         StringBuilder sb = new StringBuilder();
-        sb.append("(").append(creator.getHandle()).append(") ");
+
+        IRCUtil.IRCColor platformBgColor = null;
+        switch(platform) {
+            case x360:
+            case xb1: platformBgColor = IRCUtil.IRCColor.green; break;
+            case ps3:
+            case ps4: platformBgColor = IRCUtil.IRCColor.blue; break;
+        }
+        String coloredPlatformString = IRCUtil.color("[" + platform.getDisplayString() + "]", IRCUtil.IRCColor.white, platformBgColor);
+        sb.append(coloredPlatformString);
+
+        sb.append(" (").append(creator.getHandle()).append(") ");
         if (StringUtils.isEmpty(title)) {
-            sb.append(activity);
+            if(activity != null)
+                sb.append(IRCUtil.bold(activity));
             if(difficulty != null)
                 sb.append(", ").append(difficulty);
         } else {
-            sb.append(title);
-            sb.append(" (").append(activity);
-            if(difficulty != null)
-                sb.append(", ").append(difficulty);
-            sb.append(")");
+            sb.append(IRCUtil.bold(title));
+            if(activity != null) {
+                sb.append(" (").append(activity);
+                if (difficulty != null)
+                    sb.append(", ").append(difficulty);
+                sb.append(")");
+            }
         }
 
-        sb.append(" [").append(platform).append("] ").append(sdf.format(eventTime));
+        sb.append(" ").append(sdf.format(eventTime));
+
         return sb.toString();
     }
 }

@@ -49,7 +49,7 @@ public class TSDBot extends PircBot {
     @Inject
     protected Hustle hustle;
 
-    public TSDBot(String ident, String name, String nickservPass, String server, String[] channels) throws IrcException, IOException {
+    public TSDBot(String ident, String name, String nickservPass, String server) throws IrcException, IOException {
         setName(name);
         setAutoNickChange(true);
         setLogin(ident);
@@ -58,11 +58,6 @@ public class TSDBot extends PircBot {
         connect(server);
         if(!StringUtils.isEmpty(nickservPass))
             identify(nickservPass);
-
-        for(String channel : channels) {
-            joinChannel("#"+channel);
-            logger.info("Joined channel {}", channel);
-        }
     }
 
     @Override

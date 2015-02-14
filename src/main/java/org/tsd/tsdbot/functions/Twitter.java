@@ -2,7 +2,14 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.google.inject.name.Named;
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.JsonNode;
+import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 import org.jibble.pircbot.User;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
@@ -12,6 +19,8 @@ import org.tsd.tsdbot.notifications.TwitterManager;
 import org.tsd.tsdbot.runnable.InjectableIRCThreadFactory;
 import org.tsd.tsdbot.runnable.ThreadManager;
 import org.tsd.tsdbot.runnable.TweetPoll;
+import twitter4j.Query;
+import twitter4j.QueryResult;
 import twitter4j.Status;
 import twitter4j.TwitterException;
 
@@ -28,10 +37,11 @@ public class Twitter extends MainFunction {
     private ThreadManager threadManager;
     private InjectableIRCThreadFactory threadFactory;
     private TwitterManager twitterManager;
+    private String mashapeKey;
 
     @Inject
     public Twitter(TSDBot bot, TwitterManager mgr, ThreadManager threadManager,
-                   InjectableIRCThreadFactory threadFactory) {
+                   InjectableIRCThreadFactory threadFactory, @Named("mashapeKey") String mashapeKey) {
         super(bot);
         this.description = "Twitter utility: send and receive tweets from our exclusive @TSD_IRC Twitter account! " +
                 "Propose tweets for the chat to vote on.";
@@ -40,6 +50,7 @@ public class Twitter extends MainFunction {
         this.twitterManager = mgr;
         this.threadManager = threadManager;
         this.threadFactory = threadFactory;
+        this.mashapeKey = mashapeKey;
     }
 
     @Override
@@ -229,6 +240,76 @@ public class Twitter extends MainFunction {
                             bot.sendMessage(channel,e.getMessage());
                             bot.blunderCount++;
                         }
+                    }
+
+                } else if(subCmd.equals("search")) {
+
+                    if(cmdParts.length < 3) {
+                        bot.sendMessage(channel, "USAGE: .tw search [query]");
+                        return;
+                    }
+
+                    StringBuilder queryBuilder = new StringBuilder();
+                    for(int i=2 ; i < cmdParts.length ; i++) {
+                        if(i != 2)
+                            queryBuilder.append(" ");
+                        queryBuilder.append(cmdParts[i]);
+                    }
+
+                    QueryResult result = twitterManager.search(queryBuilder.toString(), 50);
+                    int count = result.getCount();
+                    if(count < 1 || result.getTweets().size() < 1) {
+                        bot.sendMessage(channel, "Couldn't find any tweets for that query");
+                        return;
+                    }
+
+                    HttpResponse<JsonNode> response;
+                    JSONObject detection ;
+                    Status evaluatingTweet;
+                    Status chosenTweet = null;
+                    String language;
+                    boolean reliable;
+//                    double confidence = 0;
+                    int i=0;
+                    try {
+                        while (chosenTweet == null && i < count) {
+                            evaluatingTweet = result.getTweets().get(i);
+                            // discard tweets that are replies
+                            if(evaluatingTweet.getInReplyToUserId() < 0 && evaluatingTweet.getInReplyToStatusId() < 0) {
+                                response = Unirest.post("https://community-language-detection.p.mashape.com/detect?key=8de41710a3d110c42095b6b87ee7ad5e")
+                                        .header("X-Mashape-Key", mashapeKey)
+                                        .header("Content-Type", "application/x-www-form-urlencoded")
+                                        .header("Accept", "application/json")
+                                        .field("q", evaluatingTweet.getText())
+                                        .asJson();
+                                detection = response.getBody()
+                                        .getObject().getJSONObject("data").getJSONArray("detections").getJSONObject(0);
+                                language = detection.getString("language");
+                                reliable = detection.getBoolean("isReliable");
+//                            confidence = detection.getDouble("confidence");
+                                if (language.equals("en")&& reliable)
+                                    chosenTweet = evaluatingTweet;
+                            }
+                            i++;
+                        }
+
+                        if(chosenTweet == null) {
+                            bot.sendMessage(channel, "Searched " + i + " tweets but couldn't find any English ones");
+                        } else {
+                            StringBuilder twBuilder = new StringBuilder();
+                            twBuilder.append("@").append(chosenTweet.getUser().getScreenName())
+                                    .append(": ").append(chosenTweet.getText()).append(" ( ")
+                                    .append("http://twitter.com/").append(chosenTweet.getUser().getScreenName())
+                                    .append("/status/").append(chosenTweet.getId()).append(" )");
+                            bot.sendMessage(channel, "[TWITTER] " + twBuilder.toString());
+                        }
+
+                    } catch (UnirestException e) {
+                        logger.error("Error detecting language of tweet", e);
+                        bot.sendMessage(channel, "Error detecting tweet language");
+                    } catch (Exception e) {
+                        logger.error("Error filtering tweets", e);
+                        bot.sendMessage(channel, "Error filtering tweets");
                     }
 
                 } else {

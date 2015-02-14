@@ -60,11 +60,13 @@ public class TSDBotConfigModule extends AbstractModule {
     private TSDBot bot;
     private Stage stage;
     private Properties properties;
+    private String[] channels;
 
-    public TSDBotConfigModule(TSDBot bot, Properties properties, Stage stage) {
+    public TSDBotConfigModule(TSDBot bot, Properties properties, Stage stage, String[] channels) {
         this.bot = bot;
         this.properties = properties;
         this.stage = stage;
+        this.channels = channels;
     }
 
     @Override
@@ -135,6 +137,12 @@ public class TSDBotConfigModule extends AbstractModule {
         bind(TSDBot.class).toInstance(bot);
 
         bind(Properties.class).toInstance(properties);
+
+        bind(String[].class).annotatedWith(Names.named("botChannels"))
+                .toInstance(channels);
+
+        bind(String.class).annotatedWith(Names.named("mashapeKey"))
+                .toInstance(properties.getProperty("mashape.apiKey"));
 
         bind(PrintoutLibrary.class).asEagerSingleton();
 
