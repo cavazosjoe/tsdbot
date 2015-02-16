@@ -136,6 +136,17 @@ public class Recap extends MainFunction {
             "Nart-kun, I'm Sorry",
             "The Swole Toll",
             "If Ever a Whiff There Was",
+            "BoneKin Dies",
+            "Everyone Dies",
+            "The Case of the Missing tarehart",
+            "A Good Ban Is Hard to Find",
+            "Everyone Has Fun Playing the Master Chief Collection",
+            "Star Macross'd Lovers",
+            "Rumble in the Tumblr",
+            "Minmay's Gambit",
+            "Grillin' with Bernie",
+            "Bar in the Pocket: Tex and the Hidden Flask Technique",
+            "Take Flight, Gundam!",
             "Dr. GV, PhD, although I guess if he was a medical doctor he wouldn't have a PhD? Or maybe they can, " +
                     "I don't know. I know he'd be called \"Dr.\" though. I think they should make that clearer, like " +
                     "in the dictionary or wherever they spell things out like that. But I guess it wouldn't be an English " +
@@ -193,10 +204,7 @@ public class Recap extends MainFunction {
         }
 
         private static String stripPeriods(String s) {
-            if(s.endsWith("...")) s = s.substring(0,s.length()-3);
-            else if(s.endsWith("..")) s = s.substring(0, s.length()-2);
-            else if(s.endsWith(".")) s = s.substring(0, s.length()-1);
-            return s;
+            return s.replaceAll("\\.+$","");
         }
     }
 }

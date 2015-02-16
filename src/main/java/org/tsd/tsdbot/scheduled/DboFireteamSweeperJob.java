@@ -278,11 +278,8 @@ public class DboFireteamSweeperJob implements Job {
                             if(tentativeChg != null)
                                 changes.add(tentativeChg);
 
-                            if(changes.size() > 0) {
-                                logger.info("Recorded {} changes for RSVP {}", changes.size(), onSite.toString());
-                                updatedRsvps.put(onSite, changes);
-                            }
-
+                            logger.info("Recorded {} changes for RSVP {}", changes.size(), onSite.toString());
+                            updatedRsvps.put(onSite, changes);
                             rsvpsOnSite.remove(rsvpInDb);
 
                         } else {
@@ -490,24 +487,27 @@ public class DboFireteamSweeperJob implements Job {
             bot.sendMessage(destinyChannel, "[DBOFT] [FIRETEAM UPDATE] " + sb.toString());
         }
 
-        if(rsvpChanges != null) {
+        if(rsvpChanges != null && rsvpChanges.size() > 0) {
             for(FireteamRSVP changedRsvp : rsvpChanges.keySet()) {
-                sb = new StringBuilder();
+                if(rsvpChanges.get(changedRsvp).size() > 0) { // only print if it has one or more changes
 
-                if (StringUtils.isEmpty(fireteam.getTitle()))
-                    sb.append(fireteam.getActivity());
-                else
-                    sb.append(fireteam.getTitle());
+                    sb = new StringBuilder();
 
-                sb.append(" (").append(fireteam.getPlatform().getDisplayString()).append(") ");
-                sb.append(changedRsvp.getGamertag());
+                    if (StringUtils.isEmpty(fireteam.getTitle()))
+                        sb.append(fireteam.getActivity());
+                    else
+                        sb.append(fireteam.getTitle());
 
-                for(String[] change : rsvpChanges.get(changedRsvp)) {
-                    sb.append(" || ");
-                    sb.append(change[0]).append(": ").append(change[1]).append(" -> ").append(change[2]);
+                    sb.append(" (").append(fireteam.getPlatform().getDisplayString()).append(") ");
+                    sb.append(changedRsvp.getGamertag());
+
+                    for (String[] change : rsvpChanges.get(changedRsvp)) {
+                        sb.append(" || ");
+                        sb.append(change[0]).append(": ").append(change[1]).append(" -> ").append(change[2]);
+                    }
+
+                    bot.sendMessage(destinyChannel, "[DBOFT] [RSVP CHANGED] " + sb.toString());
                 }
-
-                bot.sendMessage(destinyChannel, "[DBOFT] [RSVP CHANGED] " + sb.toString());
             }
         }
 

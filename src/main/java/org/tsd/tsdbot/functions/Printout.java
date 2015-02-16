@@ -6,12 +6,14 @@ import com.google.inject.name.Named;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.imgscalr.Scalr;
+import org.jibble.pircbot.User;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.PrintoutLibrary;
 import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.util.IRCUtil;
 import org.tsd.tsdbot.util.ImageUtils;
 import org.tsd.tsdbot.util.MiscUtils;
 
@@ -54,7 +56,10 @@ public class Printout extends MainFunction {
 
     // set of people who can trigger a printout with a deliberate repitition
     // e.g. "TSDBot printout of two bears" -> "Not Computing." -> "Two. Bears." -> [img]
-    private HashSet<String> notComputing = new HashSet<>();
+    // ident -> (number of times they've said a line while we're listening for their repeat)
+    private HashMap<String, Integer> notComputing = new HashMap<>();
+
+    private HashSet<String> banned = new HashSet<>();
 
     @Inject
     public Printout(
@@ -75,10 +80,24 @@ public class Printout extends MainFunction {
 
         String q = null;
 
-        if(text.matches(queryRegex) && !notComputing.contains(ident)) {
+        if(text.startsWith(".printout clear")) {
+            if(bot.getUserFromNick(channel, sender).hasPriv(User.Priv.OP)) {
+                banned.clear();
+                bot.sendMessage(channel, "The printout blacklist has been cleared");
+            } else {
+                bot.sendMessage(channel, "Only ops can use that");
+            }
+        }
 
-            if(random.nextDouble() < 0.15) {
-                notComputing.add(ident);
+        if(text.matches(queryRegex) && !notComputing.containsKey(ident)) {
+
+            if(banned.contains(ident)) {
+                bot.sendMessage(channel, "Make me " + annoyingEmotes[random.nextInt(annoyingEmotes.length)]);
+                return;
+            }
+
+            if(random.nextDouble() < 0.1) {
+                notComputing.put(ident, 0);
                 bot.sendMessage(channel, "Not computing. Please repeat.");
                 return;
             }
@@ -88,23 +107,39 @@ public class Printout extends MainFunction {
                 q = m.group(1);
             }
 
-        } else if(notComputing.contains(ident)) {
+        } else if(notComputing.containsKey(ident)) {
 
-            notComputing.remove(ident);
-            StringBuilder qBuilder = new StringBuilder();
-            String[] parts = text.split("\\.");
-            boolean first = true;
-            for(String p : parts) {
-                if(StringUtils.isNotEmpty(p)) {
-                    if(!first)
-                        qBuilder.append(" ");
-                    qBuilder.append(p.trim());
-                    first = false;
+            if(text.matches(".*?\\.+.*?")) {
+
+                notComputing.remove(ident);
+                StringBuilder qBuilder = new StringBuilder();
+                String[] parts = text.split("\\.");
+                boolean first = true;
+                for (String p : parts) {
+                    if (StringUtils.isNotEmpty(p)) {
+                        if (!first)
+                            qBuilder.append(" ");
+                        qBuilder.append(p.trim());
+                        first = false;
+                    }
+                }
+                q = qBuilder.toString();
+
+            } else {
+
+                notComputing.put(ident, notComputing.get(ident)+1);
+                if(notComputing.get(ident) > 2) {
+                    notComputing.remove(ident);
+                    banned.add(ident);
+                    bot.sendMessage(channel, "Insolence! I have wasted enough of my time waiting for you to release me from this prison. I won't be getting YOU any printouts for a very long time, " + sender);
+                    return;
                 }
             }
-            q = qBuilder.toString();
 
         }
+
+        if(banned.contains(ident))
+            return;
 
         if (StringUtils.isEmpty(q))
             return;
@@ -197,9 +232,14 @@ public class Printout extends MainFunction {
     @Override
     public String getRegex() {
         if(notComputing.size() > 0) {
-            return "^(TSDBot.*?printout.*|.*?\\.+.*?)";
+//            return "^(TSDBot.*?printout.*|.*?\\.+.*?)";
+            return ".*";
         } else {
-            return "^TSDBot.*?printout.*";
+            return "^(TSDBot.*?printout.*|\\.printout.*)";
         }
     }
+
+    private static final String[] annoyingEmotes = new String[]{
+            "B]", "B)", ":^)", IRCUtil.bold(":^)"), "B^)", "B^]"
+    };
 }
