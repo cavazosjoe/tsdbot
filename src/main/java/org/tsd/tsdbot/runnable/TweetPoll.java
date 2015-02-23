@@ -96,7 +96,7 @@ public class TweetPoll extends IRCListenerThread {
             } catch (TwitterException e) {
                 bot.sendMessage(channel,"There was an error sending the tweet: " + e.getMessage());
                 logger.error("ERROR SENDING TWEET POLL TWEET", e);
-                TSDBot.blunderCount++;
+                bot.incrementBlunderCnt();
             }
         } else {
             bot.sendMessage(channel,"It's ogre.");
@@ -138,7 +138,7 @@ public class TweetPoll extends IRCListenerThread {
 
                 case abort: {
 
-                    if (sender.equals(proposer) || bot.getUserFromNick(channel, sender).hasPriv(User.Priv.OP)) {
+                    if (sender.equals(proposer) || bot.userHasPrivInChannel(sender, channel, User.Priv.OP)) {
                         this.aborted = true;
                         mutex.notify();
                     } else {

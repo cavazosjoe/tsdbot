@@ -38,7 +38,7 @@ public abstract class MainFunction {
 
     public void engage(String channel, String sender, String ident, String text) {
         long timeRemaining = getRemainingCooldown(); // millis
-        if(timeRemaining <= 0 || bot.getUserFromNick(channel, sender).hasPriv(User.Priv.OP)) {
+        if(timeRemaining <= 0 || bot.userHasPrivInChannel(sender, channel, User.Priv.OP)) {
             run(channel, sender, ident, text);
             lastUsed = new Date();
         } else {

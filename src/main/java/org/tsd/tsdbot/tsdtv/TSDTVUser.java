@@ -1,9 +1,5 @@
 package org.tsd.tsdbot.tsdtv;
 
-import org.jibble.pircbot.User;
-
-import java.net.InetAddress;
-
 /**
 * Created by Joe on 2/4/2015.
 */

@@ -23,11 +23,13 @@ import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -81,7 +83,7 @@ public class Printout extends MainFunction {
         String q = null;
 
         if(text.startsWith(".printout clear")) {
-            if(bot.getUserFromNick(channel, sender).hasPriv(User.Priv.OP)) {
+            if(bot.userHasPrivInChannel(sender, channel, User.Priv.OP)) {
                 banned.clear();
                 bot.sendMessage(channel, "The printout blacklist has been cleared");
             } else {

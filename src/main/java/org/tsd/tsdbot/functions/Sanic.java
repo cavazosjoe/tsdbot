@@ -43,7 +43,7 @@ public class Sanic extends MainFunction {
             EntityUtils.consume(response.getEntity());
         } catch (Exception e) {
             logger.error("sanic() error",e);
-            bot.blunderCount++;
+            bot.incrementBlunderCnt();
         } finally {
             post.releaseConnection();
         }

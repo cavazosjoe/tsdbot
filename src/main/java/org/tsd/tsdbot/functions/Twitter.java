@@ -6,9 +6,7 @@ import com.google.inject.name.Named;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
 import org.jibble.pircbot.User;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +18,6 @@ import org.tsd.tsdbot.runnable.InjectableIRCThreadFactory;
 import org.tsd.tsdbot.runnable.ThreadManager;
 import org.tsd.tsdbot.runnable.TweetPoll;
 import org.tsd.tsdbot.util.IRCUtil;
-import twitter4j.Query;
 import twitter4j.QueryResult;
 import twitter4j.Status;
 import twitter4j.TwitterException;
@@ -65,8 +62,7 @@ public class Twitter extends MainFunction {
         if(TweetPoll.TweetPollOperation.fromString(text) != null)
             return;
 
-        User user = bot.getUserFromNick(channel, sender);
-        boolean isOp = user.hasPriv(User.Priv.OP);
+        boolean isOp = bot.userHasGlobalPriv(sender, User.Priv.OP);
 
         String[] cmdParts = text.split("\\s+");
 
@@ -231,7 +227,7 @@ public class Twitter extends MainFunction {
                                 threadManager.addThread(currentPoll);
                             } catch (Exception e) {
                                 bot.sendMessage(channel,e.getMessage());
-                                bot.blunderCount++;
+                                bot.incrementBlunderCnt();
                             }
                         }
 
@@ -243,7 +239,7 @@ public class Twitter extends MainFunction {
                             threadManager.addThread(currentPoll);
                         } catch (Exception e) {
                             bot.sendMessage(channel,e.getMessage());
-                            bot.blunderCount++;
+                            bot.incrementBlunderCnt();
                         }
                     }
 
@@ -284,7 +280,7 @@ public class Twitter extends MainFunction {
                             // discard tweets that are replies or retweets
                             if(evaluatingTweet.getInReplyToUserId() < 0
                                     && evaluatingTweet.getInReplyToStatusId() < 0
-                                    && !evaluatingTweet.isRetweet()) {
+                                    && !evaluatingTweet.isRetweet()) try {
                                 response = Unirest.post("https://community-language-detection.p.mashape.com/detect?key=8de41710a3d110c42095b6b87ee7ad5e")
                                         .header("X-Mashape-Key", mashapeKey)
                                         .header("Content-Type", "application/x-www-form-urlencoded")
@@ -298,6 +294,8 @@ public class Twitter extends MainFunction {
 //                            confidence = detection.getDouble("confidence");
                                 if (language.equals("en")&& reliable)
                                     chosenTweet = evaluatingTweet;
+                            } catch (Exception e) {
+                                logger.warn("Error evaluating tweet, id={}, skipping...", evaluatingTweet.getId());
                             }
                             i++;
                         }
@@ -318,9 +316,6 @@ public class Twitter extends MainFunction {
                             bot.sendMessage(channel, twBuilder.toString());
                         }
 
-                    } catch (UnirestException e) {
-                        logger.error("Error detecting language of tweet", e);
-                        bot.sendMessage(channel, "Error detecting tweet language");
                     } catch (Exception e) {
                         logger.error("Error filtering tweets", e);
                         bot.sendMessage(channel, "Error filtering tweets");
@@ -331,7 +326,7 @@ public class Twitter extends MainFunction {
                 }
             } catch (TwitterException t) {
                 bot.sendMessage(channel,"Error: " + t.getMessage());
-                bot.blunderCount++;
+                bot.incrementBlunderCnt();
             }
         }
     }

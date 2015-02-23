@@ -133,7 +133,7 @@ public class XboxLive extends MainFunction {
 
             if(subCmd.equals("reload")) {
 
-                if(!bot.getUserFromNick(channel, sender).hasPriv(User.Priv.OP)) {
+                if(!bot.userHasGlobalPriv(sender, User.Priv.OP)) {
                     bot.sendMessage(channel, "Only ops can use .xbl reload");
                 } else try {
                     loadFriendsList();

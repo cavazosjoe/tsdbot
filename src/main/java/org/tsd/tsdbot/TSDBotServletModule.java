@@ -5,7 +5,10 @@ import org.tsd.tsdbot.servlets.PrintoutServlet;
 import org.tsd.tsdbot.servlets.StatusServlet;
 import org.tsd.tsdbot.servlets.hustle.HustleChartServlet;
 import org.tsd.tsdbot.servlets.hustle.HustleServlet;
-import org.tsd.tsdbot.servlets.tsdtv.*;
+import org.tsd.tsdbot.servlets.tsdtv.TSDTVControlServlet;
+import org.tsd.tsdbot.servlets.tsdtv.TSDTVNowPlayingServlet;
+import org.tsd.tsdbot.servlets.tsdtv.TSDTVPlayServlet;
+import org.tsd.tsdbot.servlets.tsdtv.TSDTVServlet;
 
 /**
  * Created by Joe on 1/11/2015.

@@ -61,7 +61,7 @@ public class StrawPollFunction extends MainFunction {
             threadManager.addThread(currentPoll);
         } catch (Exception e) {
             bot.sendMessage(channel, e.getMessage());
-            bot.blunderCount++;
+            bot.incrementBlunderCnt();
         }
     }
 

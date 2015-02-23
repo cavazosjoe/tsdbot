@@ -130,6 +130,14 @@ public class FireteamRSVP {
 
     @Override
     public String toString() {
-        return "RSVP " + fireteam.toString() + " " + gamertag;
+        StringBuilder sb = new StringBuilder();
+        sb.append(gamertag);
+        if(characterClass != null)
+            sb.append(", ").append(characterClass.getDisplayString());
+        if(level != null)
+            sb.append(", Level ").append(level);
+        if(tentative)
+            sb.append(" (tentative)");
+        return sb.toString();
     }
 }

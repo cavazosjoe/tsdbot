@@ -33,17 +33,18 @@ public class BlunderCount extends MainFunction {
         } else {
             String subCmd = cmdParts[1];
             if(subCmd.equals("count")) { // display the current blunder count
-                bot.sendMessage(channel, "Current blunder count: " + TSDBot.blunderCount);
+                bot.sendMessage(channel, "Current blunder count: " + TSDBot.getBlunderCount());
             } else if(subCmd.equals("+") // vv not correct but help em out anyway vv
                     || (cmdParts.length > 2 && cmdParts[1].equals("count") && cmdParts[2].equals("+"))) {
-                if( (!bot.getUserFromNick(channel, sender).hasPriv(User.Priv.SUPEROP)) && random.nextDouble() < 0.05 ) {
+                if( (!bot.userHasPrivInChannel(sender, channel, User.Priv.SUPEROP)) && random.nextDouble() < 0.05 ) {
                     // user is not a super op
                     bot.kick(channel, sender, "R-E-K-T, REKT REKT REKT!");
                     return;
                 }
 
+                bot.incrementBlunderCnt();
                 String response = String.format(responses[random.nextInt(responses.length)]
-                        + "Blunder count incremented to %d",++TSDBot.blunderCount);
+                        + "Blunder count incremented to %d", TSDBot.getBlunderCount());
                 bot.sendMessage(channel, response);
             } else {
                 bot.sendMessage(channel, usage);

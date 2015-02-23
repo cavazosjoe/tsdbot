@@ -173,7 +173,7 @@ public class StrawPoll extends IRCListenerThread {
 
         } else if(pollOp.equals(StrawPollOperation.abort)) {
 
-            if(sender.equals(proposer) || bot.getUserFromNick(channel, sender).hasPriv(User.Priv.OP)) {
+            if(sender.equals(proposer) || bot.userHasPrivInChannel(sender, channel, User.Priv.OP)) {
                 this.aborted = true;
                 synchronized (mutex) {
                     mutex.notify();

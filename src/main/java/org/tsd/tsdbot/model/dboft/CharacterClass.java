@@ -4,9 +4,19 @@ package org.tsd.tsdbot.model.dboft;
  * Created by Joe on 2/7/2015.
  */
 public enum CharacterClass {
-    hunter,
-    warlock,
-    titan;
+    hunter("Hunter"),
+    warlock("Warlock"),
+    titan("Titan");
+
+    private String displayString;
+
+    CharacterClass(String displayString) {
+        this.displayString = displayString;
+    }
+
+    public String getDisplayString() {
+        return displayString;
+    }
 
     public static CharacterClass fromString(String s) {
         for(CharacterClass cc : values()) {

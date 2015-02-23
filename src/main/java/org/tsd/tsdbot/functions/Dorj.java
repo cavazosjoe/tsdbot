@@ -59,7 +59,7 @@ public class Dorj extends MainFunction {
 
         } else if(cmdParts[1].equals("rollback")) {
 
-            if(!bot.getUserFromNick(channel, sender).hasPriv(User.Priv.HALFOP)) {
+            if(!bot.userHasPrivInChannel(sender, channel, User.Priv.HALFOP)) {
                 bot.sendMessage(channel, "Only ops can change the course of history");
                 return;
             }

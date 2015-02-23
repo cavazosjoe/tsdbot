@@ -1,6 +1,7 @@
 package org.tsd.tsdbot.notifications;
 
 import org.tsd.tsdbot.NotificationType;
+import org.tsd.tsdbot.TSDBot;
 
 import java.util.LinkedList;
 
@@ -9,14 +10,20 @@ import java.util.LinkedList;
  */
 public abstract class NotificationManager<T extends NotificationEntity> {
 
+    protected TSDBot bot;
     protected int MAX_HISTORY;
     protected LinkedList<T> recentNotifications = new LinkedList<>();
+    protected String[] channels;
+    private boolean muted;
 
-    public NotificationManager(int maxHistory) {
+    public NotificationManager(TSDBot bot, int maxHistory, boolean muted) {
+        this.bot = bot;
         this.MAX_HISTORY = maxHistory;
+        this.muted = muted;
     }
 
-    public abstract LinkedList<T> sweep();
+    public abstract NotificationType getNotificationType();
+    protected abstract LinkedList<T> sweep();
 
     public LinkedList<T> history() {
         return recentNotifications;
@@ -42,5 +49,15 @@ public abstract class NotificationManager<T extends NotificationEntity> {
         while(recentNotifications.size() > MAX_HISTORY) recentNotifications.removeLast();
     }
 
-    public abstract NotificationType getNotificationType();
+    public void sweepAndNotify() {
+        for(NotificationEntity notification : sweep()) {
+            if(!muted) {
+                for(String channel : channels) {
+                    bot.sendMessage(channel, notification.getInline());
+                }
+            }
+        }
+        muted = false;
+    }
+
 }

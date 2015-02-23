@@ -6,6 +6,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.NotificationType;
+import org.tsd.tsdbot.NotifierChannels;
 import org.tsd.tsdbot.Stage;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -35,20 +36,25 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     private static final long EXCEPTION_COOLDOWN = 1000 * 60 * 2; // 2 minutes
     private static final long COOLDOWN_PERIOD = 1000 * 60 * 60 * 2; // 2 hours
 
-    private TSDBot bot; //TODO: remove this dependency with better exception handling in Twitter(MainFunction)
     private Stage stage;
     private Twitter twitter;
     private TwitterStream stream;
     private HashMap<Long, User> following;
     private HashMap<Long, Long> cooldown; // userId -> timestamp of last tweet
+    private String[] channels;
 
     @Inject
-    public TwitterManager(final TSDBot bot, final Twitter twitter, Properties prop, Stage stage) throws IOException {
-        super(5);
+    public TwitterManager(final TSDBot bot,
+                          final Twitter twitter,
+                          Properties prop,
+                          Stage stage,
+                          @NotifierChannels HashMap notifierChannels) throws IOException {
+        super(bot, 5, true);
         try {
 
             this.bot = bot;
             this.stage = stage;
+            this.channels = (String[]) notifierChannels.get("twitter");
 
             String CONSUMER_KEY =           prop.getProperty("twitter.consumer_key");
             String CONSUMER_KEY_SECRET =    prop.getProperty("twitter.consumer_key_secret");
@@ -119,8 +125,8 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
                         recentNotifications.addFirst(newTweet);
                         trimHistory();
 
-                        for(String channel : bot.getChannels())
-                            bot.sendMessage(channel,newTweet.getInline());
+                        for(String channel : channels)
+                            bot.sendMessage(channel, newTweet.getInline());
 
                         logger.info("Successfully logged tweet");
                     }
@@ -140,7 +146,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
                     @Override
                     public void onException(Exception e) {
                         logger.error("Twitter Stream ERROR", e);
-                        TSDBot.blunderCount++;
+                        bot.incrementBlunderCnt();
                         try {
                             throttle.take();
                             throttle.put(new DelayedImpl(EXCEPTION_COOLDOWN));
@@ -159,7 +165,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
 
         } catch (TwitterException e) {
             logger.error("Twitter Exception", e);
-            TSDBot.blunderCount++;
+            bot.incrementBlunderCnt();
         }
     }
 
@@ -221,7 +227,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
             }
         } catch (TwitterException e) {
             bot.sendMessage(channel, "I could not follow @" + handle + ". Maybe they don't exist?");
-            TSDBot.blunderCount++;
+            bot.incrementBlunderCnt();
         }
     }
 
@@ -237,7 +243,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
             }
         } catch (TwitterException e) {
             bot.sendMessage(channel, "I could not unfollow @" + handle + ". Maybe they don't exist?");
-            TSDBot.blunderCount++;
+            bot.incrementBlunderCnt();
         }
     }
 
@@ -251,7 +257,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
             }
         }
         bot.sendMessage(channel, "I could not unleash @" + handle + " because I'm not following xir");
-        TSDBot.blunderCount++;
+        bot.incrementBlunderCnt();
     }
 
     public void throttle(String channel, String handle) {
@@ -268,7 +274,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
             }
         }
         bot.sendMessage(channel, "I could not throttle @" + handle + " because I'm not following xir");
-        TSDBot.blunderCount++;
+        bot.incrementBlunderCnt();
     }
 
     public void delete(String channel, long id) {

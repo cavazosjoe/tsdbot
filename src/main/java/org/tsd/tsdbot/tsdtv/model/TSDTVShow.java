@@ -5,7 +5,10 @@ import org.tsd.tsdbot.tsdtv.TSDTVConstants;
 import org.tsd.tsdbot.util.FuzzyLogic;
 
 import java.io.File;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
+import java.util.TreeSet;
 
 /**
  * Created by Joe on 2/1/2015.

@@ -33,7 +33,8 @@ import java.util.regex.Pattern;
 import static org.quartz.CronScheduleBuilder.cronSchedule;
 import static org.quartz.JobBuilder.newJob;
 import static org.quartz.TriggerBuilder.newTrigger;
-import static org.tsd.tsdbot.util.IRCUtil.*;
+import static org.tsd.tsdbot.util.IRCUtil.IRCColor;
+import static org.tsd.tsdbot.util.IRCUtil.color;
 
 /**
  * Created by Joe on 3/9/14.

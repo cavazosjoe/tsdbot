@@ -2,7 +2,10 @@ package org.tsd.tsdbot.servlets.tsdtv;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.tsd.tsdbot.tsdtv.*;
+import org.tsd.tsdbot.tsdtv.ShowNotFoundException;
+import org.tsd.tsdbot.tsdtv.StreamLockedException;
+import org.tsd.tsdbot.tsdtv.TSDTV;
+import org.tsd.tsdbot.tsdtv.TSDTVLibrary;
 import org.tsd.tsdbot.tsdtv.model.TSDTVEpisode;
 import org.tsd.tsdbot.util.ServletUtils;
 

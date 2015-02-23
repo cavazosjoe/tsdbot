@@ -13,12 +13,14 @@ import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.NotificationType;
+import org.tsd.tsdbot.NotifierChannels;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
 
 import java.net.URI;
 import java.text.SimpleDateFormat;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Random;
 import java.util.TimeZone;
@@ -50,11 +52,12 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
     private HttpClient client;
 
     @Inject
-    public HboForumManager(HttpClient client) {
-        super(5);
+    public HboForumManager(TSDBot bot, HttpClient client, @NotifierChannels HashMap notifierChannels) {
+        super(bot, 5, true);
         hboSdf = new SimpleDateFormat("MM/dd/yy HH:mm a");
         hboSdf.setTimeZone(TimeZone.getTimeZone("America/New_York"));
         this.client = client;
+        this.channels = (String[]) notifierChannels.get("hbof");
     }
 
     @Override
@@ -139,7 +142,7 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
 
         } catch (Exception e) {
             logger.error("HboNewsManager sweep() error", e);
-            TSDBot.blunderCount++;
+            bot.incrementBlunderCnt();
         } finally {
             if(indexEntity != null) EntityUtils.consumeQuietly(indexEntity);
         }

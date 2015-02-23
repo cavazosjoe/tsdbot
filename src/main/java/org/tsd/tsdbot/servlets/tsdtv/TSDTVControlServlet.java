@@ -2,8 +2,9 @@ package org.tsd.tsdbot.servlets.tsdtv;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.tsd.tsdbot.tsdtv.*;
-import org.tsd.tsdbot.tsdtv.model.TSDTVEpisode;
+import org.tsd.tsdbot.tsdtv.NoStreamRunningException;
+import org.tsd.tsdbot.tsdtv.TSDTV;
+import org.tsd.tsdbot.tsdtv.TSDTVWebUser;
 import org.tsd.tsdbot.util.ServletUtils;
 
 import javax.naming.AuthenticationException;

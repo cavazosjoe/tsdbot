@@ -15,7 +15,8 @@ import javax.naming.AuthenticationException;
 import java.sql.SQLException;
 import java.util.Random;
 
-import static org.tsd.tsdbot.util.IRCUtil.*;
+import static org.tsd.tsdbot.util.IRCUtil.IRCColor;
+import static org.tsd.tsdbot.util.IRCUtil.color;
 
 /**
  * Created by Joe on 1/12/2015.
@@ -51,8 +52,7 @@ public class TSDTVFunction extends MainFunction {
         }
 
         User user = bot.getUserFromNick(channel, sender);
-
-        boolean isOp = bot.getUserFromNick(channel, sender).hasPriv(User.Priv.OP);
+        boolean isOp = bot.userHasGlobalPriv(sender, User.Priv.OP);
         String subCmd = cmdParts[1];
 
         if(subCmd.equals("catalog")) {
@@ -163,7 +163,7 @@ public class TSDTVFunction extends MainFunction {
 
         } else if(subCmd.equals("reload")) {
 
-            if(!bot.getUserFromNick(channel, sender).hasPriv(User.Priv.OP)) {
+            if(!isOp) {
                 bot.sendMessage(channel, "Only ops can use that");
                 return;
             }

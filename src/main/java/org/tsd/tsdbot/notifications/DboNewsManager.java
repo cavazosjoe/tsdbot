@@ -1,5 +1,6 @@
 package org.tsd.tsdbot.notifications;
 
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import it.sauronsoftware.feed4j.FeedParser;
 import it.sauronsoftware.feed4j.bean.Feed;
@@ -7,11 +8,13 @@ import it.sauronsoftware.feed4j.bean.FeedItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.NotificationType;
+import org.tsd.tsdbot.NotifierChannels;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
 
 import java.net.URL;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -33,8 +36,10 @@ public class DboNewsManager extends NotificationManager<DboNewsManager.DboNewsPo
                 + "sub|sup|pre|del|code|blockquote|strike|kbd|br|hr|area|map|object|embed|param|link|form|small|big|script|object|embed|link|style|form|input)$");
     }
 
-    public DboNewsManager() {
-        super(5);
+    @Inject
+    public DboNewsManager(TSDBot bot, @NotifierChannels HashMap notifierChannels) {
+        super(bot, 5, true);
+        this.channels = (String[]) notifierChannels.get("dbon");
     }
 
     @Override
@@ -61,7 +66,7 @@ public class DboNewsManager extends NotificationManager<DboNewsManager.DboNewsPo
             }
         } catch (Exception e) {
             logger.error("DboNewsManager sweep() error", e);
-            TSDBot.blunderCount++;
+            bot.incrementBlunderCnt();
         }
 
         recentNotifications.addAll(0,notifications);

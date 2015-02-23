@@ -3,7 +3,8 @@ package org.tsd.tsdbot;
 import com.google.inject.Singleton;
 
 import java.io.FileNotFoundException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
 
 /**
  * Created by Joe on 2/6/2015.

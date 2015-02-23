@@ -20,11 +20,12 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.URL;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Date;
+import java.util.TimeZone;
+import java.util.TreeMap;
 
 /**
  * Servlet that returns queue/schedule info for AJAX requests

@@ -28,8 +28,7 @@ public class TSDBot extends PircBot {
 
     private static Logger logger = LoggerFactory.getLogger(TSDBot.class);
 
-    public static long blunderCount = 0;
-    public static boolean showNotifications = false;
+    private static long blunderCount = 0;
 
     @Inject
     private ThreadManager threadManager;
@@ -49,6 +48,9 @@ public class TSDBot extends PircBot {
     @Inject
     protected Hustle hustle;
 
+    @Inject
+    protected String mainChannel;
+
     public TSDBot(String ident, String name, String nickservPass, String server) throws IrcException, IOException {
         setName(name);
         setAutoNickChange(true);
@@ -58,6 +60,10 @@ public class TSDBot extends PircBot {
         connect(server);
         if(!StringUtils.isEmpty(nickservPass))
             identify(nickservPass);
+    }
+
+    public static long getBlunderCount() {
+        return blunderCount;
     }
 
     @Override
@@ -196,11 +202,22 @@ public class TSDBot extends PircBot {
         return ret;
     }
 
+    public boolean userHasGlobalPriv(String nick, User.Priv priv) {
+        return userHasPrivInChannel(nick, mainChannel, priv);
+    }
+
+    public boolean userHasPrivInChannel(String nick, String channel, User.Priv priv) {
+        User u = getUserFromNick(channel, nick);
+        if(u == null)
+            return false;
+        else return u.hasPriv(priv);
+    }
+
     public User getUserFromNick(String channel, String nick) {
         User user = null;
         String prefixlessNick;
         for(User u : getUsers(channel)) {
-            prefixlessNick = u.getNick().replaceAll(u.getPrefix(),"");
+            prefixlessNick = u.getNick().replaceAll(u.getPrefix(), "");
             if(prefixlessNick.equals(nick)) {
                 user = u;
                 break;
@@ -217,5 +234,9 @@ public class TSDBot extends PircBot {
         for(String channel : getChannels()) {
             sendMessage(channel, message);
         }
+    }
+
+    public void incrementBlunderCnt() {
+        blunderCount++;
     }
 }

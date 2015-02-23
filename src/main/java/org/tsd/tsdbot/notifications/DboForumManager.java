@@ -7,6 +7,7 @@ import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.NotificationType;
+import org.tsd.tsdbot.NotifierChannels;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -16,6 +17,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import java.text.SimpleDateFormat;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
@@ -42,11 +44,12 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
     }
 
     @Inject
-    public DboForumManager(WebClient webClient) {
-        super(5);
+    public DboForumManager(TSDBot bot, WebClient webClient, @NotifierChannels HashMap notifierChannels) {
+        super(bot, 5, true);
         dboSdf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z");
         dboSdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         this.webClient = webClient;
+        this.channels = (String[]) notifierChannels.get("dbof");
     }
 
     @Override
@@ -78,7 +81,7 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
             }
         } catch (Exception e) {
             logger.error("DboForumManager sweep() error", e);
-            TSDBot.blunderCount++;
+            bot.incrementBlunderCnt();
         }
 
         recentNotifications.addAll(0,notifications);

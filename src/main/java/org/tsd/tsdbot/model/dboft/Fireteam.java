@@ -1,17 +1,14 @@
 package org.tsd.tsdbot.model.dboft;
 
 import com.j256.ormlite.dao.ForeignCollection;
-import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.field.ForeignCollectionField;
 import com.j256.ormlite.table.DatabaseTable;
 import org.apache.commons.lang3.StringUtils;
 import org.tsd.tsdbot.util.IRCUtil;
 
-import java.sql.ResultSet;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Set;
 import java.util.TimeZone;
 
 /**
@@ -152,6 +149,10 @@ public class Fireteam {
         return "http://destiny.bungie.org/forum/index.php?mode=fireteambuilder&event=" + id;
     }
 
+    public String getEffectiveTitle() {
+        return (StringUtils.isNotEmpty(title)) ? title : activity;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -167,6 +168,12 @@ public class Fireteam {
     @Override
     public int hashCode() {
         return id;
+    }
+
+    public String toBriefString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("(").append(creator.getHandle()).append(") ").append(getEffectiveTitle());
+        return sb.toString();
     }
 
     @Override

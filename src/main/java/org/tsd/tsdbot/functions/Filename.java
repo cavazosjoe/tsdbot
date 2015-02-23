@@ -54,7 +54,7 @@ public class Filename extends MainFunction {
 
         } catch (Exception e) {
             logger.error("filename() error",e);
-            bot.blunderCount++;
+            bot.incrementBlunderCnt();
         } finally {
             if(fnamesGet != null) fnamesGet.releaseConnection();
         }

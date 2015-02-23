@@ -1,20 +1,17 @@
-package org.tsd.tsdbot.scheduled;
+package org.tsd.tsdbot.notifications;
 
-import com.gargoylesoftware.htmlunit.Page;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.*;
-import com.gargoylesoftware.htmlunit.xml.XmlPage;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import org.apache.commons.lang3.StringUtils;
-import org.quartz.Job;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Stage;
+import org.tsd.tsdbot.NotificationType;
+import org.tsd.tsdbot.NotifierChannels;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.JdbcConnectionProvider;
 import org.tsd.tsdbot.model.dboft.*;
@@ -28,11 +25,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Created by Joe on 2/7/2015.
+ * Created by Joe on 2/20/2015.
  */
-public class DboFireteamSweeperJob implements Job {
+@Singleton
+public class DboFireteamManager extends NotificationManager<DboFireteamManager.DboftNotification> {
 
-    private static final Logger logger = LoggerFactory.getLogger(DboFireteamSweeperJob.class);
+    private static final Logger logger = LoggerFactory.getLogger(DboFireteamManager.class);
 
     private static final Pattern fireteamIdPattern = Pattern.compile("<td class=\"event-name\">.*?href=\"/ftb/(\\d+)\".*?", Pattern.DOTALL);
 
@@ -55,41 +53,43 @@ public class DboFireteamSweeperJob implements Job {
                 + "sub|sup|pre|del|code|blockquote|strike|kbd|br|hr|area|map|object|embed|param|link|form|small|big|script|object|embed|link|style|form|input)$");
     }
 
-    @Inject
     protected TSDBot bot;
-
-    @Inject
     protected WebClient webClient;
-
-    @Inject
     protected JdbcConnectionProvider connectionProvider;
 
     @Inject
-    protected Stage stage;
-
-    private String destinyChannel;
-    private Dao<Fireteam, Integer> fireteamDao;
-    private Dao<FireteamRSVP, Integer> rsvpDao;
-    private Dao<DboUser, Integer> userDao;
-
-    // fireteam -> seen in fetch
-    private HashMap<Fireteam, Boolean> fireteamsInDb = new HashMap<>();
+    public DboFireteamManager(TSDBot bot,
+                              WebClient webClient,
+                              JdbcConnectionProvider connectionProvider,
+                              @NotifierChannels HashMap notifierChannels) {
+        super(bot, 20, false);
+        this.bot = bot;
+        this.webClient = webClient;
+        this.connectionProvider = connectionProvider;
+        this.channels = (String[]) notifierChannels.get("dboft");
+    }
 
     @Override
-    public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
-        this.destinyChannel = (this.stage.equals(Stage.dev)) ? "#tsdbot" : "#tsd";
+    public NotificationType getNotificationType() {
+        return null;
+    }
+
+    @Override
+    protected LinkedList<DboftNotification> sweep() {
         JdbcConnectionSource connectionSource = null;
         try {
 
             logger.info("Beginning sweep of DBO Fireteams...");
+            LinkedList<DboftNotification> notifications = new LinkedList<>();
 
             connectionSource = connectionProvider.get();
-            fireteamDao = DaoManager.createDao(connectionSource, Fireteam.class);
-            rsvpDao = DaoManager.createDao(connectionSource, FireteamRSVP.class);
-            userDao = DaoManager.createDao(connectionSource, DboUser.class);
+            Dao<Fireteam, Integer> fireteamDao = DaoManager.createDao(connectionSource, Fireteam.class);
+            Dao<FireteamRSVP, Integer> rsvpDao = DaoManager.createDao(connectionSource, FireteamRSVP.class);
+            Dao<DboUser, Integer> userDao = DaoManager.createDao(connectionSource, DboUser.class);
 
+            HashMap<Fireteam, Boolean> fireteamsInDb = new HashMap<>();
             for(Fireteam fireteam : fireteamDao.query(fireteamDao.queryBuilder().where().eq("deleted", 0).prepare())) {
-                logger.info("Found undeleted fireteam in DB: id={} {}", fireteam.getId(), fireteam.toString());
+                logger.debug("Found undeleted fireteam in DB: id={} {}", fireteam.getId(), fireteam.toString());
                 fireteamsInDb.put(fireteam, false);
             }
 
@@ -101,27 +101,30 @@ public class DboFireteamSweeperJob implements Job {
             while(indexMatcher.find()) {
 
                 int fireteamId = Integer.valueOf(indexMatcher.group(1));
-                logger.info("***** Found fireteam on page: id={} *****", fireteamId);
+                logger.debug("***** Found fireteam on page: id={} *****", fireteamId);
 
                 Fireteam fireteam = fireteamDao.queryForId(fireteamId);
 
                 boolean creating = false; //creating or updating
                 if(fireteam == null) {
-                    logger.info("Could not find fireteam in database, creating...");
+                    logger.debug("Could not find fireteam in database, creating...");
                     fireteam = new Fireteam(fireteamId);
                     creating = true;
                 } else {
-                    logger.info("Found fireteam in database!");
+                    logger.debug("Found fireteam in database!");
                     if(fireteam.isDeleted()) {
-                        logger.info("Fireteam is already deleted in the db, skipping...");
+                        logger.debug("Fireteam is already deleted in the db, skipping...");
                         continue;
                     } else if(fireteam.getEventTime().before(new Date())) {
-                        logger.info("Fireteam date of {} is before current time, deleting...", fireteam.getEventTime());
+                        logger.debug("Fireteam date of {} is before current time, deleting...", fireteam.getEventTime());
                         fireteam.setDeleted(true);
                         fireteamsInDb.remove(fireteam);
                         fireteamDao.update(fireteam);
                         String shortUrl = IRCUtil.shortenUrl(fireteam.getUrl());
-                        bot.sendMessage(destinyChannel, "[DBOFT] [EVENT STARTING] " + fireteam.toString() + " -- " + shortUrl);
+                        FireteamNotification completed =
+                                new FireteamNotification(fireteam, DboftNotificationType.COMPLETE, null);
+                        notifications.add(completed);
+//                        bot.sendMessage(destinyChannel, "[DBOFT] [EVENT STARTING] " + fireteam.toString() + " -- " + shortUrl);
                         continue;
                     } else {
                         fireteamsInDb.put(fireteam, true);
@@ -185,7 +188,7 @@ public class DboFireteamSweeperJob implements Job {
                 for(DomElement de : creatorDiv.getChildElements()) {
                     Matcher creatorMatcher = dataPattern.matcher(de.asXml());
                     while(creatorMatcher.find() && creator == null) {
-                        creator = getUserFromDiv(creatorMatcher.group(1).trim());
+                        creator = getUserFromDiv(userDao, creatorMatcher.group(1).trim());
                     }
                 }
 
@@ -205,15 +208,13 @@ public class DboFireteamSweeperJob implements Job {
 
                 // we now have all the fireteam data. analyze the RSVPs
 
-                Set<FireteamRSVP> rsvpsOnSite = parseRSVPs(fireteam, (HtmlTable) fireteamPage.getByXPath("//table[@id='rsvp-list']").get(0));
-                logger.info("Found {} RSVPs on DBO", rsvpsOnSite.size());
+                Set<FireteamRSVP> rsvpsOnSite = parseRSVPs(fireteam, (HtmlTable) fireteamPage.getByXPath("//table[@id='rsvp-list']").get(0), userDao);
+                logger.debug("Found {} RSVPs on DBO", rsvpsOnSite.size());
 
                 List<String[]> fireteamChanges = new LinkedList<>();
                 HashSet<FireteamRSVP> deletedRsvps = new HashSet<>();
                 HashSet<FireteamRSVP> addedRsvps = new HashSet<>();
-
-                // fireteam -> list<change> | change=String[0:field, 1:oldValue, 2:newValue]
-                HashMap<FireteamRSVP, List<String[]>> updatedRsvps = new HashMap<>();
+                HashSet<FireteamRSVP> updatedRsvps = new HashSet<>();
 
                 if(!creating) {
 
@@ -244,11 +245,11 @@ public class DboFireteamSweeperJob implements Job {
 
                     for(FireteamRSVP rsvpInDb : fireteam.getRsvps()) {
 
-                        logger.info("Analyzing RSVP in database: {}", rsvpInDb.toString());
+                        logger.debug("Analyzing RSVP in database: {}", rsvpInDb.toString());
 
                         if(rsvpsOnSite.contains(rsvpInDb)) {
 
-                            logger.info("Matched this RSVP with one on the site");
+                            logger.debug("Matched this RSVP with one on the site");
                             // in DB and on site -- updated
                             // get the one on the site
                             FireteamRSVP onSite = null;
@@ -278,20 +279,24 @@ public class DboFireteamSweeperJob implements Job {
                             if(tentativeChg != null)
                                 changes.add(tentativeChg);
 
-                            logger.info("Recorded {} changes for RSVP {}", changes.size(), onSite.toString());
-                            updatedRsvps.put(onSite, changes);
+                            logger.debug("Recorded {} changes for RSVP {}", changes.size(), onSite.toString());
+                            updatedRsvps.add(onSite);
+                            if(changes.size() > 0) {
+                                RSVPNotification notification = new RSVPNotification(fireteam, DboftNotificationType.UPDATE, changes, onSite);
+                                notifications.add(notification);
+                            }
                             rsvpsOnSite.remove(rsvpInDb);
 
                         } else {
                             // in DB but no longer on site -- deleted
-                            logger.info("Could not find this RSVP on the site, marking for deletion...");
+                            logger.debug("Could not find this RSVP on the site, marking for deletion...");
                             deletedRsvps.add(rsvpInDb);
                         }
                     }
 
                     // rsvpsOnSite now only contains new RSVPs
                     for(FireteamRSVP addingRsvp : rsvpsOnSite) {
-                        logger.info("Marking RSVP for addition: {}", addingRsvp.toString());
+                        logger.debug("Marking RSVP for addition: {}", addingRsvp.toString());
                         addedRsvps.add(addingRsvp);
                     }
 
@@ -307,45 +312,64 @@ public class DboFireteamSweeperJob implements Job {
                 fireteam.setDescription(description);
 
                 if(!creating) {
-                    logger.info("Updating fireteam {}...", fireteam.toString());
+                    logger.debug("Updating fireteam {}...", fireteam.toString());
 //                    fireteamDao.update(fireteam);
-                    for(FireteamRSVP updatedRsvp : updatedRsvps.keySet()) {
-                        logger.info("Updating RSVP {}...", updatedRsvp.toString());
+                    for(FireteamRSVP updatedRsvp : updatedRsvps) {
+                        logger.debug("Updating RSVP {}...", updatedRsvp.toString());
                         rsvpDao.update(updatedRsvp);
                     }
                     for(FireteamRSVP addedRsvp : addedRsvps) {
-                        logger.info("Creating RSVP {}...", addedRsvp.toString());
+                        logger.debug("Creating RSVP {}...", addedRsvp.toString());
                         rsvpDao.create(addedRsvp);
+                        RSVPNotification notification = new RSVPNotification(fireteam, DboftNotificationType.CREATE, null, addedRsvp);
+                        notifications.add(notification);
                         if(!fireteam.getRsvps().contains(addedRsvp))
                             fireteam.getRsvps().add(addedRsvp);
                     }
                     for(FireteamRSVP deletedRsvp : deletedRsvps) {
-                        logger.info("Deleting RSVP {}...", deletedRsvp.toString());
+                        logger.debug("Deleting RSVP {}...", deletedRsvp.toString());
                         rsvpDao.delete(deletedRsvp);
+                        RSVPNotification notification = new RSVPNotification(fireteam, DboftNotificationType.DELETE, null, deletedRsvp);
+                        notifications.add(notification);
                         if(fireteam.getRsvps().contains(deletedRsvp))
                             fireteam.getRsvps().remove(deletedRsvp);
                     }
                     fireteamDao.update(fireteam);
-                    notifyFireteamChanges(fireteam, fireteamChanges, updatedRsvps, addedRsvps, deletedRsvps);
+
+                    if(fireteamChanges.size() > 0) {
+                        FireteamNotification notification = new FireteamNotification(fireteam, DboftNotificationType.UPDATE, fireteamChanges);
+                        notifications.add(notification);
+                    }
+
+//                    notifyFireteamChanges(fireteam, fireteamChanges, updatedRsvps, addedRsvps, deletedRsvps);
                 } else {
-                    logger.info("Creating fireteam {}...", fireteam.toString());
+                    logger.debug("Creating fireteam {}...", fireteam.toString());
                     fireteamDao.create(fireteam);
                     for(FireteamRSVP rsvp : rsvpsOnSite) {
-                        logger.info("Creating RSVP {}...", rsvp.toString());
+                        logger.debug("Creating RSVP {}...", rsvp.toString());
                         rsvpDao.create(rsvp);
                     }
-                    notifyNewFireteam(fireteam);
+                    FireteamNotification notification = new FireteamNotification(fireteam, DboftNotificationType.CREATE, null);
+                    notifications.add(notification);
+//                    notifyNewFireteam(fireteam);
                 }
             }
 
             for(Fireteam fireteam : fireteamsInDb.keySet()) {
                 if(!fireteamsInDb.get(fireteam)) {
-                    logger.info("Deleting fireteam {}...", fireteam.toString());
+                    logger.debug("Deleting fireteam {}...", fireteam.toString());
                     fireteam.setDeleted(true);
                     fireteamDao.update(fireteam);
-                    bot.sendMessage(destinyChannel, "[DBOFT] [FIRETEAM DELETED] " + fireteam.toString());
+
+                    FireteamNotification notification = new FireteamNotification(fireteam, DboftNotificationType.DELETE, null);
+                    notifications.add(notification);
+//                    bot.sendMessage(destinyChannel, "[DBOFT] [FIRETEAM DELETED] " + fireteam.toString());
                 }
             }
+
+            logger.info("Fireteam sweep ended normally, found {} notifications", notifications.size());
+
+            return notifications;
 
         } catch (Exception e) {
             logger.error("Unhandled error sweeping fireteams", e);
@@ -353,22 +377,24 @@ public class DboFireteamSweeperJob implements Job {
             if(connectionSource != null && connectionSource.isOpen())
                 connectionSource.closeQuietly();
         }
+
+        return new LinkedList<>();
     }
 
-    private DboUser getUserFromDiv(String html) throws SQLException {
+    private DboUser getUserFromDiv(Dao<DboUser, Integer> userDao, String html) throws SQLException {
         Pattern creatorPattern = Pattern.compile("<a href=\"index\\.php\\?mode=user&amp;show_user=(\\d+)\".*?>(.*?)</a>", Pattern.DOTALL);
         Matcher creatorMatcher = creatorPattern.matcher(html);
         while(creatorMatcher.find()) {
             int userId = Integer.parseInt(creatorMatcher.group(1).trim());
             String handle = creatorMatcher.group(2).trim();
-            logger.info("Analyzing user on site, id={} handle={}", userId, handle);
+            logger.debug("Analyzing user on site, id={} handle={}", userId, handle);
             DboUser foundUser = userDao.queryForId(userId);
             if(foundUser == null) {
-                logger.info("Could not find user in DB, creating...");
+                logger.debug("Could not find user in DB, creating...");
                 foundUser = new DboUser(userId, handle);
                 userDao.create(foundUser);
             } else {
-                logger.info("Found user in DB, updating...");
+                logger.debug("Found user in DB, updating...");
                 foundUser.setHandle(handle);
                 userDao.update(foundUser);
             }
@@ -378,9 +404,9 @@ public class DboFireteamSweeperJob implements Job {
         return null;
     }
 
-    private Set<FireteamRSVP> parseRSVPs(Fireteam fireteam, HtmlTable rsvpsTable) throws SQLException {
+    private Set<FireteamRSVP> parseRSVPs(Fireteam fireteam, HtmlTable rsvpsTable, Dao<DboUser, Integer> userDao) throws SQLException {
 
-        logger.info("Parsing RSVPs on site for fireteam {}...", fireteam.getId());
+        logger.debug("Parsing RSVPs on site for fireteam {}...", fireteam.getId());
 
         Set<FireteamRSVP> rsvps = new HashSet<>();
 
@@ -424,7 +450,7 @@ public class DboFireteamSweeperJob implements Job {
             logger.debug("tentative: {}", tentative);
 
             cell = row.getCell(6);
-            creator = getUserFromDiv(cell.asXml());
+            creator = getUserFromDiv(userDao, cell.asXml());
 
             FireteamRSVP rsvp = new FireteamRSVP(fireteam, creator, gamertag);
             rsvp.setCharacterClass(characterClass);
@@ -456,108 +482,117 @@ public class DboFireteamSweeperJob implements Job {
         }
     }
 
-    private void notifyNewFireteam(Fireteam fireteam) {
-        String shortUrl = IRCUtil.shortenUrl(fireteam.getUrl());
-        bot.sendMessage(destinyChannel, "[DBOFT] [NEW FIRETEAM] " + fireteam.toString() + " -- " + shortUrl);
+    public abstract class DboftNotification extends NotificationEntity {
+
+        protected Fireteam fireteam;
+        protected DboftNotificationType notificationType;
+        protected List<String[]> changes;
+
+        protected DboftNotification(Fireteam fireteam, DboftNotificationType notificationType, List<String[]> changes) {
+            this.fireteam = fireteam;
+            this.notificationType = notificationType;
+            this.changes = changes;
+        }
+
+        @Override
+        public String getPreview() {
+            return null;
+        }
+
+        @Override
+        public String[] getFullText() {
+            return new String[0];
+        }
+
+        @Override
+        public String getKey() {
+            return null;
+        }
+
     }
 
-    private void notifyFireteamChanges(Fireteam fireteam,
-                                       List<String[]> fireteamChanges,
-                                       HashMap<FireteamRSVP, List<String[]>> rsvpChanges,
-                                       Set<FireteamRSVP> newRsvps,
-                                       Set<FireteamRSVP> deletedRsvps) {
+    class FireteamNotification extends DboftNotification {
 
-        StringBuilder sb;
-
-        if(fireteamChanges != null && fireteamChanges.size() > 0) {
-            sb = new StringBuilder();
-
-            if (StringUtils.isEmpty(fireteam.getTitle()))
-                sb.append(fireteam.getActivity());
-            else
-                sb.append(fireteam.getTitle());
-
-            sb.append(" (").append(fireteam.getPlatform().getDisplayString()).append(")");
-
-            for (String[] change : fireteamChanges) {
-                sb.append(" || ");
-                sb.append(change[0]).append(": ").append(change[1]).append(" -> ").append(change[2]);
-            }
-
-            bot.sendMessage(destinyChannel, "[DBOFT] [FIRETEAM UPDATE] " + sb.toString());
+        protected FireteamNotification(Fireteam fireteam, DboftNotificationType notificationType, List<String[]> changes) {
+            super(fireteam, notificationType, changes);
         }
 
-        if(rsvpChanges != null && rsvpChanges.size() > 0) {
-            for(FireteamRSVP changedRsvp : rsvpChanges.keySet()) {
-                if(rsvpChanges.get(changedRsvp).size() > 0) { // only print if it has one or more changes
-
-                    sb = new StringBuilder();
-
-                    if (StringUtils.isEmpty(fireteam.getTitle()))
-                        sb.append(fireteam.getActivity());
-                    else
-                        sb.append(fireteam.getTitle());
-
-                    sb.append(" (").append(fireteam.getPlatform().getDisplayString()).append(") ");
-                    sb.append(changedRsvp.getGamertag());
-
-                    for (String[] change : rsvpChanges.get(changedRsvp)) {
-                        sb.append(" || ");
-                        sb.append(change[0]).append(": ").append(change[1]).append(" -> ").append(change[2]);
-                    }
-
-                    bot.sendMessage(destinyChannel, "[DBOFT] [RSVP CHANGED] " + sb.toString());
+        @Override
+        public String getInline() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("[DBOFT] ");
+            switch(notificationType) {
+                case CREATE: {
+                    sb.append("[New Fireteam] ").append(fireteam.toString())
+                            .append(" -- ").append(IRCUtil.shortenUrl(fireteam.getUrl()));
+                    break;
+                }
+                case UPDATE: {
+                    sb.append("[Fireteam update] ").append(fireteam.toBriefString());
+                    for(String[] change : changes)
+                        sb.append(" || ").append(change[0]).append(": ")
+                                .append(change[1]).append(" -> ").append(change[2]);
+                    break;
+                }
+                case DELETE: {
+                    sb.append("[Fireteam DELETED] ").append(fireteam.toBriefString());
+                    break;
+                }
+                case COMPLETE: {
+                    sb.append("[Event starting] ").append(fireteam.toString());
+                    break;
                 }
             }
+            return sb.toString();
         }
 
-        if(newRsvps != null && newRsvps.size() > 0) {
-            sb = new StringBuilder();
+    }
 
-            if (StringUtils.isEmpty(fireteam.getTitle()))
-                sb.append(fireteam.getActivity());
-            else
-                sb.append(fireteam.getTitle());
+    class RSVPNotification extends DboftNotification {
 
-            sb.append(" (").append(fireteam.getPlatform().getDisplayString()).append(")");
+        protected FireteamRSVP rsvp;
 
-            for (FireteamRSVP rsvp : newRsvps) {
-                sb.append(" || ");
-                sb.append(rsvp.getGamertag());
-                if(rsvp.getCharacterClass() != null)
-                    sb.append(", ").append(rsvp.getCharacterClass());
-                if(rsvp.getLevel() != null)
-                    sb.append(", Level ").append(rsvp.getLevel());
-                if(rsvp.isTentative())
-                    sb.append(" (tentative)");
+        protected RSVPNotification(Fireteam fireteam, DboftNotificationType notificationType, List<String[]> changes, FireteamRSVP rsvp) {
+            super(fireteam, notificationType, changes);
+            this.rsvp = rsvp;
+        }
+
+        @Override
+        public String getInline() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("[DBOFT] ");
+            switch(notificationType) {
+                case CREATE: {
+                    sb.append("[New RSVP] ").append(fireteam.getEffectiveTitle()).append(" || ")
+                            .append(rsvp.toString()).append(" -- ").append(IRCUtil.shortenUrl(fireteam.getUrl()));
+                    break;
+                }
+                case UPDATE: {
+                    sb.append("[RSVP changed] ").append(fireteam.getEffectiveTitle()).append(", ").append(rsvp.getGamertag());
+                    for(String[] change : changes)
+                        sb.append(" || ").append(change[0]).append(": ")
+                                .append(change[1]).append(" -> ").append(change[2]);
+                    sb.append(" -- ").append(IRCUtil.shortenUrl(fireteam.getUrl()));
+                    break;
+                }
+                case DELETE: {
+                    sb.append("[RSVP deleted] ").append(fireteam.getEffectiveTitle()).append(" || ")
+                            .append(rsvp.toString()).append(" -- ").append(IRCUtil.shortenUrl(fireteam.getUrl()));
+                    break;
+                }
+                case COMPLETE: {
+                    throw new IllegalStateException("An RSVP can't be completed");
+                }
             }
-
-            bot.sendMessage(destinyChannel, "[DBOFT] [NEW RSVPs] " + sb.toString());
+            return sb.toString();
         }
+    }
 
-        if(deletedRsvps != null && deletedRsvps.size() > 0) {
-            sb = new StringBuilder();
-
-            if (StringUtils.isEmpty(fireteam.getTitle()))
-                sb.append(fireteam.getActivity());
-            else
-                sb.append(fireteam.getTitle());
-
-            sb.append(" (").append(fireteam.getPlatform().getDisplayString()).append(")");
-
-            for (FireteamRSVP rsvp : deletedRsvps) {
-                sb.append(" || ");
-                sb.append(rsvp.getGamertag());
-                if(rsvp.getCharacterClass() != null)
-                    sb.append(", ").append(rsvp.getCharacterClass());
-                if(rsvp.getLevel() != null)
-                    sb.append(", Level ").append(rsvp.getLevel());
-            }
-
-            bot.sendMessage(destinyChannel, "[DBOFT] [CANCELED RSVPs] " + sb.toString());
-        }
-
-
+    enum DboftNotificationType {
+        CREATE,
+        UPDATE,
+        COMPLETE,
+        DELETE
     }
 
 

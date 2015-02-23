@@ -9,7 +9,6 @@ import com.google.inject.name.Names;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpRequestRetryHandler;
@@ -47,8 +46,7 @@ import twitter4j.TwitterFactory;
 
 import java.io.*;
 import java.sql.Connection;
-import java.util.Properties;
-import java.util.Random;
+import java.util.*;
 
 /**
  * Created by Joe on 9/19/2014.
@@ -60,13 +58,22 @@ public class TSDBotConfigModule extends AbstractModule {
     private TSDBot bot;
     private Stage stage;
     private Properties properties;
-    private String[] channels;
 
-    public TSDBotConfigModule(TSDBot bot, Properties properties, Stage stage, String[] channels) {
+    private List<String> allChannels = new LinkedList<>();
+    private String mainChannel;
+    private String[] auxChannels;
+    private HashMap<String, String[]> notifierChannels;
+
+    public TSDBotConfigModule(TSDBot bot, Properties properties, Stage stage, String mainChannel, String[] auxChannels, HashMap<String, String[]> notifierChannels) {
         this.bot = bot;
         this.properties = properties;
         this.stage = stage;
-        this.channels = channels;
+
+        this.mainChannel = mainChannel;
+        this.auxChannels = auxChannels;
+        this.notifierChannels = notifierChannels;
+        this.allChannels.add(mainChannel);
+        this.allChannels.addAll(Arrays.asList(auxChannels));
     }
 
     @Override
@@ -138,8 +145,17 @@ public class TSDBotConfigModule extends AbstractModule {
 
         bind(Properties.class).toInstance(properties);
 
-        bind(String[].class).annotatedWith(Names.named("botChannels"))
-                .toInstance(channels);
+        bind(String.class).annotatedWith(MainChannel.class)
+                .toInstance(mainChannel);
+
+        bind(String[].class).annotatedWith(AuxChannels.class)
+                .toInstance(auxChannels);
+
+        bind(List.class).annotatedWith(AllChannels.class)
+                .toInstance(allChannels);
+
+        bind(HashMap.class).annotatedWith(NotifierChannels.class)
+                .toInstance(notifierChannels);
 
         bind(String.class).annotatedWith(Names.named("mashapeKey"))
                 .toInstance(properties.getProperty("mashape.apiKey"));
@@ -279,6 +295,7 @@ public class TSDBotConfigModule extends AbstractModule {
         notificationBinder.addBinding().to(HboNewsManager.class);
         notificationBinder.addBinding().to(DboForumManager.class);
         notificationBinder.addBinding().to(DboNewsManager.class);
+        notificationBinder.addBinding().to(DboFireteamManager.class);
     }
 
 }

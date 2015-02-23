@@ -205,7 +205,7 @@ public class OmniDB extends MainFunction implements Persistable {
 
         } else if(subCmd.equals("del")){
 
-            if(!bot.getUserFromNick(channel, sender).hasPriv(User.Priv.HALFOP)) {
+            if(!bot.userHasGlobalPriv(sender, User.Priv.HALFOP)) {
                 bot.sendMessage(channel, "Only ops can use that");
                 return;
             }

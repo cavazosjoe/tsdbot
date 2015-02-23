@@ -20,7 +20,7 @@ public class ShutItDown extends MainFunction {
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
-        if(!bot.getUserFromNick(channel, sender).hasPriv(User.Priv.SUPEROP)) {
+        if(!bot.userHasGlobalPriv(sender, User.Priv.SUPEROP)) {
             bot.kick(channel, sender, "Stop that.");
         } else {
             //TODO: change this to actually shut down

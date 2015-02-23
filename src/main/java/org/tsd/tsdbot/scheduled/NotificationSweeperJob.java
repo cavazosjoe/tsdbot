@@ -35,17 +35,12 @@ public class NotificationSweeperJob implements Job {
 
         try {
             for(NotificationManager<NotificationEntity> sweeper : notificationManagers) {
-                for(NotificationEntity notification : sweeper.sweep()) {
-                    if(bot.showNotifications)
-                        bot.broadcast(notification.getInline());
-                }
+                sweeper.sweepAndNotify();
             }
-
             connectionManager.closeIdleConnections(60, TimeUnit.SECONDS);
-            bot.showNotifications = true;
         } catch (Exception e) {
             logger.error("Notification Sweeper error", e);
-            bot.blunderCount++;
+            bot.incrementBlunderCnt();
         }
     }
 }

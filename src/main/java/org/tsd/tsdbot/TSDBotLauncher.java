@@ -30,10 +30,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 import static org.quartz.CronScheduleBuilder.cronSchedule;
 import static org.quartz.JobBuilder.newJob;
@@ -63,18 +60,33 @@ public class TSDBotLauncher {
         String nick = properties.getProperty("nick");
         String pass = properties.getProperty("nickserv.pass");
         String server = properties.getProperty("server");
-        String[] channels = properties.getProperty("channels").split(",");
+
+        // collect channels and add hashmarks to them
+        String mainChannel = "#"+properties.getProperty("mainChannel");
+        String[] auxChannels = properties.getProperty("auxChannels").split(",");
+        for(int i=0 ; i < auxChannels.length ; i++)
+            auxChannels[i] = "#"+auxChannels[i];
+
+        String[] notifierKeys = {"hbon","hbof","dbon","dbof","twitter","dboft"};
+        HashMap<String, String[]> notifierChannels = new HashMap<>();
+        for(String k : notifierKeys) {
+            String[] channels = properties.getProperty("notifiers." + k).split(",");
+            for(int i=0 ; i < channels.length ; i++)
+                channels[i] = "#"+channels[i];
+            notifierChannels.put(k, channels);
+        }
+
         Stage stage = Stage.fromString(properties.getProperty("stage"));
         if(stage == null) {
             throw new Exception("STAGE must be one of [dev, production]");
         }
 
-        log.info("ident={}, nick={}, pass=***, server={}, channels={}, stage={}",
-                new Object[]{ident, nick, server, channels, stage});
+        log.info("ident={}, nick={}, pass=***, server={}, stage={}",
+                new Object[]{ident, nick, server, stage});
 
         TSDBot bot = new TSDBot(ident, nick, pass, server);
 
-        TSDBotConfigModule module = new TSDBotConfigModule(bot, properties, stage, channels);
+        TSDBotConfigModule module = new TSDBotConfigModule(bot, properties, stage, mainChannel, auxChannels, notifierChannels);
         TSDBotServletModule servletModule = new TSDBotServletModule();
 
         Injector injector = Guice.createInjector(module, servletModule);
@@ -84,9 +96,11 @@ public class TSDBotLauncher {
         log.info("TSDBot loaded successfully. Starting server...");
         initializeJettyServer(injector);
 
-        for(String channel : channels) {
-            bot.joinChannel("#"+channel);
-            log.info("Joined channel {}", channel);
+        bot.joinChannel(mainChannel);
+        log.info("Joined main channel {}", mainChannel);
+        for(String channel : auxChannels) {
+            bot.joinChannel(channel);
+            log.info("Joined aux channel {}", channel);
         }
     }
 
@@ -180,10 +194,6 @@ public class TSDBotLauncher {
                     .withIdentity(SchedulerConstants.NOTIFICATION_JOB_KEY)
                     .build();
 
-            JobDetail fireteamJob = newJob(DboFireteamSweeperJob.class)
-                    .withIdentity(SchedulerConstants.DBO_FIRETEAM_JOB_KEY)
-                    .build();
-
             CronTrigger logCleanerTrigger = newTrigger()
                     .withSchedule(cronSchedule("0 0 4 ? * MON")) //4AM every monday
                     .build();
@@ -200,15 +210,10 @@ public class TSDBotLauncher {
                     .withSchedule(cronSchedule("0 0/5 * * * ?")) //every 5 minutes
                     .build();
 
-            CronTrigger fireteamTrigger = newTrigger()
-                    .withSchedule(cronSchedule("0 0/7 * * * ?"))
-                    .build();
-
             scheduler.scheduleJob(logCleanerJob, logCleanerTrigger);
             scheduler.scheduleJob(recapCleanerJob, recapCleanerTrigger);
             scheduler.scheduleJob(printoutCleanerJob, printoutCleanerTrigger);
             scheduler.scheduleJob(notificationJob, notifyTrigger);
-            scheduler.scheduleJob(fireteamJob, fireteamTrigger);
 
             scheduler.start();
 

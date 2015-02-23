@@ -3,7 +3,6 @@ package org.tsd.tsdbot.tsdtv.model;
 import org.tsd.tsdbot.util.TSDTVUtil;
 
 import java.io.File;
-import java.util.Comparator;
 
 /**
  * Created by Joe on 2/1/2015.
