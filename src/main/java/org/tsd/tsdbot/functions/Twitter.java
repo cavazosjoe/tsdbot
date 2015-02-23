@@ -258,8 +258,8 @@ public class Twitter extends MainFunction {
                     }
 
                     QueryResult result = twitterManager.search(queryBuilder.toString(), 50);
-                    int count = result.getCount();
-                    if(count < 1 || result.getTweets().size() < 1) {
+                    LinkedList<Status> tweets = new LinkedList<>(result.getTweets());
+                    if(tweets.size() < 1) {
                         bot.sendMessage(channel, "Couldn't find any tweets for that query");
                         return;
                     }
@@ -272,10 +272,10 @@ public class Twitter extends MainFunction {
                     boolean reliable;
 //                    double confidence = 0;
                     int i=0;
-                    LinkedList<Status> tweets = new LinkedList<>(result.getTweets());
+                    logger.info(".tw search | tweets.size = {}", tweets.size());
                     Collections.shuffle(tweets);
                     try {
-                        while (chosenTweet == null && i < count) {
+                        while (chosenTweet == null && i < tweets.size()) {
                             evaluatingTweet = tweets.get(i);
                             // discard tweets that are replies or retweets
                             if(evaluatingTweet.getInReplyToUserId() < 0
