@@ -120,11 +120,11 @@ public class DboFireteamManager extends NotificationManager<DboFireteamManager.D
                         fireteam.setDeleted(true);
                         fireteamsInDb.remove(fireteam);
                         fireteamDao.update(fireteam);
-                        String shortUrl = IRCUtil.shortenUrl(fireteam.getUrl());
-                        FireteamNotification completed =
-                                new FireteamNotification(fireteam, DboftNotificationType.COMPLETE, null);
-                        notifications.add(completed);
-//                        bot.sendMessage(destinyChannel, "[DBOFT] [EVENT STARTING] " + fireteam.toString() + " -- " + shortUrl);
+                        if(fireteam.isSubscribed()) {
+                            FireteamNotification completed =
+                                    new FireteamNotification(fireteam, DboftNotificationType.COMPLETE, null);
+                            notifications.add(completed);
+                        }
                         continue;
                     } else {
                         fireteamsInDb.put(fireteam, true);
@@ -281,7 +281,7 @@ public class DboFireteamManager extends NotificationManager<DboFireteamManager.D
 
                             logger.debug("Recorded {} changes for RSVP {}", changes.size(), onSite.toString());
                             updatedRsvps.add(onSite);
-                            if(changes.size() > 0) {
+                            if(changes.size() > 0 && fireteam.isSubscribed()) {
                                 RSVPNotification notification = new RSVPNotification(fireteam, DboftNotificationType.UPDATE, changes, onSite);
                                 notifications.add(notification);
                             }
@@ -313,7 +313,6 @@ public class DboFireteamManager extends NotificationManager<DboFireteamManager.D
 
                 if(!creating) {
                     logger.debug("Updating fireteam {}...", fireteam.toString());
-//                    fireteamDao.update(fireteam);
                     for(FireteamRSVP updatedRsvp : updatedRsvps) {
                         logger.debug("Updating RSVP {}...", updatedRsvp.toString());
                         rsvpDao.update(updatedRsvp);
@@ -321,27 +320,30 @@ public class DboFireteamManager extends NotificationManager<DboFireteamManager.D
                     for(FireteamRSVP addedRsvp : addedRsvps) {
                         logger.debug("Creating RSVP {}...", addedRsvp.toString());
                         rsvpDao.create(addedRsvp);
-                        RSVPNotification notification = new RSVPNotification(fireteam, DboftNotificationType.CREATE, null, addedRsvp);
-                        notifications.add(notification);
+                        if(fireteam.isSubscribed()) {
+                            RSVPNotification notification = new RSVPNotification(fireteam, DboftNotificationType.CREATE, null, addedRsvp);
+                            notifications.add(notification);
+                        }
                         if(!fireteam.getRsvps().contains(addedRsvp))
                             fireteam.getRsvps().add(addedRsvp);
                     }
                     for(FireteamRSVP deletedRsvp : deletedRsvps) {
                         logger.debug("Deleting RSVP {}...", deletedRsvp.toString());
                         rsvpDao.delete(deletedRsvp);
-                        RSVPNotification notification = new RSVPNotification(fireteam, DboftNotificationType.DELETE, null, deletedRsvp);
-                        notifications.add(notification);
+                        if(fireteam.isSubscribed()) {
+                            RSVPNotification notification = new RSVPNotification(fireteam, DboftNotificationType.DELETE, null, deletedRsvp);
+                            notifications.add(notification);
+                        }
                         if(fireteam.getRsvps().contains(deletedRsvp))
                             fireteam.getRsvps().remove(deletedRsvp);
                     }
                     fireteamDao.update(fireteam);
 
-                    if(fireteamChanges.size() > 0) {
+                    if(fireteamChanges.size() > 0 && fireteam.isSubscribed()) {
                         FireteamNotification notification = new FireteamNotification(fireteam, DboftNotificationType.UPDATE, fireteamChanges);
                         notifications.add(notification);
                     }
 
-//                    notifyFireteamChanges(fireteam, fireteamChanges, updatedRsvps, addedRsvps, deletedRsvps);
                 } else {
                     logger.debug("Creating fireteam {}...", fireteam.toString());
                     fireteamDao.create(fireteam);
@@ -350,8 +352,7 @@ public class DboFireteamManager extends NotificationManager<DboFireteamManager.D
                         rsvpDao.create(rsvp);
                     }
                     FireteamNotification notification = new FireteamNotification(fireteam, DboftNotificationType.CREATE, null);
-                    notifications.add(notification);
-//                    notifyNewFireteam(fireteam);
+                    notifications.add(notification); // always notify on new fireteams
                 }
             }
 
@@ -361,13 +362,14 @@ public class DboFireteamManager extends NotificationManager<DboFireteamManager.D
                     fireteam.setDeleted(true);
                     fireteamDao.update(fireteam);
 
-                    FireteamNotification notification = new FireteamNotification(fireteam, DboftNotificationType.DELETE, null);
-                    notifications.add(notification);
-//                    bot.sendMessage(destinyChannel, "[DBOFT] [FIRETEAM DELETED] " + fireteam.toString());
+                    if(fireteam.isSubscribed()) {
+                        FireteamNotification notification = new FireteamNotification(fireteam, DboftNotificationType.DELETE, null);
+                        notifications.add(notification);
+                    }
                 }
             }
 
-            logger.info("Fireteam sweep ended normally, found {} notifications", notifications.size());
+            logger.info("Fireteam sweep ended normally, compiled {} notifications", notifications.size());
 
             return notifications;
 

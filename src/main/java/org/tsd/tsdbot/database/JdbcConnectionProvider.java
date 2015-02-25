@@ -25,21 +25,25 @@ public class JdbcConnectionProvider implements Provider<JdbcConnectionSource> {
     @DBConnectionString
     private String connectionString;
     private JdbcConnectionSource jdbcConnectionSource;
+    private boolean tablesLoaded = false;
 
     @Override
     public JdbcConnectionSource get() {
 
         if(jdbcConnectionSource == null || !(jdbcConnectionSource.isOpen())) try {
 
-            logger.info("JdbcConnectionSource is null or closed, " +
+            logger.debug("JdbcConnectionSource is null or closed, " +
                     "retrying with connectionString={}", connectionString);
             jdbcConnectionSource = new JdbcConnectionSource(connectionString);
 
             // scan the model directory for annotations and add tables if necessary
-            Reflections modelReflect = new Reflections("org.tsd.tsdbot.model");
-            Set<Class<?>> tables = modelReflect.getTypesAnnotatedWith(DatabaseTable.class);
-            for(Class clazz : tables) {
-                TableUtils.createTableIfNotExists(jdbcConnectionSource, clazz);
+            if(!tablesLoaded) {
+                Reflections modelReflect = new Reflections("org.tsd.tsdbot.model");
+                Set<Class<?>> tables = modelReflect.getTypesAnnotatedWith(DatabaseTable.class);
+                for (Class clazz : tables) {
+                    TableUtils.createTableIfNotExists(jdbcConnectionSource, clazz);
+                }
+                tablesLoaded = true;
             }
 
         } catch (SQLException e) {

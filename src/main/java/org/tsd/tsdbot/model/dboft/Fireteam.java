@@ -44,8 +44,11 @@ public class Fireteam {
     @DatabaseField(foreign = true, foreignAutoRefresh = true, columnName = "creatorId", canBeNull = false)
     private DboUser creator;
 
-    @DatabaseField
-    private boolean deleted;
+    @DatabaseField(canBeNull = false)
+    private boolean subscribed = false;
+
+    @DatabaseField(canBeNull = false)
+    private boolean deleted = false;
 
     @ForeignCollectionField
     private ForeignCollection<FireteamRSVP> rsvps;
@@ -55,6 +58,14 @@ public class Fireteam {
 
     public Fireteam(int id) {
         this.id = id;
+    }
+
+    public boolean isSubscribed() {
+        return subscribed;
+    }
+
+    public void setSubscribed(boolean subscribed) {
+        this.subscribed = subscribed;
     }
 
     public boolean isDeleted() {
@@ -172,13 +183,14 @@ public class Fireteam {
 
     public String toBriefString() {
         StringBuilder sb = new StringBuilder();
-        sb.append("(").append(creator.getHandle()).append(") ").append(getEffectiveTitle());
+        sb.append("(").append(creator.getHandle()).append(") ").append(getEffectiveTitle())
+                .append(" (id=").append(id).append(")");
         return sb.toString();
     }
 
     @Override
     public String toString() {
-        SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd HH:mm z");
+        SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd h:mm a z");
         sdf.setTimeZone(TimeZone.getTimeZone("America/New_York"));
         StringBuilder sb = new StringBuilder();
 
@@ -208,7 +220,7 @@ public class Fireteam {
             }
         }
 
-        sb.append(" ").append(sdf.format(eventTime));
+        sb.append(" ").append(sdf.format(eventTime)).append(" (id=").append(id).append(")");
 
         return sb.toString();
     }
