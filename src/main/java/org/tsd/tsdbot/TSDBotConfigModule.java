@@ -1,6 +1,7 @@
 package org.tsd.tsdbot;
 
 import com.gargoylesoftware.htmlunit.BrowserVersion;
+import com.gargoylesoftware.htmlunit.CookieManager;
 import com.gargoylesoftware.htmlunit.NicelyResynchronizingAjaxController;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.google.inject.AbstractModule;
@@ -189,7 +190,7 @@ public class TSDBotConfigModule extends AbstractModule {
 
         WebClient webClient = new WebClient(BrowserVersion.FIREFOX_24);
         webClient.setAjaxController(new NicelyResynchronizingAjaxController());
-        webClient.getCookieManager().setCookiesEnabled(true);
+        webClient.getCookieManager().setCookiesEnabled(false);
         bind(WebClient.class).toInstance(webClient);
 
         bind(Twitter.class).toInstance(TwitterFactory.getSingleton());
