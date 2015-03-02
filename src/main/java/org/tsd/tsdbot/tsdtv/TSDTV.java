@@ -15,6 +15,8 @@ import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.Persistable;
 import org.tsd.tsdbot.scheduled.SchedulerConstants;
 import org.tsd.tsdbot.tsdtv.model.*;
+import org.tsd.tsdbot.tsdtv.processor.FileAnalysis;
+import org.tsd.tsdbot.tsdtv.processor.StreamType;
 import org.tsd.tsdbot.util.FuzzyLogic;
 
 import javax.naming.AuthenticationException;
@@ -27,8 +29,6 @@ import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Calendar;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static org.quartz.CronScheduleBuilder.cronSchedule;
 import static org.quartz.JobBuilder.newJob;
@@ -47,10 +47,10 @@ public class TSDTV implements Persistable {
     private static final int dayBoundaryHour = 4; // 4:00 AM
     private static final TimeZone timeZone = TimeZone.getTimeZone("America/New_York");
 
-
     private TSDBot bot;
 
     private TSDTVLibrary library;
+    private TSDTVFileProcessor processor;
 
     private DBConnectionProvider connectionProvider;
     private InjectableStreamFactory streamFactory;
@@ -68,6 +68,7 @@ public class TSDTV implements Persistable {
     @Inject
     public TSDTV(TSDBot bot,
                  TSDTVLibrary library,
+                 TSDTVFileProcessor fileProcessor,
                  Properties prop,
                  Scheduler scheduler,
                  DBConnectionProvider connectionProvider,
@@ -76,6 +77,7 @@ public class TSDTV implements Persistable {
                  @Named("ffmpegExec") String ffmpegExec,
                  @Named("tsdtvDirect") String tsdtvDirect) throws SQLException {
         this.bot = bot;
+        this.processor = processor;
         this.library = library;
         this.scheduleLoc = prop.getProperty("tsdtv.schedule");
         this.scheduler = scheduler;
@@ -187,7 +189,7 @@ public class TSDTV implements Persistable {
         // determine if we have subtitles for this
         StringBuilder videoFilter = new StringBuilder();
         videoFilter.append("yadif");
-        if(hasSubtitles(program.video))
+        if(hasSubtitles(program.video.getFile()))
             videoFilter.append(",subtitles=").append(program.video.getFile().getAbsolutePath());
 
         runningStream = streamFactory.newStream(videoFilter.toString(), program);
@@ -687,53 +689,16 @@ public class TSDTV implements Persistable {
     }
 
     /**
-     * Gets the audio, video, and subtitle streams contained in a video
-     * @param video the video in question
-     * @return a mapping of track number to stream type
-     */
-    private HashMap<Integer, StreamType> getVideoStreams(Streamable video) {
-
-        Pattern trackPattern = Pattern.compile("^Track ID\\s+(\\d+):\\s+(\\w+)\\s+\\(.*\\)$", Pattern.DOTALL);
-        HashMap<Integer, StreamType> streams = new HashMap<>();
-
-        try {
-            ProcessBuilder pb = new ProcessBuilder("mkvmerge", "-i", video.getFile().getAbsolutePath());
-            Process p = pb.start();
-            p.waitFor();
-            InputStream out = p.getInputStream();
-            InputStreamReader reader = new InputStreamReader(out);
-            BufferedReader br = new BufferedReader(reader);
-            String line;
-            while( (line = br.readLine()) != null ) {
-                if(line.contains("Chapters")) break;
-                if(line.contains("Track ID")) {
-                    Matcher m = trackPattern.matcher(line);
-                    while(m.find()) {
-                        Integer streamNo = Integer.parseInt(m.group(1));
-                        StreamType streamType = StreamType.fromString(m.group(2));
-                        streams.put(streamNo, streamType);
-                    }
-                }
-            }
-
-        } catch (InterruptedException | IOException e) {
-            logger.error(e.getMessage());
-        }
-
-        return streams;
-    }
-
-    /**
      * Determines whether or not a video has a stream with subtitles
-     * @param video the video in question
+     * @param file the video in question
      * @return true if the video has subtitles
      */
-    private boolean hasSubtitles(Streamable video) {
-        HashMap<Integer, StreamType> streams = getVideoStreams(video);
-        for(Integer streamNum : streams.keySet()) {
-            if(streams.get(streamNum).equals(StreamType.SUBTITLES)) {
-                return true;
-            }
+    private boolean hasSubtitles(File file) {
+        try {
+            FileAnalysis analysis = processor.analyzeFile(file);
+            return analysis.getStreamsByType().containsKey(StreamType.SUBTITLE);
+        } catch (Exception e) {
+            logger.error("Error finding subtitles for {}", file, e);
         }
         return false;
     }
@@ -766,20 +731,6 @@ public class TSDTV implements Persistable {
             this.id = jobDataMap.getString(SchedulerConstants.TSDTV_BLOCK_ID_FIELD);
             this.scheduleParts = jobDataMap.getString(SchedulerConstants.TSDTV_BLOCK_SCHEDULE_FIELD)
                     .split(SchedulerConstants.TSDTV_BLOCK_SCHEDULE_DELIMITER);
-        }
-    }
-
-    static enum StreamType {
-        VIDEO,
-        AUDIO,
-        SUBTITLES;
-
-        public static StreamType fromString(String s) {
-            for(StreamType type : StreamType.values()) {
-                if(type.toString().compareToIgnoreCase(s) == 0)
-                    return type;
-            }
-            return null;
         }
     }
 

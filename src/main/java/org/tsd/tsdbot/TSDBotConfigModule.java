@@ -41,6 +41,7 @@ import org.tsd.tsdbot.stats.Stats;
 import org.tsd.tsdbot.stats.SystemStats;
 import org.tsd.tsdbot.tsdtv.InjectableStreamFactory;
 import org.tsd.tsdbot.tsdtv.TSDTV;
+import org.tsd.tsdbot.tsdtv.TSDTVFileProcessor;
 import org.tsd.tsdbot.tsdtv.TSDTVLibrary;
 import twitter4j.Twitter;
 import twitter4j.TwitterFactory;
@@ -48,6 +49,8 @@ import twitter4j.TwitterFactory;
 import java.io.*;
 import java.sql.Connection;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Created by Joe on 9/19/2014.
@@ -171,6 +174,9 @@ public class TSDBotConfigModule extends AbstractModule {
 
         bind(InjectableStreamFactory.class).toInstance(new InjectableStreamFactory());
 
+        ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        bind(ExecutorService.class).toInstance(executorService);
+
         PoolingHttpClientConnectionManager poolingManager = new PoolingHttpClientConnectionManager();
         poolingManager.setMaxTotal(100);
         HttpRequestRetryHandler retryHandler = new HttpRequestRetryHandler() {
@@ -242,7 +248,11 @@ public class TSDBotConfigModule extends AbstractModule {
         bind(File.class)
                 .annotatedWith(Names.named("tsdtvLibrary"))
                 .toInstance(new File(properties.getProperty("tsdtv.catalog")));
+        bind(File.class)
+                .annotatedWith(Names.named("tsdtvRaws"))
+                .toInstance(new File(properties.getProperty("tsdtv.raws")));
         bind(TSDTVLibrary.class).asEagerSingleton();
+        bind(TSDTVFileProcessor.class).asEagerSingleton();
 
         bind(TSDTV.class).asEagerSingleton();
 

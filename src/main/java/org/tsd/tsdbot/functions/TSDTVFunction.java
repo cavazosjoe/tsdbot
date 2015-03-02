@@ -10,8 +10,11 @@ import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.tsdtv.*;
 import org.tsd.tsdbot.tsdtv.model.TSDTVEpisode;
 import org.tsd.tsdbot.tsdtv.model.TSDTVShow;
+import org.tsd.tsdbot.tsdtv.processor.AnalysisCollection;
 
 import javax.naming.AuthenticationException;
+import java.io.FileNotFoundException;
+import java.nio.file.NotDirectoryException;
 import java.sql.SQLException;
 import java.util.Random;
 
@@ -28,11 +31,19 @@ public class TSDTVFunction extends MainFunction {
 
     private TSDTV tsdtv;
     private TSDTVLibrary library;
+    private TSDTVFileProcessor fileProcessor;
+
     private String serverUrl;
     private Random random;
 
     @Inject
-    public TSDTVFunction(TSDBot bot, TSDTV tsdtv, TSDTVLibrary library, @Named("serverUrl") String serverUrl, Random random) {
+    public TSDTVFunction(
+            TSDBot bot,
+            TSDTV tsdtv,
+            TSDTVLibrary library,
+            TSDTVFileProcessor fileProcessor,
+            Random random,
+            @Named("serverUrl") String serverUrl) {
         super(bot);
         this.description = "The TSDTV Streaming Entertainment Value Service";
         this.usage = "USAGE: .tsdtv [ catalog [<directory>] | play [<movie-name> | <directory> <movie-name>] ]";
@@ -40,6 +51,7 @@ public class TSDTVFunction extends MainFunction {
         this.library = library;
         this.serverUrl = serverUrl;
         this.random = random;
+        this.fileProcessor = fileProcessor;
     }
 
     @Override
@@ -65,6 +77,20 @@ public class TSDTVFunction extends MainFunction {
             }
 
             tsdtv.prepareBlockReplay(channel, cmdParts[2]);
+
+        } else if(subCmd.equals("analyze")) {
+
+            if(!isOp) {
+                bot.sendMessage(channel, "Only ops can use that");
+                return;
+            }
+
+            if(cmdParts.length < 3) {
+                bot.sendMessage(channel, "USAGE: .tsdtv analyze <raw-directory>");
+                return;
+            }
+
+            fileProcessor.analyzeDirectory(cmdParts[2], channel);
 
         } else if(subCmd.equals("play")) {
 

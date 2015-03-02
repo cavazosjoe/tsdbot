@@ -48,7 +48,7 @@ public class TSDBot extends PircBot {
     @Inject
     protected Hustle hustle;
 
-    @Inject
+    @Inject @MainChannel
     protected String mainChannel;
 
     public TSDBot(String ident, String name, String nickservPass, String server) throws IrcException, IOException {
