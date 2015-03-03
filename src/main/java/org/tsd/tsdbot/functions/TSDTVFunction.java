@@ -11,6 +11,8 @@ import org.tsd.tsdbot.tsdtv.*;
 import org.tsd.tsdbot.tsdtv.model.TSDTVEpisode;
 import org.tsd.tsdbot.tsdtv.model.TSDTVShow;
 import org.tsd.tsdbot.tsdtv.processor.AnalysisCollection;
+import org.tsd.tsdbot.tsdtv.processor.StreamDetectionException;
+import org.tsd.tsdbot.tsdtv.processor.TSDTVProcessingException;
 
 import javax.naming.AuthenticationException;
 import java.io.FileNotFoundException;
@@ -91,6 +93,49 @@ public class TSDTVFunction extends MainFunction {
             }
 
             fileProcessor.analyzeDirectory(cmdParts[2], channel);
+
+        } else if(subCmd.equals("process")) {
+
+            if(!isOp) {
+                bot.sendMessage(channel, "Only ops can use that");
+                return;
+            }
+
+            // .tsdtv process -input korra4 -output Legend_of_Korra_S4 -type dub|sub|manual
+            if(cmdParts.length < 8) {
+                bot.sendMessage(channel, "USAGE: .tsdtv process -input <analysis_id> -output <output_dir> -type dub|sub|manual");
+                return;
+            }
+
+            String analysisId = null;
+            String outputDir = null;
+            TSDTVFileProcessor.ProcessType type = null;
+
+            for(int i=2 ; i < cmdParts.length ; i++) {
+                String arg = cmdParts[i];
+                if("-input".equals(arg)) {
+                    i++;
+                    analysisId = cmdParts[i];
+                } else if("-output".equals(arg)) {
+                    i++;
+                    outputDir = cmdParts[i];
+                } else if("-type".equals(arg)) {
+                    i++;
+                    type = TSDTVFileProcessor.ProcessType.fromString(cmdParts[i]);
+                }
+            }
+
+            if(analysisId == null)
+                bot.sendMessage(channel, "Could not parse analysis ID");
+            else if(outputDir == null)
+                bot.sendMessage(channel, "Could not parse output directory");
+            else if(type == null)
+                bot.sendMessage(channel, "Could not parse process type");
+            else try {
+                fileProcessor.process(channel, analysisId, outputDir, type);
+            } catch (Exception e) {
+                bot.sendMessage(channel, "ERROR: " + e.getMessage());
+            }
 
         } else if(subCmd.equals("play")) {
 

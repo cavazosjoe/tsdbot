@@ -11,7 +11,6 @@ import org.tsd.tsdbot.tsdtv.processor.*;
 import org.tsd.tsdbot.util.TSDTVUtil;
 
 import java.io.*;
-import java.nio.file.NotDirectoryException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Matcher;
@@ -47,14 +46,153 @@ public class TSDTVFileProcessor {
     @Inject @Named("tsdtvRaws")
     private File rawsDir;
 
+    @Inject @Named("tsdtvLibrary")
+    private File libraryDir;
+
+    @Inject
+    private Random random;
+
     private HashMap<String, AnalysisCollection> analyses = new HashMap<>();
 
     public AnalysisCollection getAnalysesForId(String id) {
         return analyses.get(id);
     }
 
-    public void process(String rawsLocation, String destinationName) {
+    public void process(final String channel, String analysesId, final String output, final ProcessType type) throws TSDTVProcessingException, StreamDetectionException {
 
+        log.info("Beginning show processing: analysisId={}, output={}, type={}", new Object[]{analysesId, output, type});
+
+        final AnalysisCollection analysisCollection = analyses.get(analysesId);
+        if(analysisCollection == null)
+            throw new TSDTVProcessingException("Could not find analyses for id " + analysesId);
+        if(analysisCollection.getAnalyses().size() == 0)
+            throw new TSDTVProcessingException("Analysis collection for " + analysisCollection.getFolder() + " contains no analyses");
+
+        File inputDir = new File(rawsDir + "/" + analysisCollection.getFolder());
+        log.info("Using input directory {}", inputDir.getAbsolutePath());
+
+        final File outputDir = new File(libraryDir.getAbsolutePath() + "/" + output);
+        log.info("Using output directory {}", outputDir.getAbsolutePath());
+
+        if(outputDir.exists())
+            throw new TSDTVProcessingException("Output directory " + outputDir.getName() + " already exists");
+        else
+            outputDir.mkdir();
+
+        final HashMap<Integer, String[]> manualStreamMapping = new HashMap<>();
+        if(type.equals(ProcessType.manual)) try {
+
+            File episodeFile = new File(inputDir.getAbsolutePath() + "/" + ".episodeMap");
+            log.info("Using episodeFile {}", episodeFile.getAbsolutePath());
+
+            if(!episodeFile.exists())
+                throw new TSDTVProcessingException("Could not find episode stream mapping for " + analysisCollection.getFolder());
+
+            FileInputStream episodeMapping = new FileInputStream(episodeFile);
+            try(BufferedReader br = new BufferedReader(new InputStreamReader(episodeMapping))) {
+                String line = null;
+                int epNum = 0;
+                while((line = br.readLine()) != null) {
+                    manualStreamMapping.put(epNum, line.split(","));
+                    epNum++;
+                }
+            } catch (IOException e) {
+                log.error("Error reading episode mapping file", e);
+                throw new TSDTVProcessingException("Error reading episode mapping file for " + analysisCollection.getFolder());
+            }
+        } catch (FileNotFoundException fnfe) {
+            log.error("Error finding episode mapping file", fnfe);
+            throw new TSDTVProcessingException("Error finding episode mapping file");
+        }
+
+        Runnable processingThread = new Runnable() {
+            @Override
+            public void run() {
+                int epNum = 0;
+                for(FileAnalysis fileAnalysis : analysisCollection.getAnalyses()) {
+                    log.info("Processing fileAnalysis for {}", fileAnalysis.getFile().getAbsolutePath());
+                    Stream[] tracks = null;
+                    try {
+                        switch (type) {
+                            case dub:
+                                tracks = detectDubStreams(fileAnalysis);
+                                log.info("Dub streams: {}", tracks);
+                                break;
+                            case sub:
+                                tracks = detectSubStreams(fileAnalysis);
+                                log.info("Sub streams: {}", tracks);
+                                break;
+                            case manual: {
+                                String[] tracksToUse = manualStreamMapping.get(epNum);
+                                log.info("Tracks to use: {}", tracksToUse);
+                                tracks = new Stream[tracksToUse.length];
+                                for (int j = 0; j < tracksToUse.length; j++) {
+                                    int n = Integer.parseInt(tracksToUse[j]);
+                                    tracks[j] = fileAnalysis.getStreamsByInteger().get(n);
+                                }
+                                log.info("Manual streams: {}", tracks);
+                                epNum++;
+                            }
+                        }
+                    } catch (StreamDetectionException e) {
+                        log.error("Error detecting streams for file {}", fileAnalysis.getFile().getName(), e);
+                        bot.sendMessage(channel, "Error detecting streams for file " + fileAnalysis.getFile().getName());
+                        return;
+                    }
+
+                    String outputFile = outputDir.getAbsolutePath() + "/" + fileAnalysis.getFile().getName();
+                    log.info("Using outputLoc {}", outputFile);
+
+                    LinkedList<String> ffmpegCmdParts = new LinkedList<>();
+                    ffmpegCmdParts.add(ffmpegExec);
+                    ffmpegCmdParts.add("-y");
+                    ffmpegCmdParts.add("-i");
+                    ffmpegCmdParts.add(fileAnalysis.getFile().getAbsolutePath());
+
+                    for(Stream s : tracks) {
+                        ffmpegCmdParts.add("-map");
+                        ffmpegCmdParts.add("0:" + s.getStreamNumber());
+                    }
+
+                    ffmpegCmdParts.add("-c:v");
+                    ffmpegCmdParts.add("copy");
+                    ffmpegCmdParts.add("-c:a");
+                    ffmpegCmdParts.add("copy");
+                    ffmpegCmdParts.add(outputFile);
+
+                    log.info("Using ffmpegCmdParts {}", ffmpegCmdParts);
+
+                    ProcessBuilder pb = new ProcessBuilder(ffmpegCmdParts);
+                    try {
+                        Process p = pb.start();
+                        p.waitFor();
+
+                        InputStream out = p.getErrorStream();
+                        InputStreamReader reader = new InputStreamReader(out);
+                        BufferedReader br = new BufferedReader(reader);
+                        String line;
+                        while ((line = br.readLine()) != null) {
+                            log.info(line);
+                        }
+
+                        log.info("Successfully processed file {}", fileAnalysis.getFile().getName());
+                    } catch (Exception e) {
+                        log.error("Error running ffmpeg command {}", pb.command(), e);
+                        bot.sendMessage(channel, "Error processing file " + fileAnalysis.getFile().getName());
+                        return;
+                    }
+                }
+
+                StringBuilder successMsg = new StringBuilder();
+                successMsg.append("Successfully processed ").append(analysisCollection.getAnalyses().size())
+                        .append(" videos for ").append(output).append(". ")
+                        .append(successFlavors[random.nextInt(successFlavors.length)]);
+                bot.sendMessage(channel, successMsg.toString());
+            }
+        };
+
+        executorService.submit(processingThread);
+        bot.sendMessage(channel, "The request for processing has been sent to TSD Industries");
 
     }
 
@@ -96,8 +234,10 @@ public class TSDTVFileProcessor {
                 });
 
                 for(File f : files) try {
-                    analysis = analyzeFile(f);
-                    collection.addAnalysis(analysis);
+                    if(!f.getName().startsWith(".")) {
+                        analysis = analyzeFile(f);
+                        collection.addAnalysis(analysis);
+                    }
                 } catch (Exception e) {
                     log.error("Error analyzing file {}", f.getAbsolutePath(), e);
                     bot.sendMessage(channel, err + "Error analyzing file " + f.getAbsolutePath());
@@ -152,9 +292,9 @@ public class TSDTVFileProcessor {
                 Matcher streamLineMatcher = streamLinePattern.matcher(line);
                 while(streamLineMatcher.find()) {
 
-                    log.info("group(1) = {}", streamLineMatcher.group(1));
-                    log.info("group(2) = {}", streamLineMatcher.group(2));
-                    log.info("group(3) = {}", streamLineMatcher.group(3));
+                    log.debug("group(1) = {}", streamLineMatcher.group(1));
+                    log.debug("group(2) = {}", streamLineMatcher.group(2));
+                    log.debug("group(3) = {}", streamLineMatcher.group(3));
 
                     StreamType type = null;
                     String codec = null;
@@ -167,7 +307,7 @@ public class TSDTVFileProcessor {
                     }
 
                     if(type == null) {
-                        log.info("Could not determine stream type, skipping...");
+                        log.warn("Could not determine stream type, skipping...");
                         continue;
                     }
 
@@ -269,5 +409,28 @@ public class TSDTVFileProcessor {
         }
         return audio;
     }
+
+    public enum ProcessType {
+        sub,
+        dub,
+        manual;
+
+        public static ProcessType fromString(String s) {
+            for(ProcessType type : values()) {
+                if(type.toString().equals(s))
+                    return type;
+            }
+            return null;
+        }
+    }
+
+    private static final String[] successFlavors = new String[]{
+            "Get dunked on you stupid retard.",
+            "You're welcome.",
+            "You're fucking welcome.",
+            "They said it couldn't be done.",
+            "Remember when kanbo said it couldn't be done, and then you did it?",
+            "It's too bad TSD won't be around next year"
+    };
 
 }
