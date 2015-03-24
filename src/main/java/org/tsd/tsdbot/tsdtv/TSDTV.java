@@ -77,7 +77,7 @@ public class TSDTV implements Persistable {
                  @Named("ffmpegExec") String ffmpegExec,
                  @Named("tsdtvDirect") String tsdtvDirect) throws SQLException {
         this.bot = bot;
-        this.processor = processor;
+        this.processor = fileProcessor;
         this.library = library;
         this.scheduleLoc = prop.getProperty("tsdtv.schedule");
         this.scheduler = scheduler;
