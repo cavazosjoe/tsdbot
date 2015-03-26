@@ -36,7 +36,6 @@ public class TSDTVUtilTest {
             newFile = new File(tsdtvPath + "/" + RandomStringUtils.randomAlphabetic(10) + ".tmp");
             newFile.createNewFile();
             createdFiles.add(newFile);
-            System.out.println("Ccreated random file " + newFile.getAbsolutePath());
         }
     }
 
@@ -72,7 +71,6 @@ public class TSDTVUtilTest {
         Random random = new Random();
         for(int i=0 ; i < 100 ; i++) {
             randomFile = TSDTVUtil.getRandomFileFromDirectory(random, tsdtvFolder);
-            System.out.println("pulled random file: " + randomFile.getAbsolutePath());
             assertNotNull(randomFile);
             assertTrue(randomFile.isFile());
             assertTrue(createdFiles.contains(randomFile));
