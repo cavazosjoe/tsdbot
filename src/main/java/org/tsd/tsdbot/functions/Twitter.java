@@ -270,7 +270,6 @@ public class Twitter extends MainFunction {
                     Status chosenTweet = null;
                     String language;
                     boolean reliable;
-//                    double confidence = 0;
                     int i=0;
                     logger.info(".tw search | tweets.size = {}", tweets.size());
                     Collections.shuffle(tweets);
@@ -291,8 +290,7 @@ public class Twitter extends MainFunction {
                                         .getObject().getJSONObject("data").getJSONArray("detections").getJSONObject(0);
                                 language = detection.getString("language");
                                 reliable = detection.getBoolean("isReliable");
-//                            confidence = detection.getDouble("confidence");
-                                if (language.equals("en")&& reliable)
+                                if (language.equals("en") && reliable)
                                     chosenTweet = evaluatingTweet;
                             } catch (Exception e) {
                                 logger.warn("Error evaluating tweet, id={}, skipping...", evaluatingTweet.getId());
@@ -301,20 +299,20 @@ public class Twitter extends MainFunction {
                         }
 
                         if(chosenTweet == null) {
-                            bot.sendMessage(channel, "Searched " + i + " tweets but couldn't find any English ones");
-                        } else {
-
-                            StringBuilder urlBuilder = new StringBuilder();
-                            urlBuilder.append("http://twitter.com/").append(chosenTweet.getUser().getScreenName())
-                                    .append("/status/").append(chosenTweet.getId());
-                            String shortUrl = IRCUtil.shortenUrl(urlBuilder.toString());
-
-                            StringBuilder twBuilder = new StringBuilder();
-                            twBuilder.append("@").append(chosenTweet.getUser().getScreenName())
-                                    .append(": ").append(chosenTweet.getText()).append(" -- ").append(shortUrl);
-
-                            bot.sendMessage(channel, twBuilder.toString());
+                            // couldn't find any good tweets -- just pick a random one
+                            chosenTweet = tweets.get(0);
                         }
+
+                        StringBuilder urlBuilder = new StringBuilder();
+                        urlBuilder.append("http://twitter.com/").append(chosenTweet.getUser().getScreenName())
+                                .append("/status/").append(chosenTweet.getId());
+                        String shortUrl = IRCUtil.shortenUrl(urlBuilder.toString());
+
+                        StringBuilder twBuilder = new StringBuilder();
+                        twBuilder.append("@").append(chosenTweet.getUser().getScreenName())
+                                .append(": ").append(chosenTweet.getText()).append(" -- ").append(shortUrl);
+
+                        bot.sendMessage(channel, twBuilder.toString());
 
                     } catch (Exception e) {
                         logger.error("Error filtering tweets", e);
