@@ -24,7 +24,7 @@ import java.util.Set;
 /**
  * Created by Joe on 2/18/14.
  */
-public class TSDBot extends PircBot {
+public class TSDBot extends PircBot implements Bot {
 
     private static Logger logger = LoggerFactory.getLogger(TSDBot.class);
 
@@ -62,7 +62,7 @@ public class TSDBot extends PircBot {
             identify(nickservPass);
     }
 
-    public static long getBlunderCount() {
+    public long getBlunderCount() {
         return blunderCount;
     }
 
@@ -79,9 +79,9 @@ public class TSDBot extends PircBot {
         }
     }
 
-    @Override protected synchronized void onUserList(String channel, User[] users) {}
-    @Override protected synchronized void onPrivateMessage(String sender, String login, String hostname, String message) {}
-    @Override protected synchronized void onAction(String sender, String login, String hostname, String target, String action) {
+    @Override public synchronized void onUserList(String channel, User[] users) {}
+    @Override public synchronized void onPrivateMessage(String sender, String login, String hostname, String message) {}
+    @Override public synchronized void onAction(String sender, String login, String hostname, String target, String action) {
         archivist.log(target, ArchivistUtil.getRawAction(
                 System.currentTimeMillis(),
                 sender,
@@ -89,8 +89,8 @@ public class TSDBot extends PircBot {
                 action
         ));
     }
-    @Override protected synchronized void onNotice(String sourceNick, String sourceLogin, String sourceHostname, String target, String notice) {}
-    @Override protected synchronized void onJoin(String channel, String sender, String login, String hostname) {
+    @Override public synchronized void onNotice(String sourceNick, String sourceLogin, String sourceHostname, String target, String notice) {}
+    @Override public synchronized void onJoin(String channel, String sender, String login, String hostname) {
         archivist.log(channel, ArchivistUtil.getRawJoin(
                 System.currentTimeMillis(),
                 sender,
@@ -99,7 +99,7 @@ public class TSDBot extends PircBot {
                 channel
         ));
     }
-    @Override protected synchronized void onPart(String channel, String sender, String login, String hostname) {
+    @Override public synchronized void onPart(String channel, String sender, String login, String hostname) {
         // when someone leaves the channel
         archivist.log(channel, ArchivistUtil.getRawPart(
                 System.currentTimeMillis(),
@@ -108,14 +108,14 @@ public class TSDBot extends PircBot {
                 channel
         ));
     }
-    @Override protected synchronized void onNickChange(String oldNick, String login, String hostname, String newNick) {
+    @Override public synchronized void onNickChange(String oldNick, String login, String hostname, String newNick) {
         archivist.log(null, ArchivistUtil.getRawNickChange(
                 System.currentTimeMillis(),
                 oldNick,
                 newNick
         ));
     }
-    @Override protected synchronized void onKick(String channel, String kickerNick, String kickerLogin, String kickerHostname, String recipientNick, String reason) {
+    @Override public synchronized void onKick(String channel, String kickerNick, String kickerLogin, String kickerHostname, String recipientNick, String reason) {
         archivist.log(channel, ArchivistUtil.getRawKick(
                 System.currentTimeMillis(),
                 kickerNick,
@@ -124,7 +124,7 @@ public class TSDBot extends PircBot {
                 reason
         ));
     }
-    @Override protected synchronized void onQuit(String sourceNick, String sourceLogin, String sourceHostname, String reason) {
+    @Override public synchronized void onQuit(String sourceNick, String sourceLogin, String sourceHostname, String reason) {
         // when someone quits the server
         archivist.log(null, ArchivistUtil.getRawQuit(
                 System.currentTimeMillis(),
@@ -133,15 +133,15 @@ public class TSDBot extends PircBot {
                 reason
         ));
     }
-    @Override protected synchronized void onTopic(String channel, String topic, String setBy, long date, boolean changed) {
+    @Override public synchronized void onTopic(String channel, String topic, String setBy, long date, boolean changed) {
         archivist.log(channel, ArchivistUtil.getRawTopicChange(
                 System.currentTimeMillis(),
                 setBy,
                 topic
         ));
     }
-    @Override protected synchronized void onChannelInfo(String channel, int userCount, String topic) {}
-    @Override protected synchronized void onMode(String channel, String sourceNick, String sourceLogin, String sourceHostname, String mode) {
+    @Override public synchronized void onChannelInfo(String channel, int userCount, String topic) {}
+    @Override public synchronized void onMode(String channel, String sourceNick, String sourceLogin, String sourceHostname, String mode) {
         archivist.log(channel, ArchivistUtil.getRawChannelMode(
                 System.currentTimeMillis(),
                 sourceNick,
@@ -149,7 +149,7 @@ public class TSDBot extends PircBot {
                 channel
         ));
     }
-    @Override protected synchronized void onUserMode(String targetNick, String sourceNick, String sourceLogin, String sourceHostname, String mode) {
+    @Override public synchronized void onUserMode(String targetNick, String sourceNick, String sourceLogin, String sourceHostname, String mode) {
         archivist.log(null, ArchivistUtil.getRawUserMode(
                 System.currentTimeMillis(),
                 sourceNick,
@@ -159,7 +159,7 @@ public class TSDBot extends PircBot {
     }
 
     @Override
-    protected synchronized void onMessage(String channel, String sender, String login, String hostname, String message) {
+    public synchronized void onMessage(String channel, String sender, String login, String hostname, String message) {
 
         logger.info("{}: <{}> {}", new Object[]{channel, sender, message});
 

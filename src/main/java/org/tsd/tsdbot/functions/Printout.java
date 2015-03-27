@@ -11,6 +11,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.PrintoutLibrary;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -65,7 +66,7 @@ public class Printout extends MainFunction {
 
     @Inject
     public Printout(
-            TSDBot bot,
+            Bot bot,
             Random random,
             PrintoutLibrary library,
             @Named("serverUrl") String serverUrl) {

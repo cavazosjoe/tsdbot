@@ -1,6 +1,7 @@
 package org.tsd.tsdbot.functions;
 
 import org.jibble.pircbot.User;
+import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.TSDBot;
 
 import java.util.Date;
@@ -10,13 +11,13 @@ import java.util.Date;
  */
 public abstract class MainFunction {
 
-    protected TSDBot bot;
+    protected Bot bot;
     protected String description;
     protected String usage;
     private Long cooldownMillis;
     private Date lastUsed;
 
-    public MainFunction(TSDBot bot) {
+    public MainFunction(Bot bot) {
         this.bot = bot;
     }
 
