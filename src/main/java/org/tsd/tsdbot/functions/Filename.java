@@ -25,6 +25,8 @@ public class Filename extends MainFunctionImpl {
 
     private static final Logger logger = LoggerFactory.getLogger(Filename.class);
 
+    private static final String filenamesLocation = "http://www.teamschoolyd.org/filenames/";
+
     private HttpClient httpClient;
     private Random random;
 
@@ -41,18 +43,16 @@ public class Filename extends MainFunctionImpl {
     public void run(String channel, String sender, String ident, String text) {
         HttpGet fnamesGet = null;
         try {
-            fnamesGet = new HttpGet("http://teamschoolyd.org/filenames/");
-//            fnamesGet.setHeader("User-Agent", "Mozilla/4.0");
+            fnamesGet = new HttpGet(filenamesLocation);
             ResponseHandler<String> responseHandler = new BasicResponseHandler();
             String response = httpClient.execute(fnamesGet, responseHandler);
 
             Matcher m = Pattern.compile("a href=\"([\\w_]+?\\.\\w{3})\"", Pattern.DOTALL).matcher(response);
-            String pfx = "http://www.teamschoolyd.org/filenames/";
             LinkedList<String> all = new LinkedList<>();
             while(m.find()) {
                 all.add(m.group(1));
             }
-            bot.sendMessage(channel, pfx + all.get(random.nextInt(all.size())));
+            bot.sendMessage(channel, filenamesLocation + all.get(random.nextInt(all.size())));
 
         } catch (Exception e) {
             logger.error("filename() error",e);
