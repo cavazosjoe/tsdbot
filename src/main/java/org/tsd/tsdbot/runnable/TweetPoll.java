@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.ThreadType;
 import org.tsd.tsdbot.notifications.TwitterManager;
@@ -29,7 +30,7 @@ public class TweetPoll extends IRCListenerThread {
     private boolean aborted = false;
 
     @Inject
-    public TweetPoll(TSDBot bot, ThreadManager threadManager, TwitterManager twitterManager) throws Exception {
+    public TweetPoll(Bot bot, ThreadManager threadManager, TwitterManager twitterManager) throws Exception {
         super(bot, threadManager);
         this.listeningRegex = "^\\.tw (aye|abort)$";
         this.twitterManager = twitterManager;

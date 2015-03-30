@@ -2,7 +2,8 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.util.FuzzyLogic;
 
@@ -14,7 +15,8 @@ import java.util.regex.Pattern;
  * Created by Joe on 5/24/14.
  */
 @Singleton
-public class Replace extends MainFunction {
+@Function(initialRegex = "^s/.+?/[^/]*")
+public class Replace extends MainFunctionImpl {
 
     private HistoryBuff historyBuff;
 
@@ -22,7 +24,7 @@ public class Replace extends MainFunction {
     private Pattern commandFormat = Pattern.compile("^s/([^/]+)/([^/]*)(.*)$");
 
     @Inject
-    public Replace(TSDBot bot, HistoryBuff historyBuff) {
+    public Replace(Bot bot, HistoryBuff historyBuff) {
         super(bot);
         this.historyBuff = historyBuff;
         this.description = "Replace stuff";
@@ -34,11 +36,6 @@ public class Replace extends MainFunction {
         String replaceResult = tryStringReplace(channel, text, historyBuff);
         if(replaceResult != null)
             bot.sendMessage(channel, replaceResult);
-    }
-
-    @Override
-    public String getRegex() {
-        return "^s/.+?/[^/]*";
     }
 
     public String tryStringReplace(String channel, String message, HistoryBuff historyBuffer) {
@@ -85,4 +82,5 @@ public class Replace extends MainFunction {
 
         return null;
     }
+
 }

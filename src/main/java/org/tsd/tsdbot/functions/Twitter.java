@@ -10,7 +10,8 @@ import org.jibble.pircbot.User;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 import org.tsd.tsdbot.ThreadType;
 import org.tsd.tsdbot.notifications.NotificationEntity;
 import org.tsd.tsdbot.notifications.TwitterManager;
@@ -30,7 +31,8 @@ import java.util.Random;
  * Created by Joe on 5/24/14.
  */
 @Singleton
-public class Twitter extends MainFunction {
+@Function(initialRegex = "^\\.tw.*")
+public class Twitter extends MainFunctionImpl {
 
     private static final Logger logger = LoggerFactory.getLogger(Twitter.class);
 
@@ -41,7 +43,7 @@ public class Twitter extends MainFunction {
     private Random random;
 
     @Inject
-    public Twitter(TSDBot bot, TwitterManager mgr, ThreadManager threadManager, Random random,
+    public Twitter(Bot bot, TwitterManager mgr, ThreadManager threadManager, Random random,
                    InjectableIRCThreadFactory threadFactory, @Named("mashapeKey") String mashapeKey) {
         super(bot);
         this.description = "Twitter utility: send and receive tweets from our exclusive @TSD_IRC Twitter account! " +
@@ -327,10 +329,5 @@ public class Twitter extends MainFunction {
                 bot.incrementBlunderCnt();
             }
         }
-    }
-
-    @Override
-    public String getRegex() {
-        return "^\\.tw.*";
     }
 }

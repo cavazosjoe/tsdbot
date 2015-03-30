@@ -24,6 +24,7 @@ import org.jfree.util.ShapeUtilities;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.CircularBuffer;
 
@@ -48,7 +49,7 @@ public class HustleStats implements Stats {
         timeFormat.setTimeZone(TimeZone.getTimeZone("America/New_York"));
     }
 
-    private TSDBot bot;
+    private Bot bot;
 
     private HttpClient httpClient;
     private String apiKey;
@@ -59,8 +60,10 @@ public class HustleStats implements Stats {
 
     private JFreeChart chart = null;
 
+    boolean error = false;
+
     @Inject
-    public HustleStats(TSDBot bot, HttpClient httpClient, Properties properties) {
+    public HustleStats(Bot bot, HttpClient httpClient, Properties properties) {
         this.bot = bot;
         this.httpClient = httpClient;
         this.apiKey = properties.getProperty("mashape.apiKey");
@@ -90,6 +93,7 @@ public class HustleStats implements Stats {
         log.debug("Sending latest message for sentiment analysis...");
 
         HttpPost post = null;
+        String responseString = null;
         try {
             post = new HttpPost("https://community-sentiment.p.mashape.com/text/");
             post.addHeader("X-Mashape-Key", apiKey);
@@ -99,7 +103,7 @@ public class HustleStats implements Stats {
             params.add(new BasicNameValuePair("txt", message));
             post.setEntity(new UrlEncodedFormEntity(params));
             CloseableHttpResponse response = (CloseableHttpResponse) httpClient.execute(post);
-            String responseString = EntityUtils.toString(response.getEntity());
+            responseString = EntityUtils.toString(response.getEntity());
 
             JSONObject json = new JSONObject(responseString);
             for(String key : json.keySet()) {
@@ -118,9 +122,13 @@ public class HustleStats implements Stats {
 
             generateChart();
 
+            error = false;
+
         } catch (Exception e) {
-            log.error("Error retrieving text sentiment", e);
-            bot.sendMessage(channel, "(Error calculating hustle quotient, please check logs)");
+            log.error("Error retrieving text sentiment, response={}", responseString, e);
+            if(!error)
+                bot.sendMessage(channel, "(Error calculating hustle quotient, please check logs)");
+            error = true;
         } finally {
             if(post != null)
                 post.releaseConnection();

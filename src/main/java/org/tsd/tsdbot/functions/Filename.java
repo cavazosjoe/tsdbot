@@ -8,7 +8,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 
 import java.util.LinkedList;
 import java.util.Random;
@@ -19,7 +20,8 @@ import java.util.regex.Pattern;
  * Created by Joe on 5/24/14.
  */
 @Singleton
-public class Filename extends MainFunction {
+@Function(initialRegex = "^\\.(filename|fname)$")
+public class Filename extends MainFunctionImpl {
 
     private static final Logger logger = LoggerFactory.getLogger(Filename.class);
 
@@ -27,7 +29,7 @@ public class Filename extends MainFunction {
     private Random random;
 
     @Inject
-    public Filename(TSDBot bot, HttpClient httpClient, Random random) {
+    public Filename(Bot bot, HttpClient httpClient, Random random) {
         super(bot);
         this.description = "Pull a random entry from the TSD Filenames Database";
         this.usage = "USAGE: [ .filename | .fname ]";
@@ -60,8 +62,4 @@ public class Filename extends MainFunction {
         }
     }
 
-    @Override
-    public String getRegex() {
-        return "^\\.(filename|fname)$";
-    }
 }

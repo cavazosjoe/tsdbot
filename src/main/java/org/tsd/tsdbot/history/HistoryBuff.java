@@ -3,6 +3,7 @@ package org.tsd.tsdbot.history;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.apache.commons.collections.buffer.CircularFifoBuffer;
+import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.FuzzyLogic;
 
@@ -19,7 +20,7 @@ public class HistoryBuff {
     private Map<String, CircularFifoBuffer> channelHistory = new HashMap<>();
 
     @Inject
-    public HistoryBuff(TSDBot bot, Random random) {
+    public HistoryBuff(Bot bot, Random random) {
         for(String channel : bot.getChannels())
             channelHistory.put(channel, new CircularFifoBuffer(CHANNEL_HISTORY_SIZE));
         this.random = random;
@@ -92,6 +93,11 @@ public class HistoryBuff {
             history.remove(msg);
         }
         return filteredHistory;
+    }
+
+    public void reset() {
+        for(CircularFifoBuffer buffer : channelHistory.values())
+            buffer.clear();
     }
 
     public class Message {

@@ -8,20 +8,22 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 
 /**
  * Created by Joe on 5/24/14.
  */
 @Singleton
-public class Sanic extends MainFunction {
+@Function(initialRegex = "^\\.sanic$")
+public class Sanic extends MainFunctionImpl {
 
     private static final Logger logger = LoggerFactory.getLogger(Sanic.class);
 
     private HttpClient httpClient;
 
     @Inject
-    public Sanic(TSDBot bot, HttpClient httpClient) {
+    public Sanic(Bot bot, HttpClient httpClient) {
         super(bot);
         this.httpClient = httpClient;
         this.description = "Sanic \"fanfunction\". Retrieves a random page from the Sonic fanfiction wiki";
@@ -49,8 +51,4 @@ public class Sanic extends MainFunction {
         }
     }
 
-    @Override
-    public String getRegex() {
-        return "^\\.sanic$";
-    }
 }

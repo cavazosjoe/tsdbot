@@ -2,7 +2,8 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 import org.tsd.tsdbot.history.*;
 import org.tsd.tsdbot.util.IRCUtil;
 
@@ -12,7 +13,8 @@ import java.util.*;
  * Created by Joe on 5/24/14.
  */
 @Singleton
-public class ScareQuote extends MainFunction {
+@Function(initialRegex = "^\\.quote")
+public class ScareQuote extends MainFunctionImpl {
 
     //TODO: put more than 5 minutes of effort into this and stop trying to "fix" it while drunk
 
@@ -21,7 +23,7 @@ public class ScareQuote extends MainFunction {
     private Random random;
 
     @Inject
-    public ScareQuote(TSDBot bot, HistoryBuff historyBuff,
+    public ScareQuote(Bot bot, HistoryBuff historyBuff,
                       Random random, InjectableMsgFilterStrategyFactory filterFactory) {
         super(bot);
         this.description = "Scare quote \"function\"";
@@ -111,11 +113,6 @@ public class ScareQuote extends MainFunction {
 
             bot.sendMessage(channel, "<" + IRCUtil.scrambleNick(chosen.sender) + "> " + result.toString());
         }
-    }
-
-    @Override
-    public String getRegex() {
-        return "^\\.quote";
     }
 
     private boolean isThrowaway(String word) {

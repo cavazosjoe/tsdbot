@@ -2,7 +2,8 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 
 import java.util.Random;
 
@@ -10,12 +11,13 @@ import java.util.Random;
  * Created by Joe on 3/1/14.
  */
 @Singleton
-public class Chooser extends MainFunction {
+@Function(initialRegex = "^\\.choose.*")
+public class Chooser extends MainFunctionImpl {
 
     private Random random;
 
     @Inject
-    public Chooser(TSDBot bot, Random random) {
+    public Chooser(Bot bot, Random random) {
         super(bot);
         this.description = "Have the bot choose a random selection for you";
         this.usage = "USAGE: .choose option1 | option2 [ | option3...]";
@@ -52,11 +54,6 @@ public class Chooser extends MainFunction {
         } else {
             bot.sendMessage(channel, usage);
         }
-    }
-
-    @Override
-    public String getRegex() {
-        return "^\\.choose.*";
     }
 
     private static String[] formats = new String[] {

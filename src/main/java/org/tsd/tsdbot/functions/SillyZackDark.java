@@ -2,7 +2,8 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 
 import java.util.HashSet;
 
@@ -10,7 +11,8 @@ import java.util.HashSet;
  * Created by Joe on 10/2/2014.
  */
 @Singleton
-public class SillyZackDark extends MainFunction {
+@Function(initialRegex = "^\\s*(o/|\\\\o)\\s*$")
+public class SillyZackDark extends MainFunctionImpl {
 
     private static final String LEFT_GUY = "o/";
     private static final String RIGHT_GUY = "\\o";
@@ -21,14 +23,14 @@ public class SillyZackDark extends MainFunction {
     private String banMask = null;
 
     @Inject
-    public SillyZackDark(TSDBot bot) {
+    public SillyZackDark(Bot bot) {
         super(bot);
         this.description = ";)";
         this.usage = ";)";
     }
 
     @Override
-    protected void run(String channel, String sender, String ident, String text) {
+    public void run(String channel, String sender, String ident, String text) {
         if(ident.equalsIgnoreCase("zack") || ident.equalsIgnoreCase("zackdark") || ident.equalsIgnoreCase("zd")) {
             // zackdark typed this
             if(required == null) { // zackdark has triggered the schroogle
@@ -57,8 +59,4 @@ public class SillyZackDark extends MainFunction {
         }
     }
 
-    @Override
-    public String getRegex() {
-        return "^\\s*(o/|\\\\o)\\s*$";
-    }
 }

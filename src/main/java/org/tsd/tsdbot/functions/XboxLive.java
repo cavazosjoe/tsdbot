@@ -12,7 +12,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 import org.tsd.tsdbot.util.FuzzyLogic;
 import org.tsd.tsdbot.util.RelativeDate;
 
@@ -32,7 +33,8 @@ import java.util.concurrent.TimeUnit;
  * Created by Joe on 5/24/14.
  */
 @Singleton
-public class XboxLive extends MainFunction {
+@Function(initialRegex = "^\\.xbl.*")
+public class XboxLive extends MainFunctionImpl {
 
     private static final Logger logger = LoggerFactory.getLogger(XboxLive.class);
 
@@ -71,7 +73,7 @@ public class XboxLive extends MainFunction {
             });
 
     @Inject
-    public XboxLive(TSDBot bot, Properties properties) {
+    public XboxLive(Bot bot, Properties properties) {
         super(bot);
         this.description = "Xbox Live utility";
         this.usage = "USAGE: .xbl [ gamertag ]";
@@ -185,11 +187,6 @@ public class XboxLive extends MainFunction {
                 bot.sendMessage(channel, "Error getting player status");
             }
         }
-    }
-
-    @Override
-    public String getRegex() {
-        return "^\\.xbl.*";
     }
 
     /**

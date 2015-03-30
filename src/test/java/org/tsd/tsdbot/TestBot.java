@@ -1,29 +1,52 @@
 package org.tsd.tsdbot;
 
+import com.google.inject.Inject;
 import org.jibble.pircbot.User;
+import org.tsd.tsdbot.functions.MainFunction;
+import org.tsd.tsdbot.functions.MainFunctionImpl;
+import org.tsd.tsdbot.history.HistoryBuff;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by Joe on 3/27/2015.
  */
 public class TestBot implements Bot {
 
-    private HashSet<MockUser> mainUsers = new HashSet<>();
-    private HashMap<String, HashSet<MockUser>> channelUsers = new HashMap<>();
+    @Inject
+    private Set<MainFunction> functions;
 
+    @Inject
+    private HistoryBuff historyBuff;
+
+    protected static long blunderCount = 0;
+
+    private String mainChannel;
+    private HashMap<String, HashSet<MockUser>> channelUsers = new HashMap<>();
     private HashMap<String, LinkedList<String>> linesSent = new HashMap<>();
 
-    @Override
-    public long getBlunderCount() {
-        return 0;
+    public TestBot(String mainChannel, String... auxChannels) {
+        this.mainChannel = mainChannel;
+        channelUsers.put(mainChannel, new HashSet<MockUser>());
+        linesSent.put(mainChannel, new LinkedList<String>());
+
+        if(auxChannels != null) {
+            for (String aux : auxChannels) {
+                channelUsers.put(aux, new HashSet<MockUser>());
+                linesSent.put(aux, new LinkedList<String>());
+            }
+        }
     }
 
     @Override
-    public void incrementBlunderCnt() {}
+    public long getBlunderCount() {
+        return blunderCount;
+    }
+
+    @Override
+    public void incrementBlunderCnt() {
+        blunderCount++;
+    }
 
     @Override
     public void sendMessage(String target, String text) {
@@ -45,7 +68,21 @@ public class TestBot implements Bot {
     @Override public void onChannelInfo(String channel, int userCount, String topic) {}
     @Override public void onMode(String channel, String sourceNick, String sourceLogin, String sourceHostname, String mode) {}
     @Override public void onUserMode(String targetNick, String sourceNick, String sourceLogin, String sourceHostname, String mode) {}
-    @Override public void onMessage(String channel, String sender, String login, String hostname, String message) {}
+
+    @Override
+    public void onMessage(String channel, String sender, String login, String hostname, String message) {
+        for(MainFunction function : functions) {
+            if(message.matches(function.getListeningRegex())) {
+                function.run(channel, sender, login, message);
+            }
+        }
+        historyBuff.updateHistory(channel, message, sender);
+    }
+
+    @Override
+    public String[] getChannels() {
+        return channelUsers.keySet().toArray(new String[channelUsers.size()]);
+    }
 
     @Override public void ban(String channel, String hostmask) {}
     @Override public void unBan(String channel, String hostmask) {}
@@ -59,7 +96,7 @@ public class TestBot implements Bot {
 
     @Override
     public boolean userHasGlobalPriv(String nick, User.Priv priv) {
-        for(MockUser user : mainUsers) {
+        for(MockUser user : channelUsers.get(mainChannel)) {
             if(user.handle.equals(nick))
                 return user.priv.sufficientPrivs(priv);
         }
@@ -101,7 +138,7 @@ public class TestBot implements Bot {
     }
 
     public void addMainChannelUser(User.Priv priv, String handle) {
-        mainUsers.add(new MockUser(priv, handle));
+        channelUsers.get(mainChannel).add(new MockUser(priv, handle));
     }
 
     public void addChannelUser(String channel, User.Priv priv, String handle) {
@@ -109,6 +146,12 @@ public class TestBot implements Bot {
             channelUsers.put(channel, new HashSet<MockUser>());
         MockUser addingUser = new MockUser(priv, handle);
         channelUsers.get(channel).add(addingUser);
+    }
+
+    public void reset() {
+        for(LinkedList<String> lines : linesSent.values())
+            lines.clear();
+        historyBuff.reset();
     }
 
     public class MockUser {

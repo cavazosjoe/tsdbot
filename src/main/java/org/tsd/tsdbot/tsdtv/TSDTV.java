@@ -10,6 +10,7 @@ import org.quartz.*;
 import org.quartz.impl.matchers.GroupMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.Persistable;
@@ -47,7 +48,7 @@ public class TSDTV implements Persistable {
     private static final int dayBoundaryHour = 4; // 4:00 AM
     private static final TimeZone timeZone = TimeZone.getTimeZone("America/New_York");
 
-    private TSDBot bot;
+    private Bot bot;
 
     private TSDTVLibrary library;
     private TSDTVFileProcessor processor;
@@ -66,7 +67,7 @@ public class TSDTV implements Persistable {
     private TSDTVStream runningStream;
 
     @Inject
-    public TSDTV(TSDBot bot,
+    public TSDTV(Bot bot,
                  TSDTVLibrary library,
                  TSDTVFileProcessor fileProcessor,
                  Properties prop,

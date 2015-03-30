@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.functions.Archivist;
 import org.tsd.tsdbot.functions.Hustle;
 import org.tsd.tsdbot.functions.MainFunction;
+import org.tsd.tsdbot.functions.MainFunctionImpl;
 import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.runnable.IRCListenerThread;
 import org.tsd.tsdbot.runnable.ThreadManager;
@@ -28,16 +29,16 @@ public class TSDBot extends PircBot implements Bot {
 
     private static Logger logger = LoggerFactory.getLogger(TSDBot.class);
 
-    private static long blunderCount = 0;
+    protected static long blunderCount = 0;
 
     @Inject
-    private ThreadManager threadManager;
+    protected ThreadManager threadManager;
 
     @Inject
-    private Set<MainFunction> functions;
+    protected Set<MainFunction> functions;
 
     @Inject
-    private Set<Stats> stats;
+    protected Set<Stats> stats;
 
     @Inject
     protected HistoryBuff historyBuff;
@@ -50,6 +51,9 @@ public class TSDBot extends PircBot implements Bot {
 
     @Inject @MainChannel
     protected String mainChannel;
+
+    @Deprecated // used for testing
+    public TSDBot() {}
 
     public TSDBot(String ident, String name, String nickservPass, String server) throws IrcException, IOException {
         setName(name);
@@ -172,8 +176,8 @@ public class TSDBot extends PircBot implements Bot {
 
         // pass message to functions that match its pattern
         for(MainFunction function : functions) {
-            if(message.matches(function.getRegex())) {
-                function.engage(channel, sender, login, message);
+            if(message.matches(function.getListeningRegex())) {
+                function.run(channel, sender, login, message);
             }
         }
 

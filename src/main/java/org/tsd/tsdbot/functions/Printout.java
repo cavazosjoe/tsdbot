@@ -12,8 +12,8 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 import org.tsd.tsdbot.PrintoutLibrary;
-import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.IRCUtil;
 import org.tsd.tsdbot.util.ImageUtils;
 import org.tsd.tsdbot.util.MiscUtils;
@@ -38,7 +38,8 @@ import java.util.regex.Pattern;
  * Created by Joe on 5/24/14.
  */
 @Singleton
-public class Printout extends MainFunction {
+@Function(initialRegex = "^(TSDBot.*?printout.*|\\.printout.*)")
+public class Printout extends MainFunctionImpl {
 
     private static final Logger logger = LoggerFactory.getLogger(Printout.class);
 
@@ -101,6 +102,7 @@ public class Printout extends MainFunction {
 
             if(random.nextDouble() < 0.1) {
                 notComputing.put(ident, 0);
+                listeningRegex = ".*";
                 bot.sendMessage(channel, "Not computing. Please repeat.");
                 return;
             }
@@ -138,6 +140,9 @@ public class Printout extends MainFunction {
                     return;
                 }
             }
+
+            if(notComputing.size() == 0)
+                listeningRegex = "^(TSDBot.*?printout.*|\\.printout.*)";
 
         }
 
@@ -230,16 +235,6 @@ public class Printout extends MainFunction {
             bot.sendMessage(channel, "No sequences found.");
         }
 
-    }
-
-    @Override
-    public String getRegex() {
-        if(notComputing.size() > 0) {
-//            return "^(TSDBot.*?printout.*|.*?\\.+.*?)";
-            return ".*";
-        } else {
-            return "^(TSDBot.*?printout.*|\\.printout.*)";
-        }
     }
 
     private static final String[] annoyingEmotes = new String[]{

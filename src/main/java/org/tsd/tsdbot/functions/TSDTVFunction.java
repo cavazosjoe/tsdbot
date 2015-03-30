@@ -6,17 +6,13 @@ import com.google.inject.name.Named;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 import org.tsd.tsdbot.tsdtv.*;
 import org.tsd.tsdbot.tsdtv.model.TSDTVEpisode;
 import org.tsd.tsdbot.tsdtv.model.TSDTVShow;
-import org.tsd.tsdbot.tsdtv.processor.AnalysisCollection;
-import org.tsd.tsdbot.tsdtv.processor.StreamDetectionException;
-import org.tsd.tsdbot.tsdtv.processor.TSDTVProcessingException;
 
 import javax.naming.AuthenticationException;
-import java.io.FileNotFoundException;
-import java.nio.file.NotDirectoryException;
 import java.sql.SQLException;
 import java.util.Random;
 
@@ -27,7 +23,8 @@ import static org.tsd.tsdbot.util.IRCUtil.color;
  * Created by Joe on 1/12/2015.
  */
 @Singleton
-public class TSDTVFunction extends MainFunction {
+@Function(initialRegex = "^\\.tsdtv.*")
+public class TSDTVFunction extends MainFunctionImpl {
 
     private static final Logger logger = LoggerFactory.getLogger(TSDTVFunction.class);
 
@@ -40,7 +37,7 @@ public class TSDTVFunction extends MainFunction {
 
     @Inject
     public TSDTVFunction(
-            TSDBot bot,
+            Bot bot,
             TSDTV tsdtv,
             TSDTVLibrary library,
             TSDTVFileProcessor fileProcessor,
@@ -57,7 +54,7 @@ public class TSDTVFunction extends MainFunction {
     }
 
     @Override
-    protected void run(String channel, String sender, String ident, String text) {
+    public void run(String channel, String sender, String ident, String text) {
         String[] cmdParts = text.split("\\s+");
 
         if(cmdParts.length < 2) {
@@ -294,10 +291,5 @@ public class TSDTVFunction extends MainFunction {
         } else if(subCmd.equals("links")) {
             bot.sendMessage(channel, tsdtv.getLinks(true));
         }
-    }
-
-    @Override
-    public String getRegex() {
-        return "^\\.tsdtv.*";
     }
 }

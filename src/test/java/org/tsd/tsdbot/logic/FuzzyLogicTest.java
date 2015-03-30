@@ -1,4 +1,4 @@
-package org.tsd.tsdbot.unit;
+package org.tsd.tsdbot.logic;
 
 import org.junit.Test;
 import org.tsd.tsdbot.util.FuzzyLogic;

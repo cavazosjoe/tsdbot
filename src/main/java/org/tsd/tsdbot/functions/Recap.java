@@ -2,7 +2,8 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 import org.tsd.tsdbot.history.*;
 import org.tsd.tsdbot.util.IRCUtil;
 
@@ -14,7 +15,8 @@ import java.util.Random;
  * Created by Joe on 5/24/14.
  */
 @Singleton
-public class Recap extends MainFunction {
+@Function(initialRegex = "^\\.recap")
+public class Recap extends MainFunctionImpl {
 
     private static final int dramaCount = 4;
 
@@ -23,8 +25,8 @@ public class Recap extends MainFunction {
     private Random random;
 
     @Inject
-    public Recap(TSDBot bot, HistoryBuff historyBuff, Random random, InjectableMsgFilterStrategyFactory filterFactory) {
-        super(bot, 10);
+    public Recap(Bot bot, HistoryBuff historyBuff, Random random, InjectableMsgFilterStrategyFactory filterFactory) {
+        super(bot);
         this.description = "Recap function. Get a dramatic recap of recent chat history";
         this.usage = "USAGE: .recap [ minutes (integer) ]";
         this.historyBuff = historyBuff;
@@ -66,11 +68,6 @@ public class Recap extends MainFunction {
 
             bot.sendMessage(channel, "Tonight's episode: \"" + episodeNames[random.nextInt(episodeNames.length)] + "\"");
         }
-    }
-
-    @Override
-    public String getRegex() {
-        return "^\\.recap";
     }
 
     private String getScrambledNick(String nick, HashMap<String, String> dict) {

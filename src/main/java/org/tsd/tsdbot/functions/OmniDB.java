@@ -6,7 +6,8 @@ import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.Persistable;
 import org.tsd.tsdbot.util.DatabaseLogic;
@@ -22,7 +23,8 @@ import java.util.*;
  * Created by Joe on 1/22/2015.
  */
 @Singleton
-public class OmniDB extends MainFunction implements Persistable {
+@Function(initialRegex = "^\\.odb.*")
+public class OmniDB extends MainFunctionImpl implements Persistable {
 
     private static final Logger logger = LoggerFactory.getLogger(OmniDB.class);
 
@@ -33,7 +35,7 @@ public class OmniDB extends MainFunction implements Persistable {
     private Random random;
 
     @Inject
-    public OmniDB(TSDBot bot, DBConnectionProvider connectionProvider, Random random) throws SQLException {
+    public OmniDB(Bot bot, DBConnectionProvider connectionProvider, Random random) throws SQLException {
         super(bot);
         this.description = "Use the patented TSD Omni Database";
         this.usage = "USAGE: .odb [ add #tag1 #tag2 <item> | get tag1 tag2 ]";
@@ -89,7 +91,7 @@ public class OmniDB extends MainFunction implements Persistable {
     }
 
     @Override
-    protected void run(String channel, String sender, String ident, String text) {
+    public void run(String channel, String sender, String ident, String text) {
 
         String[] cmdParts = text.split("\\s+");
 
@@ -223,11 +225,6 @@ public class OmniDB extends MainFunction implements Persistable {
         } else {
             bot.sendMessage(channel, usage);
         }
-    }
-
-    @Override
-    public String getRegex() {
-        return "^\\.odb.*";
     }
 
     private String addItem(String item, List<String> tags) throws SQLException {

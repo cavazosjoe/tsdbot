@@ -2,7 +2,8 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 import org.tsd.tsdbot.ThreadType;
 import org.tsd.tsdbot.runnable.InjectableIRCThreadFactory;
 import org.tsd.tsdbot.runnable.StrawPoll;
@@ -12,13 +13,14 @@ import org.tsd.tsdbot.runnable.ThreadManager;
  * Created by Joe on 5/24/14.
  */
 @Singleton
-public class StrawPollFunction extends MainFunction {
+@Function(initialRegex = "^\\.poll.*")
+public class StrawPollFunction extends MainFunctionImpl {
 
     private InjectableIRCThreadFactory threadFactory;
     private ThreadManager threadManager;
 
     @Inject
-    public StrawPollFunction(TSDBot bot, ThreadManager threadManager, InjectableIRCThreadFactory threadFactory) {
+    public StrawPollFunction(Bot bot, ThreadManager threadManager, InjectableIRCThreadFactory threadFactory) {
         super(bot);
         this.description = "Strawpoll: propose a question and choices for the chat to vote on";
         this.usage = "USAGE: .poll <question> ; <duration (integer)> ; choice 1 ; choice 2 [; choice 3 ...]";
@@ -65,8 +67,4 @@ public class StrawPollFunction extends MainFunction {
         }
     }
 
-    @Override
-    public String getRegex() {
-        return "^\\.poll.*";
-    }
 }

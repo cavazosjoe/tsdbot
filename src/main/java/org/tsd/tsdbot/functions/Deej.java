@@ -2,7 +2,8 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.history.InjectableMsgFilterStrategyFactory;
 import org.tsd.tsdbot.history.MessageFilter;
@@ -14,14 +15,18 @@ import java.util.Random;
  * Created by Joe on 5/24/14.
  */
 @Singleton
-public class Deej extends MainFunction {
+@Function(initialRegex = "^\\.deej$")
+public class Deej extends MainFunctionImpl {
 
     private InjectableMsgFilterStrategyFactory filterFactory;
     private HistoryBuff historyBuff;
     private Random random;
 
     @Inject
-    public Deej(TSDBot bot, HistoryBuff historyBuff, Random random, InjectableMsgFilterStrategyFactory filterFactory) {
+    public Deej(Bot bot,
+                HistoryBuff historyBuff,
+                Random random,
+                InjectableMsgFilterStrategyFactory filterFactory) {
         super(bot);
         this.description = "DeeJ utility. Picks a random line from the channel history and makes it all dramatic and shit";
         this.usage = "USAGE: .deej";
@@ -44,11 +49,6 @@ public class Deej extends MainFunction {
             // return the deej-formatted selected message
             bot.sendMessage(channel, String.format(formats[random.nextInt(formats.length)], chosen.text));
         }
-    }
-
-    @Override
-    public String getRegex() {
-        return "^\\.deej$";
     }
 
     private static final String[] formats = new String[] {

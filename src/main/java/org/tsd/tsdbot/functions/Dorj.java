@@ -5,6 +5,8 @@ import com.google.inject.Singleton;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.ThreadType;
 import org.tsd.tsdbot.notifications.TwitterManager;
@@ -17,7 +19,8 @@ import org.tsd.tsdbot.util.IRCUtil;
  * Created by Joe on 5/24/14.
  */
 @Singleton
-public class Dorj extends MainFunction {
+@Function(initialRegex = "^\\.dorj.*")
+public class Dorj extends MainFunctionImpl {
 
     private static final Logger logger = LoggerFactory.getLogger(Dorj.class);
 
@@ -27,7 +30,7 @@ public class Dorj extends MainFunction {
     private long lastDorjId = -1;
 
     @Inject
-    public Dorj(TSDBot bot, ThreadManager threadManager,
+    public Dorj(Bot bot, ThreadManager threadManager,
                 InjectableIRCThreadFactory threadFactory, TwitterManager twitterManager) {
         super(bot);
         this.description = "Dorj: use teamwork to summon the legendary Double Dorj";
@@ -79,8 +82,4 @@ public class Dorj extends MainFunction {
         this.lastDorjId = tweetId;
     }
 
-    @Override
-    public String getRegex() {
-        return "^\\.dorj.*";
-    }
 }

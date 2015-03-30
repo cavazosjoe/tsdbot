@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.ThreadType;
 
@@ -24,7 +25,7 @@ public class StrawPoll extends IRCListenerThread {
     private boolean aborted = false;
 
     @Inject
-    public StrawPoll(TSDBot bot, ThreadManager threadManager) throws Exception {
+    public StrawPoll(Bot bot, ThreadManager threadManager) throws Exception {
         super(bot, threadManager);
         this.listeningRegex = "^\\.(poll|vote).*";
     }

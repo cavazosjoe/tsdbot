@@ -2,7 +2,8 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -12,12 +13,13 @@ import java.util.Random;
  * Created by Joe on 7/9/2014.
  */
 @Singleton
-public class Wod extends MainFunction {
+@Function(initialRegex = "^\\.(wod|workbot|werkbot).*")
+public class Wod extends MainFunctionImpl {
 
     private Random random;
 
     @Inject
-    public Wod(TSDBot bot, Random random) {
+    public Wod(Bot bot, Random random) {
         super(bot);
         this.description = "TSD WorkBot. Get a randomized workout for today, you lazy sack of shit";
         this.usage = "USAGE: .workbot [ options ]";
@@ -183,11 +185,6 @@ public class Wod extends MainFunction {
             bot.sendMessage(sender, exercise.toString());
         }
 
-    }
-
-    @Override
-    public String getRegex() {
-        return "^\\.(wod|workbot|werkbot).*";
     }
 
     public static enum Exercise {

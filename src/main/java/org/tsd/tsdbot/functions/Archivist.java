@@ -5,7 +5,8 @@ import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.AllChannels;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 import org.tsd.tsdbot.util.ArchivistUtil;
 import org.tsd.tsdbot.util.IRCUtil;
 import org.tsd.tsdbot.util.MiscUtils;
@@ -18,7 +19,8 @@ import java.util.*;
  * Created by Joe on 6/4/14.
  */
 @Singleton
-public class Archivist /*Exedol*/ extends MainFunction {
+@Function(initialRegex = "^\\.catchup.*")
+public class Archivist /*Exedol*/ extends MainFunctionImpl {
 
     private static final Logger log = LoggerFactory.getLogger(Archivist.class);
 
@@ -36,7 +38,7 @@ public class Archivist /*Exedol*/ extends MainFunction {
     private HashMap<String, PrintWriter> writerMap = new HashMap<>();
 
     @Inject
-    public Archivist(TSDBot bot, Properties properties, @AllChannels List channels) throws IOException {
+    public Archivist(Bot bot, Properties properties, @AllChannels List channels) throws IOException {
 
         super(bot);
 
@@ -242,11 +244,6 @@ public class Archivist /*Exedol*/ extends MainFunction {
                 bot.sendMessage(channel, usage);
             }
         }
-    }
-
-    @Override
-    public String getRegex() {
-        return "^\\.catchup.*";
     }
 
     private TreeMap<Long, LinkedList<String>> trimFiveMinuteBuffer(TreeMap<Long, LinkedList<String>> buffer, long fromTime) {

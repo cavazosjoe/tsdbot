@@ -10,6 +10,7 @@ import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.NotificationType;
 import org.tsd.tsdbot.NotifierChannels;
 import org.tsd.tsdbot.TSDBot;
@@ -53,17 +54,15 @@ public class DboFireteamManager extends NotificationManager<DboFireteamManager.D
                 + "sub|sup|pre|del|code|blockquote|strike|kbd|br|hr|area|map|object|embed|param|link|form|small|big|script|object|embed|link|style|form|input)$");
     }
 
-    protected TSDBot bot;
     protected WebClient webClient;
     protected JdbcConnectionProvider connectionProvider;
 
     @Inject
-    public DboFireteamManager(TSDBot bot,
+    public DboFireteamManager(Bot bot,
                               WebClient webClient,
                               JdbcConnectionProvider connectionProvider,
                               @NotifierChannels HashMap notifierChannels) {
         super(bot, 20, false);
-        this.bot = bot;
         this.webClient = webClient;
         this.connectionProvider = connectionProvider;
         this.channels = (String[]) notifierChannels.get("dboft");
@@ -198,11 +197,14 @@ public class DboFireteamManager extends NotificationManager<DboFireteamManager.D
                 }
 
                 String description = null;
-                HtmlDivision descriptionDiv = (HtmlDivision) fireteamPage.getByXPath("//div[@id='event-description']").get(0);
-                for(DomElement de : descriptionDiv.getChildElements()) {
-                    Matcher descriptionMatcher = dataPattern.matcher(de.asXml());
-                    while(descriptionMatcher.find() && description == null) {
-                        description = HtmlSanitizer.sanitize(descriptionMatcher.group(1).trim());
+                List descriptionDivs = fireteamPage.getByXPath("//div[@id='event-description']");
+                if(descriptionDivs != null && descriptionDivs.size() > 0) {
+                    HtmlDivision descriptionDiv = (HtmlDivision) descriptionDivs.get(0);
+                    for (DomElement de : descriptionDiv.getChildElements()) {
+                        Matcher descriptionMatcher = dataPattern.matcher(de.asXml());
+                        while (descriptionMatcher.find() && description == null) {
+                            description = HtmlSanitizer.sanitize(descriptionMatcher.group(1).trim());
+                        }
                     }
                 }
 

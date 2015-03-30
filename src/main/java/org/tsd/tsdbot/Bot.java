@@ -28,6 +28,7 @@ public interface Bot {
     void onMode(String channel, String sourceNick, String sourceLogin, String sourceHostname, String mode);
     void onUserMode(String targetNick, String sourceNick, String sourceLogin, String sourceHostname, String mode);
     void onMessage(String channel, String sender, String login, String hostname, String message);
+    String[] getChannels();
 
     void ban(String channel, String hostmask);
     void unBan(String channel, String hostmask);

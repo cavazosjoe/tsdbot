@@ -2,28 +2,30 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.tsd.tsdbot.TSDBot;
+import com.google.inject.name.Named;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 
 /**
  * Created by Joe on 5/24/14.
  */
 @Singleton
-public class CommandList extends MainFunction {
+@Function(initialRegex = "^\\.cmd$")
+public class CommandList extends MainFunctionImpl {
+
+    private String serverUrl;
 
     @Inject
-    public CommandList(TSDBot bot) {
+    public CommandList(Bot bot, @Named("serverUrl") String serverUrl) {
         super(bot);
         this.description = "Have the bot send you a list of commands";
         this.usage = "USAGE: .cmd";
+        this.serverUrl = serverUrl;
     }
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
-        bot.sendMessage(channel, "http://irc.teamschoolyd.org/commands.txt");
+        bot.sendMessage(channel, serverUrl+"/commands.txt");
     }
 
-    @Override
-    public String getRegex() {
-        return "^\\.cmd$";
-    }
 }

@@ -3,16 +3,18 @@ package org.tsd.tsdbot.functions;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.jibble.pircbot.User;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 
 /**
  * Created by Joe on 5/24/14.
  */
 @Singleton
-public class ShutItDown extends MainFunction {
+@Function(initialRegex = "^\\.SHUT_IT_DOWN$")
+public class ShutItDown extends MainFunctionImpl {
 
     @Inject
-    public ShutItDown(TSDBot bot) {
+    public ShutItDown(Bot bot) {
         super(bot);
         this.description = "SHUT IT DOWN (owner only)";
         this.usage = "USAGE: SHUT IT DOWN";
@@ -28,8 +30,4 @@ public class ShutItDown extends MainFunction {
         }
     }
 
-    @Override
-    public String getRegex() {
-        return "^\\.SHUT_IT_DOWN$";
-    }
 }

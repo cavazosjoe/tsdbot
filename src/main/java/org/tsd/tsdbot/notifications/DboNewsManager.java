@@ -7,6 +7,7 @@ import it.sauronsoftware.feed4j.bean.Feed;
 import it.sauronsoftware.feed4j.bean.FeedItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.NotificationType;
 import org.tsd.tsdbot.NotifierChannels;
 import org.tsd.tsdbot.TSDBot;
@@ -37,7 +38,7 @@ public class DboNewsManager extends NotificationManager<DboNewsManager.DboNewsPo
     }
 
     @Inject
-    public DboNewsManager(TSDBot bot, @NotifierChannels HashMap notifierChannels) {
+    public DboNewsManager(Bot bot, @NotifierChannels HashMap notifierChannels) {
         super(bot, 5, true);
         this.channels = (String[]) notifierChannels.get("dbon");
     }

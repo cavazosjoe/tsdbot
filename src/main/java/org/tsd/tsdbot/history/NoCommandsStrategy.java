@@ -2,6 +2,7 @@ package org.tsd.tsdbot.history;
 
 import com.google.inject.Inject;
 import org.tsd.tsdbot.functions.MainFunction;
+import org.tsd.tsdbot.functions.MainFunctionImpl;
 
 import java.util.Set;
 
@@ -16,7 +17,7 @@ public class NoCommandsStrategy implements MessageFilterStrategy {
     @Override
     public boolean apply(HistoryBuff.Message m) {
         for(MainFunction func : functions) {
-            if(m.text.matches(func.getRegex()))
+            if(m.text.matches(func.getListeningRegex()))
                 return false;
         }
         return true;

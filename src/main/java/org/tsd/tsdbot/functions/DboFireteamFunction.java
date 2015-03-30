@@ -8,7 +8,8 @@ import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 import org.tsd.tsdbot.database.JdbcConnectionProvider;
 import org.tsd.tsdbot.model.dboft.Fireteam;
 
@@ -18,15 +19,16 @@ import java.sql.SQLException;
  * Created by Joe on 2/7/2015.
  */
 @Singleton
-public class DboFireteamFunction extends MainFunction {
+@Function(initialRegex = "^\\.dboft.*")
+public class DboFireteamFunction extends MainFunctionImpl {
 
     private static final Logger logger = LoggerFactory.getLogger(DboFireteamFunction.class);
 
-    private TSDBot bot;
     private JdbcConnectionProvider connectionProvider;
 
     @Inject
-    public DboFireteamFunction(TSDBot bot, JdbcConnectionProvider connectionProvider) {
+    public DboFireteamFunction(Bot bot, JdbcConnectionProvider connectionProvider) {
+        super(bot);
         this.description = "DBO Fireteam function. Manage subscriptions to DBO Fireteam notifications";
         this.usage = "USAGE: .dboft [ subscribe <id> | unsubscribe <id> ]";
         this.bot = bot;
@@ -34,7 +36,7 @@ public class DboFireteamFunction extends MainFunction {
     }
 
     @Override
-    protected void run(String channel, String sender, String ident, String text) {
+    public void run(String channel, String sender, String ident, String text) {
 
         String[] cmdParts = text.split("\\s+");
 
@@ -104,11 +106,6 @@ public class DboFireteamFunction extends MainFunction {
             if(connectionSource != null)
                 connectionSource.closeQuietly();
         }
-    }
-
-    @Override
-    public String getRegex() {
-        return "^\\.dboft.*";
     }
 
 }

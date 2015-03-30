@@ -1,7 +1,5 @@
-package org.tsd.tsdbot.unit;
+package org.tsd.tsdbot.logic;
 
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 import org.tsd.tsdbot.util.IRCUtil;
 import org.tsd.tsdbot.util.MiscUtils;

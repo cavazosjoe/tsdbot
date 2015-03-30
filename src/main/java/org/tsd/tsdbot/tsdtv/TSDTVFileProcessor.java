@@ -6,6 +6,7 @@ import com.google.inject.name.Named;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.tsdtv.processor.*;
 import org.tsd.tsdbot.util.TSDTVUtil;
@@ -32,7 +33,7 @@ public class TSDTVFileProcessor {
     private static final Pattern streamInfoPattern = Pattern.compile("(\\w+):\\s(\\w+).*", Pattern.DOTALL);
 
     @Inject
-    private TSDBot bot;
+    private Bot bot;
 
     @Inject
     private ExecutorService executorService;

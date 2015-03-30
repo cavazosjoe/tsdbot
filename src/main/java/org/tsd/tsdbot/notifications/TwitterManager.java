@@ -5,10 +5,7 @@ import com.google.inject.Singleton;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.NotificationType;
-import org.tsd.tsdbot.NotifierChannels;
-import org.tsd.tsdbot.Stage;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.*;
 import org.tsd.tsdbot.util.IRCUtil;
 import org.tsd.tsdbot.util.RelativeDate;
 import twitter4j.*;
@@ -44,7 +41,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     private String[] channels;
 
     @Inject
-    public TwitterManager(final TSDBot bot,
+    public TwitterManager(final Bot bot,
                           final Twitter twitter,
                           Properties prop,
                           Stage stage,

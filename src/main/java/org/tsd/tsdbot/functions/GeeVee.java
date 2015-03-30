@@ -4,7 +4,8 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 import org.tsd.tsdbot.history.HistoryBuff;
 
 import java.util.LinkedList;
@@ -15,7 +16,8 @@ import java.util.Random;
  * Created by Joe on 4/5/14.
  */
 @Singleton
-public class GeeVee extends MainFunction {
+@Function(initialRegex = "^\\.gv.*")
+public class GeeVee extends MainFunctionImpl {
 
     private static Logger logger = LoggerFactory.getLogger(GeeVee.class);
 
@@ -23,7 +25,7 @@ public class GeeVee extends MainFunction {
     private Random random;
 
     @Inject
-    public GeeVee(TSDBot bot, HistoryBuff historyBuff, Random random) {
+    public GeeVee(Bot bot, HistoryBuff historyBuff, Random random) {
         super(bot);
         this.description = "The Generally Vague Utility, I guess, but I don't know why you would want to use it, unless " +
                 "you had a good reason, but I guess that goes without saying, even though I never really had to," +
@@ -72,11 +74,6 @@ public class GeeVee extends MainFunction {
                     bot.sendMessage(channel, runOnSentence);
             }
         }
-    }
-
-    @Override
-    public String getRegex() {
-        return "^\\.gv.*";
     }
 
     public String getRandomGvResponse() {

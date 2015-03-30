@@ -1,4 +1,4 @@
-package org.tsd.tsdbot.unit;
+package org.tsd.tsdbot.logic;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Test;

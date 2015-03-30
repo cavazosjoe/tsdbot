@@ -2,8 +2,9 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 import org.tsd.tsdbot.NotificationType;
-import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.notifications.NotificationEntity;
 import org.tsd.tsdbot.notifications.NotificationManager;
 
@@ -14,12 +15,13 @@ import java.util.Set;
  * Created by Joe on 5/24/14.
  */
 @Singleton
-public class OmniPost extends MainFunction {
+@Function(initialRegex = "^\\.(hbof|hbon|dbof|dbon)\\s+.*")
+public class OmniPost extends MainFunctionImpl {
 
     private Set<NotificationManager> notificationManagers;
 
     @Inject
-    public OmniPost(TSDBot bot, Set<NotificationManager> notificationManagers) {
+    public OmniPost(Bot bot, Set<NotificationManager> notificationManagers) {
         super(bot);
         this.description = "OmniPost notification system. Browse recent posts from the HBO and DBO forums and news feeds";
         this.usage = "USAGE: [ .hbof | .hbon | .dbof | .dbon ] [ list | pv [ postId (optional) ] ]";
@@ -73,11 +75,6 @@ public class OmniPost extends MainFunction {
         } else {
             bot.sendMessage(channel, usage);
         }
-    }
-
-    @Override
-    public String getRegex() {
-        return "^\\.(hbof|hbon|dbof|dbon)\\s+.*";
     }
 
 }

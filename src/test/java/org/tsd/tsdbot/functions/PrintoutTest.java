@@ -1,16 +1,14 @@
-package org.tsd.tsdbot.integ;
+package org.tsd.tsdbot.functions;
 
 import com.google.inject.Injector;
+import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
 import org.jibble.pircbot.User;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.tsd.tsdbot.Bot;
-import org.tsd.tsdbot.PrintoutLibrary;
-import org.tsd.tsdbot.TestBot;
-import org.tsd.tsdbot.functions.Printout;
+import org.tsd.tsdbot.*;
 
 import java.io.FileNotFoundException;
 import java.util.Random;
@@ -30,12 +28,11 @@ public class PrintoutTest {
 
     @Test
     public void testNormal(Injector injector) throws FileNotFoundException {
-        Printout printoutFunction = injector.getInstance(Printout.class);
         TestBot bot = (TestBot) injector.getInstance(Bot.class);
         PrintoutLibrary library = injector.getInstance(PrintoutLibrary.class);
 
         random.setDoubleVal(1.0);
-        printoutFunction.run(channel, "Schooly_D", "schoolyd", "TSDBot I need a printout of a big ol' fuzzy bear");
+        bot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", "TSDBot I need a printout of a big ol' fuzzy bear");
         String lastMessage = bot.getLastMessage(channel);
         assertTrue(lastMessage.startsWith(server));
         String id = lastMessage.substring(lastMessage.lastIndexOf("/") + 1);
@@ -47,19 +44,18 @@ public class PrintoutTest {
     @Test
     public void testRepeat(Injector injector) throws FileNotFoundException {
 
-        Printout printoutFunction = injector.getInstance(Printout.class);
         TestBot bot = (TestBot) injector.getInstance(Bot.class);
         PrintoutLibrary library = injector.getInstance(PrintoutLibrary.class);
 
         random.setDoubleVal(0);
-        printoutFunction.run(channel, "Schooly_D", "schoolyd", "TSDBot I need a printout of a big ol' fuzzy bear");
+        bot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", "TSDBot I need a printout of a big ol' fuzzy bear");
         String lastMessage = bot.getLastMessage(channel);
         assertTrue(lastMessage.toLowerCase().startsWith("not computing"));
-        printoutFunction.run(channel, "Schooly_D", "schoolyd", "BIG FUZZY BEAR");
+        bot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", "BIG FUZZY BEAR");
         lastMessage = bot.getLastMessage(channel);
         assertTrue(lastMessage.toLowerCase().startsWith("not computing"));
 
-        printoutFunction.run(channel, "Schooly_D", "schoolyd", "BIG. FUZZY. BEAR.");
+        bot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", "BIG. FUZZY. BEAR.");
         lastMessage = bot.getLastMessage(channel);
         assertTrue(lastMessage.startsWith(server));
         String id = lastMessage.substring(lastMessage.lastIndexOf("/") + 1);
@@ -70,32 +66,32 @@ public class PrintoutTest {
 
     @Test
     public void testBlacklist(Injector injector) throws FileNotFoundException {
-        Printout printoutFunction = injector.getInstance(Printout.class);
+
         TestBot bot = (TestBot) injector.getInstance(Bot.class);
         PrintoutLibrary library = injector.getInstance(PrintoutLibrary.class);
 
         random.setDoubleVal(0);
-        printoutFunction.run(channel, "Schooly_D", "schoolyd", "TSDBot I need a printout of a big ol' fuzzy bear");
+        bot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", "TSDBot I need a printout of a big ol' fuzzy bear");
         String lastMessage = bot.getLastMessage(channel);
         assertTrue(lastMessage.toLowerCase().startsWith("not computing"));
 
         for(int i=0 ; i < 3 ; i++) {
-            printoutFunction.run(channel, "Schooly_D", "schoolyd", "nope :^)");
+            bot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", "nope :^)");
         }
 
         lastMessage = bot.getLastMessage(channel);
         assertTrue(lastMessage.toLowerCase().startsWith("insolence"));
 
-        printoutFunction.run(channel, "Schooly_D", "schoolyd", "TSDBot I need a printout of a big ol' fuzzy bear");
+        bot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", "TSDBot I need a printout of a big ol' fuzzy bear");
         lastMessage = bot.getLastMessage(channel);
         assertTrue(lastMessage.toLowerCase().startsWith("make me"));
 
-        printoutFunction.run(channel, "OpUser", "opuser", ".printout clear");
+        bot.onMessage(channel, "OpUser", "opuser", "hostname", ".printout clear");
         lastMessage = bot.getLastMessage(channel);
         assertTrue(lastMessage.toLowerCase().startsWith("the printout blacklist"));
 
         random.setDoubleVal(1.0);
-        printoutFunction.run(channel, "Schooly_D", "schoolyd", "TSDBot I need a printout of a big ol' fuzzy bear");
+        bot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", "TSDBot I need a printout of a big ol' fuzzy bear");
         lastMessage = bot.getLastMessage(channel);
         assertTrue(lastMessage.startsWith(server));
         String id = lastMessage.substring(lastMessage.lastIndexOf("/") + 1);
@@ -112,22 +108,13 @@ public class PrintoutTest {
             bind(PrintoutLibrary.class).toInstance(new PrintoutLibrary());
             bind(String.class).annotatedWith(Names.named("serverUrl")).toInstance(server);
 
-            TestBot testBot = new TestBot();
+            TestBot testBot = new TestBot(channel, null);
             testBot.addChannelUser(channel, User.Priv.OP, "OpUser");
             bind(Bot.class).toInstance(testBot);
-        }
-    }
 
-    private static class FauxRandom extends Random {
-        private double doubleVal;
+            IntegTestUtils.loadFunctions(binder(), Printout.class);
 
-        @Override
-        public double nextDouble() {
-            return doubleVal;
-        }
-
-        public void setDoubleVal(double doubleVal) {
-            this.doubleVal = doubleVal;
+            requestInjection(testBot);
         }
     }
 }

@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.ThreadType;
 import org.tsd.tsdbot.functions.Dorj;
@@ -44,7 +45,7 @@ public class DorjThread extends IRCListenerThread {
     private LinkedList<String> dorjFormats = new LinkedList<>();
 
     @Inject
-    public DorjThread(TSDBot bot, Dorj dorj, ThreadManager threadManager, Random random,
+    public DorjThread(Bot bot, Dorj dorj, ThreadManager threadManager, Random random,
                       TwitterManager twitterManager, HistoryBuff historyBuff,
                       InjectableMsgFilterStrategyFactory msgFilterFact) throws Exception {
         super(bot, threadManager);

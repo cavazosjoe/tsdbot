@@ -5,7 +5,8 @@ import com.google.inject.Singleton;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.Function;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.Persistable;
 import org.tsd.tsdbot.util.DatabaseLogic;
@@ -21,7 +22,8 @@ import java.util.Random;
  * Created by Joe on 5/24/14.
  */
 @Singleton
-public class TomCruise extends MainFunction implements Persistable {
+@Function(initialRegex = "^\\.tc.*")
+public class TomCruise extends MainFunctionImpl implements Persistable {
 
     private static Logger logger = LoggerFactory.getLogger(TomCruise.class);
 
@@ -29,7 +31,7 @@ public class TomCruise extends MainFunction implements Persistable {
     private Random random;
 
     @Inject
-    public TomCruise(TSDBot bot, DBConnectionProvider connectionProvider, Random random) throws SQLException {
+    public TomCruise(Bot bot, DBConnectionProvider connectionProvider, Random random) throws SQLException {
         super(bot);
         this.description = "Generate a random Tom Cruise clip or quote";
         this.usage = "USAGE: .tc [ clip | quote ]";
@@ -56,11 +58,6 @@ public class TomCruise extends MainFunction implements Persistable {
         }
 
         bot.sendMessages(channel, IRCUtil.splitLongString(getRandom(itemType)));
-    }
-
-    @Override
-    public String getRegex() {
-        return "^\\.tc.*";
     }
 
     public String getRandom(TomCruiseItemType itemType) {
