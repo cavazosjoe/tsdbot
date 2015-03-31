@@ -25,7 +25,6 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.Bot;
-import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.util.CircularBuffer;
 
 import java.awt.*;
@@ -126,8 +125,8 @@ public class HustleStats implements Stats {
 
         } catch (Exception e) {
             log.error("Error retrieving text sentiment, response={}", responseString, e);
-            if(!error)
-                bot.sendMessage(channel, "(Error calculating hustle quotient, please check logs)");
+            if(!error) //TODO: replace hardcoded target with something better that doesn't annoy the chat
+                bot.sendMessage("Schooly_D", "(Error calculating hustle quotient, please check logs)");
             error = true;
         } finally {
             if(post != null)

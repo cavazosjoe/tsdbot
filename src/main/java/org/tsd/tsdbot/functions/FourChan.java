@@ -52,7 +52,7 @@ public class FourChan extends MainFunctionImpl {
             return;
         }
 
-        String boardRegex = "^/??(\\w{1,3})/??$";
+        String boardRegex = "^/??(\\w{1,4})/??$";
         if(!cmdParts[1].matches(boardRegex)) {
             bot.sendMessage(channel, "Could not understand which board you want. Ex: .4chan /v/");
             return;

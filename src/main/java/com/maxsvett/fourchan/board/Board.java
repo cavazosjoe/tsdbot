@@ -80,7 +80,7 @@ public class Board {
 				new Board("Comics & Cartoons", "/co/",false),
 				new Board("Cosplay & CGL", "/cgl/",false),
 				new Board("Cute/Male", "/cm/",false),
-				new Board("Discussion", "/q/",false),
+//				new Board("Discussion", "/q/",false), // rip ;_;7
 				new Board("Do-It-Yourself", "/diy/",false),
 				new Board("Ecchi", "/e/",true),
 				new Board("Fashion", "/fa/",false),

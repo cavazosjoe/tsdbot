@@ -7,7 +7,6 @@ import org.jibble.pircbot.User;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.tsd.tsdbot.Bot;
@@ -22,7 +21,8 @@ import org.tsd.tsdbot.model.dboft.Platform;
 import java.sql.SQLException;
 import java.util.Date;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by Joe on 3/29/2015.
@@ -58,41 +58,38 @@ public class DBOFireteamFunctionTest {
         TestBot testBot = (TestBot)bot;
         Dao<Fireteam, Integer> dao = DaoManager.createDao(connectionSource, Fireteam.class);
 
-        testBot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", ".dboft subscribe someteam");
-        String lastMessage = testBot.getLastMessage(channel);
+        String lastMessage = sendMessageGetResponse(testBot, "Schooly_D", ".dboft subscribe someteam");
         assertTrue(lastMessage.toLowerCase().contains("must be an integer"));
 
-        testBot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", ".dboft subscribe 2");
-        lastMessage = testBot.getLastMessage(channel);
+        lastMessage = sendMessageGetResponse(testBot, "Schooly_D", ".dboft subscribe 2");
         assertTrue(lastMessage.toLowerCase().contains("could not find fireteam"));
 
-        testBot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", ".dboft subscribe 1");
-        lastMessage = testBot.getLastMessage(channel);
+        lastMessage = sendMessageGetResponse(testBot, "Schooly_D", ".dboft subscribe 1");
         assertTrue(lastMessage.toLowerCase().contains("now subscribed to"));
         assertTrue(dao.queryForId(1).isSubscribed());
 
-        testBot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", ".dboft subscribe 1");
-        lastMessage = testBot.getLastMessage(channel);
+        lastMessage = sendMessageGetResponse(testBot, "Schooly_D", ".dboft subscribe 1");
         assertTrue(lastMessage.toLowerCase().contains("already subscribed"));
 
-        testBot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", ".dboft unsubscribe 2");
-        lastMessage = testBot.getLastMessage(channel);
+        lastMessage = sendMessageGetResponse(testBot, "Schooly_D", ".dboft unsubscribe 2");
         assertTrue(lastMessage.toLowerCase().contains("could not find fireteam"));
 
-        testBot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", ".dboft unsubscribe 1");
-        lastMessage = testBot.getLastMessage(channel);
+        lastMessage = sendMessageGetResponse(testBot, "Schooly_D", ".dboft unsubscribe 1");
         assertTrue(lastMessage.toLowerCase().contains("only an op can"));
 
-        testBot.onMessage(channel, "OpUser", "opuser", "hostname", ".dboft unsubscribe 1");
-        lastMessage = testBot.getLastMessage(channel);
+        lastMessage = sendMessageGetResponse(testBot, "OpUser", ".dboft unsubscribe 1");
         assertTrue(lastMessage.toLowerCase().contains("no longer subscribed to"));
         assertFalse(dao.queryForId(1).isSubscribed());
 
-        testBot.onMessage(channel, "OpUser", "opuser", "hostname", ".dboft unsubscribe 1");
-        lastMessage = testBot.getLastMessage(channel);
+        lastMessage = sendMessageGetResponse(testBot, "OpUser", ".dboft unsubscribe 1");
         assertTrue(lastMessage.toLowerCase().contains("not currently subscribed"));
         assertFalse(dao.queryForId(1).isSubscribed());
 
+    }
+
+    private String sendMessageGetResponse(TestBot testBot, String user, String msg) {
+        testBot.onMessage(channel, user, "ident", "hostname", msg);
+        return testBot.getLastMessage(channel);
     }
 
     public static class Module extends JukitoModule {
