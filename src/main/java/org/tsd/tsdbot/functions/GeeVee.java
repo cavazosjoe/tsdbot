@@ -104,7 +104,7 @@ public class GeeVee extends MainFunctionImpl {
         return null;
     }
 
-    private static String[] gvResponses = new String[]{
+    public static String[] gvResponses = new String[]{
             "I don't think you understand, but whatever",
             "Why?",
             "I don't think that's correct",
