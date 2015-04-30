@@ -144,6 +144,7 @@ public class Recap extends MainFunctionImpl {
             "Grillin' with Bernie",
             "Bar in the Pocket: Tex and the Hidden Flask Technique",
             "Take Flight, Gundam!",
+            "Dr. Strangedeej, or: How I Learned to Stop Worrying and Love the Dorj",
             "Dr. GV, PhD, although I guess if he was a medical doctor he wouldn't have a PhD? Or maybe they can, " +
                     "I don't know. I know he'd be called \"Dr.\" though. I think they should make that clearer, like " +
                     "in the dictionary or wherever they spell things out like that. But I guess it wouldn't be an English " +

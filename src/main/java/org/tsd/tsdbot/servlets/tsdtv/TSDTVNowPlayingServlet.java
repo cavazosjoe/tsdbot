@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
@@ -147,11 +146,9 @@ public class TSDTVNowPlayingServlet extends HttpServlet {
                 try {
                     TSDTVShow show = library.getShow(showString);
                     File img = show.getQueueImage();
-                    if(img == null || !img.exists())
-                        throw new Exception("Could not find image for show " + showString);
                     IOUtils.copy(new FileInputStream(img), resp.getOutputStream());
-                } catch (Exception e) {
-                    IOUtils.copy(new URL("http://i.imgur.com/6HNzLdK.jpg").openStream(), resp.getOutputStream());
+                } catch (ShowNotFoundException e) {
+                    logger.error("Could not find show {}", showString);
                 } finally {
                     resp.getOutputStream().close();
                 }

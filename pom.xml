@@ -73,6 +73,14 @@
 
   <dependencies>
 
+    <!--begin google-->
+    <dependency>
+      <groupId>com.google.apis</groupId>
+      <artifactId>google-api-services-youtube</artifactId>
+      <version>v3-rev136-1.20.0</version>
+    </dependency>
+    <!--end google-->
+
     <dependency>
       <groupId>it.sauronsoftware</groupId>
       <artifactId>feed4j</artifactId>
@@ -350,6 +358,12 @@
       <artifactId>jukito</artifactId>
       <version>1.4.1</version>
       <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.googlecode.json-simple</groupId>
+      <artifactId>json-simple</artifactId>
+      <version>1.1.1</version>
     </dependency>
 
   </dependencies>

@@ -1,10 +1,16 @@
 package org.tsd.tsdbot.tsdtv.model;
 
+import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.tsdtv.ShowNotFoundException;
 import org.tsd.tsdbot.tsdtv.TSDTVConstants;
 import org.tsd.tsdbot.util.FuzzyLogic;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -14,6 +20,10 @@ import java.util.TreeSet;
  * Created by Joe on 2/1/2015.
  */
 public class TSDTVShow implements Comparable<TSDTVShow> {
+
+    private static final Logger log = LoggerFactory.getLogger(TSDTVShow.class);
+
+    private static File defaultImg = null;
 
     private File directory;
 
@@ -38,7 +48,7 @@ public class TSDTVShow implements Comparable<TSDTVShow> {
     public LinkedList<TSDTVEpisode> getAllEpisodes() {
         LinkedList<TSDTVEpisode> result = new LinkedList<>();
         for(File f : directory.listFiles()) {
-            if(!f.getName().startsWith(".")) {
+            if( (!f.getName().endsWith(".sh")) && (!f.getName().startsWith(".")) ) {
                 result.add(new TSDTVEpisode(f, this));
             }
         }
@@ -92,7 +102,20 @@ public class TSDTVShow implements Comparable<TSDTVShow> {
 
     public File getQueueImage() {
         File img = new File(directory.getAbsolutePath() + "/" + TSDTVConstants.SHOW_IMG_NAME);
-        return img.exists() ? img : null;
+        if(!img.exists()) {
+            if(defaultImg == null) try {
+                defaultImg = File.createTempFile("defaultImg", ".jpg");
+                try(    InputStream is = new URL("http://i.imgur.com/6HNzLdK.jpg").openStream();
+                        FileOutputStream fos = new FileOutputStream(defaultImg)) {
+                    IOUtils.copy(is, fos);
+                }
+            } catch (Exception e) {
+                log.error("Error downloading default queue image", e);
+            }
+            return defaultImg;
+        } else {
+            return img;
+        }
     }
 
     @Override

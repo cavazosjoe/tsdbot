@@ -3,8 +3,11 @@ package org.tsd.tsdbot;
 import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.NicelyResynchronizingAjaxController;
 import com.gargoylesoftware.htmlunit.WebClient;
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.services.youtube.YouTube;
 import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import org.apache.commons.io.FileUtils;
@@ -28,16 +31,11 @@ import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.DBConnectionString;
 import org.tsd.tsdbot.database.JdbcConnectionProvider;
-import org.tsd.tsdbot.functions.*;
+import org.tsd.tsdbot.functions.Archivist;
 import org.tsd.tsdbot.history.HistoryBuff;
-import org.tsd.tsdbot.notifications.*;
 import org.tsd.tsdbot.runnable.InjectableIRCThreadFactory;
 import org.tsd.tsdbot.runnable.ThreadManager;
 import org.tsd.tsdbot.scheduled.InjectableJobFactory;
-import org.tsd.tsdbot.stats.GvStats;
-import org.tsd.tsdbot.stats.HustleStats;
-import org.tsd.tsdbot.stats.Stats;
-import org.tsd.tsdbot.stats.SystemStats;
 import org.tsd.tsdbot.tsdtv.InjectableStreamFactory;
 import org.tsd.tsdbot.tsdtv.TSDTV;
 import org.tsd.tsdbot.tsdtv.TSDTVFileProcessor;
@@ -252,6 +250,22 @@ public class TSDBotConfigModule extends AbstractModule {
                 .toInstance(new File(properties.getProperty("tsdtv.raws")));
         bind(TSDTVLibrary.class).asEagerSingleton();
         bind(TSDTVFileProcessor.class).asEagerSingleton();
+
+        GoogleAuthHolder googleAuthHolder = new GoogleAuthHolder(properties);
+        GoogleCredential googleCredential = new GoogleCredential.Builder()
+                .setTransport(new NetHttpTransport())
+                .setJsonFactory(new JacksonFactory())
+                .setClientSecrets(googleAuthHolder.getClientId(), googleAuthHolder.getClientSecret()).build();
+        googleCredential.setRefreshToken(googleAuthHolder.getRefreshToken());
+
+        YouTube youTube = new YouTube.Builder(
+                googleCredential.getTransport(),
+                googleCredential.getJsonFactory(),
+                googleCredential)
+                .setApplicationName(googleAuthHolder.getAppId())
+                .build();
+
+        bind(YouTube.class).toInstance(youTube);
 
         bind(TSDTV.class).asEagerSingleton();
 

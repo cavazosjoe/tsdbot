@@ -5,6 +5,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.tsd.tsdbot.Bot;
@@ -25,6 +26,7 @@ public class FourChanTest {
     private static final String imagePattern = "http://images\\.4chan\\.org%ssrc/[\\d]+\\.[\\w]+";
 
     @Test
+    @Ignore
     public void test(Bot bot) {
         TestBot testBot = (TestBot)bot;
 
