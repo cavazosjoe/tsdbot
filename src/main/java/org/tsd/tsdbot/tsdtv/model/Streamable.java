@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
  */
 public abstract class Streamable {
 
-    private final static Logger logger = LoggerFactory.getLogger(Streamable.class);
+    private final static Logger log = LoggerFactory.getLogger(Streamable.class);
 
     private static final Pattern durationPattern = Pattern.compile("(\\d+):(\\d+):(\\d+)\\.(\\d+)");
 
@@ -36,7 +36,7 @@ public abstract class Streamable {
 
     public long getDuration(String ffmpegExec) {
         String durationString = getMetadata(ffmpegExec).get(TSDTVConstants.METADATA_DURATION_FIELD);
-        logger.info("Parsing duration {} for file {}", durationString, file.getAbsolutePath());
+        log.info("Parsing duration {} for file {}", durationString, file.getAbsolutePath());
         Matcher m = durationPattern.matcher(durationString);
         long duration = 0;
         while(m.find()) {
@@ -49,7 +49,7 @@ public abstract class Streamable {
 
     public HashMap<String, String> getMetadata(String ffmpegExec) {
 
-        logger.info("Retrieving metadata for {}", file.getAbsolutePath());
+        log.info("Retrieving metadata for {}", file.getAbsolutePath());
         HashMap<String, String> metadata = new HashMap<>();
 
         try {
@@ -61,12 +61,12 @@ public abstract class Streamable {
             BufferedReader br = new BufferedReader(reader);
             String line;
             while( (line = br.readLine()) != null ) {
-                logger.info(line);
+                log.debug(line);
                 if(line.contains("Metadata")) {
                     while( (line = br.readLine()) != null && (!line.contains("Duration")) ) { // stop on duration
                         String[] parts = line.split(":",2);
                         if(parts.length == 2) {
-                            logger.info("Adding line to metadata: {} -> {}", parts[0].trim(), parts[1].trim());
+                            log.info("Adding line to metadata: {} -> {}", parts[0].trim(), parts[1].trim());
                             metadata.put(parts[0].trim(), parts[1].trim());
                         }
                     }
@@ -74,16 +74,16 @@ public abstract class Streamable {
                 if(line != null && line.contains("Duration")) {
                     // now get the duration
                     // Duration: 00:00:00.0, start=0000blahblah
-                    logger.info("Raw duration line: {}", line);
+                    log.debug("Raw duration line: {}", line);
                     String duration = line.substring(line.indexOf(":") + 1, line.indexOf(","));
-                    logger.info("Adding parsed duration to metadata: {}", duration);
+                    log.info("Adding parsed duration to metadata: {}", duration);
                     metadata.put(TSDTVConstants.METADATA_DURATION_FIELD, duration);
                     break;
                 }
             }
 
         } catch (Exception e) {
-            logger.error("Error getting video metadata", e);
+            log.error("Error getting video metadata", e);
         }
 
         return metadata;

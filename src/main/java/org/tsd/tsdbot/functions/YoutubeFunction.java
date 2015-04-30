@@ -83,18 +83,20 @@ public class YoutubeFunction extends MainFunctionImpl {
             @Override
             public void run() {
                 HashSet<File> clips = new HashSet<>();
+                File clipList = null;
                 try {
 
                     List<TSDTVShow> allShows = library.getAllShows();
 
-                    for (int i = 0; i < numClips; i++) {
+                    for (int i = 0; i < numClips; i++) try {
                         TSDTVShow randomShow = allShows.get(random.nextInt(allShows.size()));
                         TSDTVEpisode randomEpisode = randomShow.getRandomEpisode(random);
                         log.info("selected random episode: {}", randomEpisode.getFile().getAbsolutePath());
 
                         long durationInMillis = randomEpisode.getDuration(ffmpegExec);
                         int durationInSeconds = (int) (durationInMillis / 1000);
-                        int clipStartSeconds = random.nextInt(durationInSeconds - videoLength);
+                        int opEdBufferInSeconds = 200; // so we pull openings and endings less often
+                        int clipStartSeconds = opEdBufferInSeconds + random.nextInt(durationInSeconds - (opEdBufferInSeconds+videoLength));
                         log.info("clipStartSeconds = {}", clipStartSeconds);
 
                         // ffmpeg -ss [clipStart] -i /path/to/movie.mp4 -t [durationInSeconds] -c:v libx264 -y /path/to/out.mp4
@@ -128,21 +130,23 @@ public class YoutubeFunction extends MainFunctionImpl {
                             throw new Exception("Error creating clip!");
                         log.info("successfully clipped");
                         clips.add(tempFile);
+                    } catch (Exception e) {
+                        log.error("Failed to process clip, SKIPPING...", e);
                     }
 
-                    File fileList = File.createTempFile(RandomStringUtils.randomAlphanumeric(10), ".txt");
-                    PrintWriter writer = new PrintWriter(fileList, "UTF-8");
+                    clipList = File.createTempFile(RandomStringUtils.randomAlphanumeric(10), ".txt");
+                    PrintWriter writer = new PrintWriter(clipList, "UTF-8");
                     for(File clip : clips)
                         writer.println("file '" + clip.getAbsolutePath() + "'");
                     writer.close();
-                    log.info("clip list written to {}, combining videos...", fileList.getAbsolutePath());
+                    log.info("clip list written to {}, combining videos...", clipList.getAbsolutePath());
 
                     File combinedVid = File.createTempFile(RandomStringUtils.randomAlphanumeric(10), ".mp4");
 
                     ProcessBuilder pb = new ProcessBuilder(
                             ffmpegExec,
                             "-f", "concat",
-                            "-i", fileList.getAbsolutePath(),
+                            "-i", clipList.getAbsolutePath(),
                             "-c", "copy",
                             "-y",
                             combinedVid.getAbsolutePath()
@@ -161,18 +165,33 @@ public class YoutubeFunction extends MainFunctionImpl {
                     String description = (m != null) ? m.text : RandomStringUtils.randomAlphanumeric(10);
 
                     Video returnedVideo = uploadToYoutube(title, description, combinedVid);
+                    String videoId = returnedVideo.getId();
 
-                    log.info("video uploaded, sleeping for a bit...");
+                    log.info("video uploaded, waiting to finish processing...");
 
-                    // sleep for a while to give it time to upload and process
-                    Thread.sleep(1000 * 30);
+//                    long timeoutMillis = 1000 * 120;
+//                    long millisToSleep = 1000 * 5;
+//                    long millisWaited = 0;
+//                    String status;
+//                    do {
+//                        Thread.sleep(millisToSleep);
+//                        millisWaited += millisToSleep;
+//                        returnedVideo = youTube.videos().list("id="+videoId).execute().getItems().get(0);
+//                        status = returnedVideo.getProcessingDetails().getProcessingStatus();
+//                        log.info("PROCESSING STATUS = {}", status);
+//                    } while(millisWaited < timeoutMillis && !"terminated".equalsIgnoreCase(status));
 
-                    bot.sendMessage(channel, "https://www.youtube.com/watch?v=" + returnedVideo.getId());
+                    Thread.sleep(1000 * 25);
+
+                    bot.sendMessage(channel, "https://www.youtube.com/watch?v=" + videoId);
 
                 } catch (Exception e) {
                     log.error("Error creating youtube", e);
                     bot.sendMessage(channel, "Actually, nah");
                 } finally {
+                    log.info("deleting temp files...");
+                    if(clipList != null)
+                        clipList.delete();
                     for(File f : clips)
                         f.delete();
                 }
