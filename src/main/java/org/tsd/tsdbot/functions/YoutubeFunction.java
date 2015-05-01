@@ -19,8 +19,10 @@ import org.tsd.tsdbot.history.*;
 import org.tsd.tsdbot.tsdtv.TSDTVLibrary;
 import org.tsd.tsdbot.tsdtv.model.TSDTVEpisode;
 import org.tsd.tsdbot.tsdtv.model.TSDTVShow;
+import org.tsd.tsdbot.util.TSDTVUtil;
 
 import java.io.*;
+import java.text.DecimalFormat;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -38,6 +40,8 @@ public class YoutubeFunction extends MainFunctionImpl {
     private static final int videoLength = 9;
     private static final int numClips = 3;
     private static final double clipDuration = videoLength/numClips;
+
+    private static final DecimalFormat volumeAdjustFormat = new DecimalFormat("#0.0;-#0.0");
 
     private MessageFilter messageFilter = null;
 
@@ -114,12 +118,10 @@ public class YoutubeFunction extends MainFunctionImpl {
                                 "-b:v", "1048k",
                                 "-pix_fmt", "yuv420p",
                                 "-vf", "scale=480:480",
-//                        "-flags:v", "+global_header",
                                 "-preset", "veryslow",
                                 "-ac", "1",
                                 "-c:a", "aac",
                                 "-strict", "experimental",
-//                        "-flags:a", "+global_header",
                                 "-ar", "44100",
                                 "-b:a", "128k",
                                 "-y",
@@ -133,6 +135,8 @@ public class YoutubeFunction extends MainFunctionImpl {
                     } catch (Exception e) {
                         log.error("Failed to process clip, SKIPPING...", e);
                     }
+
+                    normalizeAudio(clips);
 
                     clipList = File.createTempFile(RandomStringUtils.randomAlphanumeric(10), ".txt");
                     PrintWriter writer = new PrintWriter(clipList, "UTF-8");
@@ -164,22 +168,13 @@ public class YoutubeFunction extends MainFunctionImpl {
                     m = historyBuff.getRandomFilteredMessage(channel, null, messageFilter);
                     String description = (m != null) ? m.text : RandomStringUtils.randomAlphanumeric(10);
 
+                    log.info("title = {}", title);
+                    log.info("description = {}", description);
+
                     Video returnedVideo = uploadToYoutube(title, description, combinedVid);
                     String videoId = returnedVideo.getId();
 
                     log.info("video uploaded, waiting to finish processing...");
-
-//                    long timeoutMillis = 1000 * 120;
-//                    long millisToSleep = 1000 * 5;
-//                    long millisWaited = 0;
-//                    String status;
-//                    do {
-//                        Thread.sleep(millisToSleep);
-//                        millisWaited += millisToSleep;
-//                        returnedVideo = youTube.videos().list("id="+videoId).execute().getItems().get(0);
-//                        status = returnedVideo.getProcessingDetails().getProcessingStatus();
-//                        log.info("PROCESSING STATUS = {}", status);
-//                    } while(millisWaited < timeoutMillis && !"terminated".equalsIgnoreCase(status));
 
                     Thread.sleep(1000 * 25);
 
@@ -200,6 +195,49 @@ public class YoutubeFunction extends MainFunctionImpl {
 
         executorService.submit(youtubeThread);
         bot.sendMessage(channel, "Consider it done");
+
+    }
+
+    private void normalizeAudio(HashSet<File> unNormalizedClips) {
+        HashSet<File> returnSet = new HashSet<>();
+        for(File raw : unNormalizedClips) try {
+
+            double clipVolume = TSDTVUtil.getMaxVolume(ffmpegExec, raw);
+            double volAdjust = clipVolume*-1;
+            String volumeAdjustString = "volume=" + volumeAdjustFormat.format(volAdjust) + "dB";
+            log.info("using volume adjustment {} -> {} -> {}", new Object[]{clipVolume, volAdjust, volumeAdjustString});
+
+            File tempFile = File.createTempFile(RandomStringUtils.randomAlphanumeric(10), ".mp4");
+            log.info("normalizing audio to temp file {}", tempFile.getAbsolutePath());
+            ProcessBuilder pb = new ProcessBuilder(
+                    ffmpegExec,
+                    "-i", raw.getAbsolutePath(),
+                    "-af", volumeAdjustString,
+                    "-c:v", "copy",
+                    "-c:a", "aac",
+                    "-strict", "experimental",
+                    "-ar", "44100",
+                    "-b:a", "128k",
+                    "-af", volumeAdjustString,
+                    "-y",
+                    tempFile.getAbsolutePath());
+            Process p = pb.start();
+            p.waitFor();
+            if(p.exitValue() != 0)
+                throw new Exception("Error normalizing clip!");
+            log.info("successfully normalizing");
+            returnSet.add(tempFile);
+
+        } catch (Exception e) {
+            log.error("ERROR NORMALIZING AUDIO FOR {}, skipping...");
+        }
+
+        for(File raw : unNormalizedClips) {
+            raw.delete();
+        }
+
+        unNormalizedClips.clear();
+        unNormalizedClips.addAll(returnSet);
 
     }
 
@@ -249,70 +287,6 @@ public class YoutubeFunction extends MainFunctionImpl {
 
         return videoInsert.execute();
     }
-
-//    private long createPost(String sessionKey, String vineId, File vid) throws Exception {
-//
-//        String thumbUrl = uploadThumbnail(sessionKey, vineId);
-//        String vidUrl = uploadVideo(sessionKey, vineId, vid);
-//
-//        HashMap<String, String> postInfo = new HashMap<>();
-//        postInfo.put("entities",        "");
-//        postInfo.put("videoUrl",        vidUrl);
-//        postInfo.put("thumbnailUrl",    thumbUrl);
-//        postInfo.put("description",     "aaaaaaaaa");
-//        HttpResponse postResponse = HttpUtil.post(Constants.VINE_API_POST_CREATE_PATH, sessionKey, postInfo);
-//        InputStream is = HttpUtil.getInputStreamHttpResponse(postResponse);
-//        JSONObject jsonResponse = (JSONObject) JSONUtil.fromJSONStream(is);
-//        log.info("Create post response: {}", jsonResponse.toJSONString());
-//        boolean success = JSONUtil.getBoolean(jsonResponse, "success");
-//        if(!success)
-//            throw new Exception(JSONUtil.getString(jsonResponse, "error"));
-//        return (long) JSONUtil.getJSONObject(jsonResponse, "data").get("postId");
-//    }
-//
-//    private String uploadThumbnail(String sessionKey, String vineId) throws IOException {
-//        String thumbTarget = String.format(MediaConstants.VINE_MEDIA_UPLOAD_THUMB, vineId + ".mp4.jpg");
-//
-//        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-//        IOUtils.copy(Printout.class.getResourceAsStream("/vinethumb.jpg"), baos);
-//
-//        HttpEntity thumbEntity = new ByteArrayEntity(baos.toByteArray());
-//        HttpPut thumbPut = new HttpPut(thumbTarget);
-//        thumbPut.addHeader(MediaConstants.VINE_MEDIA_HTTPHEADER_HOST_TEXT, MediaConstants.VINE_MEDIA_HTTPHEADER_HOST);
-//        thumbPut.addHeader(MediaConstants.VINE_MEDIA_HTTPHEADER_PROXY_TEXT, MediaConstants.VINE_MEDIA_HTTPHEADER_PROXY);
-//        thumbPut.addHeader(MediaConstants.VINE_MEDIA_HTTPHEADER_CONTENT_TYPE_TEXT, MediaConstants.VINE_MEDIA_HTTPHEADER_CONTENT_TYPE_IMG);
-//        thumbPut.addHeader(MediaConstants.VINE_MEDIA_HTTPHEADER_VINE_CLIENT_TEXT, MediaConstants.VINE_MEDIA_HTTPHEADER_VINE_CLIENT);
-//        thumbPut.addHeader(Constants.VINE_HTTPHEADER_ACCEPT_LANGUAGE_TEXT, Constants.VINE_HTTPHEADER_ACCEPT_LANGUAGE);
-//        thumbPut.addHeader(Constants.VINE_HTTPHEADER_ACCEPT_TEXT, Constants.VINE_HTTPHEADER_ACCEPT);
-//        thumbPut.addHeader(Constants.VINE_HTTPHEADER_VINE_SESSION_ID, sessionKey);
-//        thumbPut.addHeader(Constants.VINE_HTTPHEADER_ACCEPT_ENCODING_TEXT, MediaConstants.VINE_MEDIA_HTTPHEADER_ACCEPT_ENCODING);
-//        thumbPut.addHeader("Connection", "keep-alive");
-//        thumbPut.addHeader(Constants.VINE_HTTPHEADER_USER_AGENT_TEXT, Constants.VINE_HTTPHEADER_USER_AGENT);
-//
-//        thumbPut.setEntity(thumbEntity);
-//        HttpResponse response = httpClient.execute(thumbPut);
-//        return response.getHeaders("X-Upload-Key")[0].getValue();
-//    }
-//
-//    private String uploadVideo(String sessionKey, String vineId, File vid) throws IOException {
-//        String vidTarget = String.format(MediaConstants.VINE_MEDIA_UPLOAD_VIDEO, vineId + ".mp4");
-//        HttpEntity vidEntity = new FileEntity(vid);
-//        HttpPut vidPut = new HttpPut(vidTarget);
-//        vidPut.addHeader(MediaConstants.VINE_MEDIA_HTTPHEADER_HOST_TEXT, MediaConstants.VINE_MEDIA_HTTPHEADER_HOST);
-//        vidPut.addHeader(MediaConstants.VINE_MEDIA_HTTPHEADER_PROXY_TEXT, MediaConstants.VINE_MEDIA_HTTPHEADER_PROXY);
-//        vidPut.addHeader(MediaConstants.VINE_MEDIA_HTTPHEADER_CONTENT_TYPE_TEXT, MediaConstants.VINE_MEDIA_HTTPHEADER_CONTENT_TYPE_VIDEO);
-//        vidPut.addHeader(MediaConstants.VINE_MEDIA_HTTPHEADER_VINE_CLIENT_TEXT, MediaConstants.VINE_MEDIA_HTTPHEADER_VINE_CLIENT);
-//        vidPut.addHeader(Constants.VINE_HTTPHEADER_ACCEPT_LANGUAGE_TEXT, Constants.VINE_HTTPHEADER_ACCEPT_LANGUAGE);
-//        vidPut.addHeader(Constants.VINE_HTTPHEADER_ACCEPT_TEXT, Constants.VINE_HTTPHEADER_ACCEPT);
-//        vidPut.addHeader(Constants.VINE_HTTPHEADER_VINE_SESSION_ID, sessionKey);
-//        vidPut.addHeader(Constants.VINE_HTTPHEADER_ACCEPT_ENCODING_TEXT, MediaConstants.VINE_MEDIA_HTTPHEADER_ACCEPT_ENCODING);
-//        vidPut.addHeader("Connection", "keep-alive");
-//        vidPut.addHeader(Constants.VINE_HTTPHEADER_USER_AGENT_TEXT, Constants.VINE_HTTPHEADER_USER_AGENT);
-//
-//        vidPut.setEntity(vidEntity);
-//        HttpResponse response = httpClient.execute(vidPut);
-//        return response.getHeaders("X-Upload-Key")[0].getValue();
-//    }
 
     private void logStream(Process process) throws IOException {
         try(
