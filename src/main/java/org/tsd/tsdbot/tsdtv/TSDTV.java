@@ -11,11 +11,13 @@ import org.quartz.impl.matchers.GroupMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.Bot;
-import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.Persistable;
 import org.tsd.tsdbot.scheduled.SchedulerConstants;
-import org.tsd.tsdbot.tsdtv.model.*;
+import org.tsd.tsdbot.tsdtv.model.FillerType;
+import org.tsd.tsdbot.tsdtv.model.TSDTVEpisode;
+import org.tsd.tsdbot.tsdtv.model.TSDTVFiller;
+import org.tsd.tsdbot.tsdtv.model.TSDTVShow;
 import org.tsd.tsdbot.tsdtv.processor.FileAnalysis;
 import org.tsd.tsdbot.tsdtv.processor.StreamType;
 import org.tsd.tsdbot.util.FuzzyLogic;
@@ -135,6 +137,99 @@ public class TSDTV implements Persistable {
 
     }
 
+    public void updateCurrentEpisode(TSDTVShow show, TSDTVEpisode episode) throws SQLException {
+
+        // set the episode number in the database
+        setEpisodeNumber(show, episode.getEpisodeNumber());
+
+        // try some hot-swapping in the queue
+        if(!queue.isEmpty()) {
+
+            logger.info("Hotswapping episodes in queue...");
+
+            int updatingToEpisodeNum = episode.getEpisodeNumber();
+            long timeOffset = 0; // running number of milliseconds to push downstream start/end times
+
+            TSDTVQueueItem queueItem;
+            ListIterator<TSDTVQueueItem> queueIterator = queue.listIterator();
+
+            while(queueIterator.hasNext()) {
+
+                queueItem = queueIterator.next();
+                logger.info("Evaluating file {}...", queueItem.video.getFile());
+
+                if(queueItem.scheduled && queueItem.video.getEpisodeNumber() > 0) {
+                    // this is a scheduled episode. check if it's our show, update if so
+                    try {
+
+                        TSDTVShow queueShow = ((TSDTVEpisode) queueItem.video).getShow();
+
+                        if(show.equals(queueShow)) { // this is an episode of the show we're updating
+
+                            logger.info("Queue item matches show {}, updating...", show.getRawName());
+
+                            TSDTVEpisode replacingWithEpisode = show.getEpisode(updatingToEpisodeNum);
+                            logger.info("Replacing with file {}...", replacingWithEpisode.getRawName());
+
+                            TSDTVBlock block = queueItem.block;
+
+                            Date startTime = new Date(queueItem.startTime.getTime() + timeOffset);
+                            logger.info("{} + {}ms = {}", new Object[]{queueItem.startTime, timeOffset, startTime});
+
+                            TSDTVQueueItem replacementQueueItem = new TSDTVQueueItem(
+                                    replacingWithEpisode,
+                                    block,
+                                    true,
+                                    startTime,
+                                    ffmpegExec,
+                                    null
+                            );
+
+                            queueIterator.set(replacementQueueItem);
+                            logger.info("Replaced item in queue");
+
+                            String broadcastFmt = "[TSDTV] Replaced episode in queue: %s, %s -> %s";
+                            bot.broadcast(String.format(
+                                    broadcastFmt,
+                                    show.getPrettyName(),
+                                    ((TSDTVEpisode) queueItem.video).getPrettyName(),
+                                    replacingWithEpisode.getPrettyName()));
+
+                            // calculate time difference between old item and new, add to the offset
+                            long timeDiff = replacingWithEpisode.getDuration(ffmpegExec) - queueItem.video.getDuration(ffmpegExec);
+                            timeOffset += timeDiff;
+                            logger.info("timeOffset + {} = {}", timeDiff + timeOffset);
+
+                            // loop to episode 1 if we're at the end
+                            if(updatingToEpisodeNum >= show.getAllEpisodes().size()) {
+                                updatingToEpisodeNum = 1;
+                            } else {
+                                updatingToEpisodeNum++;
+                            }
+
+                            logger.info("updatingToEpisodeNumber = {}", updatingToEpisodeNum);
+
+                        } else {
+                            // we're not replacing this episode, but its start time should be adjusted
+                            logger.info("Adjusting non-matched video's start time by " + timeOffset);
+                            queueItem.startTime = new Date(queueItem.startTime.getTime() + timeOffset);
+                        }
+
+                    } catch (EpisodeNotFoundException e) {
+                        logger.error("Error updating downstream queue", e);
+                        bot.broadcast("Error updating downstream queue, please check logs");
+                        return;
+                    }
+
+                } else {
+                    // we're not replacing this episode, but its start time should be adjusted
+                    logger.info("Adjusting non-matched video's start time by " + timeOffset);
+                    queueItem.startTime = new Date(queueItem.startTime.getTime() + timeOffset);
+                }
+            }
+        }
+    }
+
     public TreeMap<Date, TSDTVBlock> getRemainingBlocks(boolean todayOnly) throws SchedulerException {
         GregorianCalendar endOfToday = new GregorianCalendar();
         endOfToday.setTimeZone(timeZone);
@@ -199,16 +294,11 @@ public class TSDTV implements Persistable {
         if(program.scheduled && program.video.getEpisodeNumber() > 0) {
             try {
                 TSDTVShow show = ((TSDTVEpisode)program.video).getShow();
-                Connection dbConn = connectionProvider.get();
-                String update = "update TSDTV_SHOW set currentEpisode = ? where name = ?";
-                try(PreparedStatement ps = dbConn.prepareStatement(update)) {
-                    // loop to episode 1 if we're playing the last episode of the show
-                    int newEpNumber = (show.getAllEpisodes().size() <= program.video.getEpisodeNumber()) ? 1 : program.video.getEpisodeNumber()+1;
-                    ps.setInt(1, newEpNumber);
-                    ps.setString(2, show.getRawName());
-                    ps.executeUpdate();
-                }
+                // loop to episode 1 if we're playing the last episode of the show
+                int newEpNumber = (show.getAllEpisodes().size() <= program.video.getEpisodeNumber()) ? 1 : program.video.getEpisodeNumber()+1;
+                setEpisodeNumber(show, newEpNumber);
             } catch (Exception e) {
+                bot.broadcast("Error updating show episode number. Please check logs");
                 logger.error("Error updating show episode number", e);
             }
         }
@@ -393,7 +483,7 @@ public class TSDTV implements Persistable {
                 TSDTVEpisode episode;
                 try {
                     episode = show.getEpisode(episodeNum);
-                } catch (ShowNotFoundException e) {
+                } catch (EpisodeNotFoundException e) {
                     logger.error("Could not find episode", e);
                     continue;
                 }
@@ -716,6 +806,19 @@ public class TSDTV implements Persistable {
                 return new Date();
         } else {
             return queue.getLast().endTime;
+        }
+    }
+
+    private void setEpisodeNumber(TSDTVShow show, int num) throws SQLException {
+        Connection dbConn = connectionProvider.get();
+        String update = "update TSDTV_SHOW set currentEpisode = ? where name = ?";
+        try(PreparedStatement ps = dbConn.prepareStatement(update)) {
+            ps.setInt(1, num);
+            ps.setString(2, show.getRawName());
+            ps.executeUpdate();
+        } catch (SQLException sqle) {
+            logger.error("Error setting episode number", sqle);
+            throw sqle;
         }
     }
 

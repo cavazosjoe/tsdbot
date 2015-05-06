@@ -3,6 +3,7 @@ package org.tsd.tsdbot.tsdtv.model;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.tsdtv.EpisodeNotFoundException;
 import org.tsd.tsdbot.tsdtv.ShowNotFoundException;
 import org.tsd.tsdbot.tsdtv.TSDTVConstants;
 import org.tsd.tsdbot.util.FuzzyLogic;
@@ -79,12 +80,12 @@ public class TSDTVShow implements Comparable<TSDTVShow> {
         }
     }
 
-    public TSDTVEpisode getEpisode(int episodeNumber) throws ShowNotFoundException {
+    public TSDTVEpisode getEpisode(int episodeNumber) throws EpisodeNotFoundException {
         for(TSDTVEpisode episode : getAllEpisodes()) {
             if(episodeNumber == episode.getEpisodeNumber())
                 return episode;
         }
-        throw new ShowNotFoundException("Could not find episode number " + episodeNumber);
+        throw new EpisodeNotFoundException("Could not find episode number " + episodeNumber + " for show " + getRawName());
     }
 
     public TSDTVEpisode getRandomEpisode(Random random) {

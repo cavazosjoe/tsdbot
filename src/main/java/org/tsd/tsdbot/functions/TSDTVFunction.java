@@ -77,6 +77,43 @@ public class TSDTVFunction extends MainFunctionImpl {
 
             tsdtv.prepareBlockReplay(channel, cmdParts[2]);
 
+        } else if(subCmd.equals("set")) {
+
+            if(!isOp) {
+                bot.sendMessage(channel, "Only ops can use that");
+                return;
+            }
+
+            if(cmdParts.length < 4) {
+                bot.sendMessage(channel, "USAGE: .tsdtv set <show> <episode_number>");
+                return;
+            }
+
+            TSDTVShow show;
+            try {
+                show = library.getShow(cmdParts[2]);
+            } catch (ShowNotFoundException snfe) {
+                bot.sendMessage(channel, "Could not find show matching query \"" + cmdParts[2] + "\"");
+                return;
+            }
+
+            int episodeNumber = Integer.parseInt(cmdParts[3]);
+            if(episodeNumber < 1) {
+                bot.sendMessage(channel, "Episode number must be greater than 0");
+                return;
+            }
+
+            try {
+                TSDTVEpisode episode = show.getEpisode(episodeNumber);
+                tsdtv.updateCurrentEpisode(show, episode);
+                bot.sendMessage(channel, show.getPrettyName() + "'s next episode is now " + episodeNumber
+                        + " (" + episode.getPrettyName() + ")");
+            } catch (EpisodeNotFoundException enfe) {
+                bot.sendMessage(channel, cmdParts[3] + " is not a valid episode number");
+            } catch (SQLException sqle) {
+                bot.sendMessage(channel, "Error setting episode number, please check logs");
+            }
+
         } else if(subCmd.equals("analyze")) {
 
             if(!isOp) {
