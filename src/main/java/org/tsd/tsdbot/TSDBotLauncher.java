@@ -103,6 +103,7 @@ public class TSDBotLauncher {
             bot.joinChannel(channel);
             log.info("Joined aux channel {}", channel);
         }
+
     }
 
     private static void initializeJettyServer(Injector injector) throws Exception {

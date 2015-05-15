@@ -48,6 +48,7 @@ import java.sql.Connection;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by Joe on 9/19/2014.
@@ -174,7 +175,7 @@ public class TSDBotConfigModule extends AbstractModule {
         ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         bind(ExecutorService.class).toInstance(executorService);
 
-        PoolingHttpClientConnectionManager poolingManager = new PoolingHttpClientConnectionManager();
+        final PoolingHttpClientConnectionManager poolingManager = new PoolingHttpClientConnectionManager();
         poolingManager.setMaxTotal(100);
         HttpRequestRetryHandler retryHandler = new HttpRequestRetryHandler() {
             @Override
@@ -268,6 +269,28 @@ public class TSDBotConfigModule extends AbstractModule {
         bind(YouTube.class).toInstance(youTube);
 
         bind(TSDTV.class).asEagerSingleton();
+
+        final boolean shutdown = false;
+        executorService.submit(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    while (!shutdown) {
+                        synchronized (this) {
+                            wait(1000 * 30);
+                            // Close expired connections
+                            poolingManager.closeExpiredConnections();
+                            // Optionally, close connections
+                            // that have been idle longer than 30 sec
+                            poolingManager.closeIdleConnections(30, TimeUnit.SECONDS);
+                        }
+                    }
+                } catch (InterruptedException ex) {
+                    // terminate
+                    log.warn("Idle connection monitor terminated");
+                }
+            }
+        });
 
     }
 

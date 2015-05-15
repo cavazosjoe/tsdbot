@@ -56,6 +56,7 @@ public class TSDBotFunctionalModule extends AbstractModule {
         functionBinder.addBinding().to(OmniDB.class);
         functionBinder.addBinding().to(DboFireteamFunction.class);
         functionBinder.addBinding().to(YoutubeFunction.class);
+        functionBinder.addBinding().to(HarveyParty.class);
     }
 
     private void bindNotifiers() {
