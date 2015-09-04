@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.jibble.pircbot.User;
 import org.tsd.tsdbot.Bot;
-import org.tsd.tsdbot.Function;
+import org.tsd.tsdbot.module.Function;
 
 import java.util.Random;
 

@@ -4,9 +4,10 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.AllChannels;
 import org.tsd.tsdbot.Bot;
-import org.tsd.tsdbot.Function;
+import org.tsd.tsdbot.config.TSDBotConfiguration;
+import org.tsd.tsdbot.module.AllChannels;
+import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.util.ArchivistUtil;
 import org.tsd.tsdbot.util.IRCUtil;
 import org.tsd.tsdbot.util.MiscUtils;
@@ -38,7 +39,7 @@ public class Archivist /*Exedol*/ extends MainFunctionImpl {
     private HashMap<String, PrintWriter> writerMap = new HashMap<>();
 
     @Inject
-    public Archivist(Bot bot, Properties properties, @AllChannels List channels) throws IOException {
+    public Archivist(Bot bot, TSDBotConfiguration config, @AllChannels List channels) throws IOException {
 
         super(bot);
 
@@ -47,8 +48,8 @@ public class Archivist /*Exedol*/ extends MainFunctionImpl {
 
         stdSdf.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
 
-        recapDir = properties.getProperty("archivist.recaps");
-        archiveDir = properties.getProperty("archivist.logs");
+        recapDir = config.archivist.recaps;
+        archiveDir = config.archivist.logs;
         File logDirF = new File(archiveDir);
         if(!logDirF.exists()) {
             log.info("Logging directory {} does not exist, creating...", archiveDir);
@@ -256,7 +257,7 @@ public class Archivist /*Exedol*/ extends MainFunctionImpl {
         return buffer;
     }
 
-    public static enum EventType {
+    public enum EventType {
         JOIN("%s (%s@%s) has joined %s") {
             @Override
             public String getPrettyFormatted(String raw) {

@@ -22,8 +22,8 @@ public class FuzzyLogic {
         return ret;
     }
 
-    public static interface FuzzyVisitor<T> {
-        public String visit(T o1);
+    public interface FuzzyVisitor<T> {
+        String visit(T o1);
     }
 
 }

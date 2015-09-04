@@ -9,7 +9,7 @@ import org.apache.http.impl.client.BasicResponseHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.Bot;
-import org.tsd.tsdbot.Function;
+import org.tsd.tsdbot.module.Function;
 
 import java.util.LinkedList;
 import java.util.Random;

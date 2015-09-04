@@ -13,7 +13,8 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.Bot;
-import org.tsd.tsdbot.Function;
+import org.tsd.tsdbot.config.TSDBotConfiguration;
+import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.util.FuzzyLogic;
 import org.tsd.tsdbot.util.RelativeDate;
 
@@ -73,12 +74,12 @@ public class XboxLive extends MainFunctionImpl {
             });
 
     @Inject
-    public XboxLive(Bot bot, Properties properties) {
+    public XboxLive(Bot bot, TSDBotConfiguration config) {
         super(bot);
         this.description = "Xbox Live utility";
         this.usage = "USAGE: .xbl [ gamertag ]";
-        this.xblApiKey = properties.getProperty("xbl.apiKey");
-        this.xuid = Long.parseLong(properties.getProperty("xbl.xuid"));
+        this.xblApiKey = config.xbl.apiKey;
+        this.xuid = Long.parseLong(config.xbl.xuid);
         try {
             loadFriendsList();
         } catch (Exception e) {

@@ -11,6 +11,7 @@ import org.quartz.impl.matchers.GroupMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.config.TSDBotConfiguration;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.Persistable;
 import org.tsd.tsdbot.scheduled.SchedulerConstants;
@@ -72,7 +73,7 @@ public class TSDTV implements Persistable {
     public TSDTV(Bot bot,
                  TSDTVLibrary library,
                  TSDTVFileProcessor fileProcessor,
-                 Properties prop,
+                 TSDBotConfiguration config,
                  Scheduler scheduler,
                  DBConnectionProvider connectionProvider,
                  InjectableStreamFactory streamFactory,
@@ -82,7 +83,7 @@ public class TSDTV implements Persistable {
         this.bot = bot;
         this.processor = fileProcessor;
         this.library = library;
-        this.scheduleLoc = prop.getProperty("tsdtv.schedule");
+        this.scheduleLoc = config.tsdtv.scheduleFile;
         this.scheduler = scheduler;
         this.connectionProvider = connectionProvider;
         this.streamFactory = streamFactory;
@@ -380,7 +381,7 @@ public class TSDTV implements Persistable {
     public void killAll(TSDTVUser user) throws AuthenticationException, NoStreamRunningException {
         if(runningStream != null) {
             if(user.isOp())
-                runningStream.kill(true);
+                runningStream.kill(false);
             else
                 throw new AuthenticationException();
         } else {

@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import org.tsd.tsdbot.Bot;
-import org.tsd.tsdbot.Function;
+import org.tsd.tsdbot.module.Function;
 
 /**
  * Created by Joe on 5/24/14.

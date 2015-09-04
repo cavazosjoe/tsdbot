@@ -6,9 +6,9 @@ import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.Bot;
-import org.tsd.tsdbot.Function;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.Persistable;
+import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.util.DatabaseLogic;
 import org.tsd.tsdbot.util.IRCUtil;
 

@@ -1,6 +1,6 @@
 package org.tsd.tsdbot;
 
-import java.util.Properties;
+import org.tsd.tsdbot.config.GoogleConfig;
 
 /**
  * Created by Joe on 4/29/2015.
@@ -12,11 +12,11 @@ public class GoogleAuthHolder {
     private String clientSecret;
     private String refreshToken;
 
-    public GoogleAuthHolder(Properties properties) {
-        this.appId = properties.getProperty("google.appId");
-        this.clientId = properties.getProperty("google.clientId");
-        this.clientSecret = properties.getProperty("google.clientSecret");
-        this.refreshToken = properties.getProperty("google.refreshToken");
+    public GoogleAuthHolder(GoogleConfig config) {
+        this.appId = config.appId;
+        this.clientId = config.clientId;
+        this.clientSecret = config.clientSecret;
+        this.refreshToken = config.refreshToken;
     }
 
     public String getAppId() {

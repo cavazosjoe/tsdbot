@@ -1,5 +1,6 @@
 package org.tsd.tsdbot;
 
+import com.esotericsoftware.yamlbeans.YamlReader;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
@@ -21,16 +22,22 @@ import org.quartz.JobDetail;
 import org.quartz.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.config.TSDBotConfiguration;
+import org.tsd.tsdbot.module.ServerPort;
+import org.tsd.tsdbot.module.TSDBotFunctionalModule;
+import org.tsd.tsdbot.module.TSDBotModule;
+import org.tsd.tsdbot.module.TSDBotServletModule;
 import org.tsd.tsdbot.scheduled.*;
 
 import javax.servlet.DispatcherType;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
+import java.io.FileReader;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
 
 import static org.quartz.CronScheduleBuilder.cronSchedule;
 import static org.quartz.JobBuilder.newJob;
@@ -50,33 +57,16 @@ public class TSDBotLauncher {
             throw new Exception("USAGE: TSDBot.jar [properties location]");
         }
 
-        String propertiesLocation = args[0];
-        Properties properties = new Properties();
-        try(InputStream fis = new FileInputStream(new File(propertiesLocation))) {
-            properties.load(fis);
-        }
+        String configLocation = args[0];
+        YamlReader yamlReader = new YamlReader(new FileReader(configLocation));
+        TSDBotConfiguration config = yamlReader.read(TSDBotConfiguration.class);
 
-        String ident = properties.getProperty("ident");
-        String nick = properties.getProperty("nick");
-        String pass = properties.getProperty("nickserv.pass");
-        String server = properties.getProperty("server");
+        String ident = config.connection.ident;
+        String nick = config.connection.nick;
+        String pass = config.connection.nickservPass;
+        String server = config.connection.server;
 
-        // collect channels and add hashmarks to them
-        String mainChannel = "#"+properties.getProperty("mainChannel");
-        String[] auxChannels = properties.getProperty("auxChannels").split(",");
-        for(int i=0 ; i < auxChannels.length ; i++)
-            auxChannels[i] = "#"+auxChannels[i];
-
-        String[] notifierKeys = {"hbon","hbof","dbon","dbof","twitter","dboft"};
-        HashMap<String, String[]> notifierChannels = new HashMap<>();
-        for(String k : notifierKeys) {
-            String[] channels = properties.getProperty("notifiers." + k).split(",");
-            for(int i=0 ; i < channels.length ; i++)
-                channels[i] = "#"+channels[i];
-            notifierChannels.put(k, channels);
-        }
-
-        Stage stage = Stage.fromString(properties.getProperty("stage"));
+        Stage stage = config.connection.stage;
         if(stage == null) {
             throw new Exception("STAGE must be one of [dev, production]");
         }
@@ -86,7 +76,7 @@ public class TSDBotLauncher {
 
         TSDBot bot = new TSDBot(ident, nick, pass, server);
 
-        TSDBotConfigModule module = new TSDBotConfigModule(bot, properties, stage, mainChannel, auxChannels, notifierChannels);
+        TSDBotModule module = new TSDBotModule(bot, config);
         TSDBotServletModule servletModule = new TSDBotServletModule();
         TSDBotFunctionalModule functionalModule = new TSDBotFunctionalModule();
 
@@ -97,9 +87,9 @@ public class TSDBotLauncher {
         log.info("TSDBot loaded successfully. Starting server...");
         initializeJettyServer(injector);
 
-        bot.joinChannel(mainChannel);
-        log.info("Joined main channel {}", mainChannel);
-        for(String channel : auxChannels) {
+        bot.joinChannel(config.connection.mainChannel);
+        log.info("Joined main channel {}", config.connection.mainChannel);
+        for(String channel : config.connection.auxChannels) {
             bot.joinChannel(channel);
             log.info("Joined aux channel {}", channel);
         }
@@ -173,23 +163,23 @@ public class TSDBotLauncher {
 
     private static void configureScheduler(Injector injector) {
         try {
-            Properties properties = injector.getInstance(Properties.class);
+            TSDBotConfiguration config = injector.getInstance(TSDBotConfiguration.class);
             Scheduler scheduler = injector.getInstance(Scheduler.class);
             scheduler.setJobFactory(injector.getInstance(InjectableJobFactory.class));
 
             JobDetail logCleanerJob = newJob(LogCleanerJob.class)
                     .withIdentity(SchedulerConstants.LOG_JOB_KEY)
-                    .usingJobData(SchedulerConstants.LOGS_DIR_FIELD, properties.getProperty("archivist.logs"))
+                    .usingJobData(SchedulerConstants.LOGS_DIR_FIELD, config.archivist.logs)
                     .build();
 
             JobDetail recapCleanerJob = newJob(RecapCleanerJob.class)
                     .withIdentity(SchedulerConstants.RECAP_JOB_KEY)
-                    .usingJobData(SchedulerConstants.RECAP_DIR_FIELD, properties.getProperty("archivist.recaps"))
+                    .usingJobData(SchedulerConstants.RECAP_DIR_FIELD, config.archivist.recaps)
                     .build();
 
             JobDetail printoutCleanerJob = newJob(PrintoutCleanerJob.class)
                     .withIdentity(SchedulerConstants.PRINTOUT_JOB_KEY)
-                    .usingJobData(SchedulerConstants.PRINTOUT_DIR_FIELD, properties.getProperty("printout.dir"))
+                    .usingJobData(SchedulerConstants.PRINTOUT_DIR_FIELD, config.printoutDir)
                     .build();
 
             JobDetail notificationJob = newJob(NotificationSweeperJob.class)

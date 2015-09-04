@@ -5,7 +5,11 @@ import com.google.inject.Singleton;
 import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.*;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.NotificationType;
+import org.tsd.tsdbot.Stage;
+import org.tsd.tsdbot.config.TSDBotConfiguration;
+import org.tsd.tsdbot.module.NotifierChannels;
 import org.tsd.tsdbot.util.IRCUtil;
 import org.tsd.tsdbot.util.RelativeDate;
 import twitter4j.*;
@@ -15,8 +19,8 @@ import twitter4j.conf.ConfigurationBuilder;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
@@ -38,25 +42,25 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     private TwitterStream stream;
     private HashMap<Long, User> following;
     private HashMap<Long, Long> cooldown; // userId -> timestamp of last tweet
-    private String[] channels;
+    private List<String> channels;
 
     @Inject
     public TwitterManager(final Bot bot,
                           final Twitter twitter,
-                          Properties prop,
+                          TSDBotConfiguration configuration,
                           Stage stage,
-                          @NotifierChannels HashMap notifierChannels) throws IOException {
+                          @NotifierChannels Map notifierChannels) throws IOException {
         super(bot, 5, true);
         try {
 
             this.bot = bot;
             this.stage = stage;
-            this.channels = (String[]) notifierChannels.get("twitter");
+            this.channels = (List<String>) notifierChannels.get("twitter");
 
-            String CONSUMER_KEY =           prop.getProperty("twitter.consumer_key");
-            String CONSUMER_KEY_SECRET =    prop.getProperty("twitter.consumer_key_secret");
-            String ACCESS_TOKEN =           prop.getProperty("twitter.access_token");
-            String ACCESS_TOKEN_SECRET =    prop.getProperty("twitter.access_token_secret");
+            String CONSUMER_KEY =           configuration.twitter.consumerKey;
+            String CONSUMER_KEY_SECRET =    configuration.twitter.consumerKeySecret;
+            String ACCESS_TOKEN =           configuration.twitter.accessToken;
+            String ACCESS_TOKEN_SECRET =    configuration.twitter.accessTokenSecret;
 
             this.twitter = twitter;
             this.twitter.setOAuthConsumer(CONSUMER_KEY, CONSUMER_KEY_SECRET);

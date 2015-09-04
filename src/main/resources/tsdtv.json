@@ -1,5 +1,0 @@
-{
-    "nowPlaying" : "<div class='singleItem'><div class='showTime'>13:50 EST</div><div class='showTitle'><div class='titleName'>SDF_Macross</div><div class='episodeName'>09_-_Miss_Macross</div></div></div>",
-    "queue" : "<div class='schItem singleItem'><div class='showTime'>13:50 EST</div><div class='showTitle'><div class='titleName'>SDF_Macross</div><div class='episodeName'>09_-_Miss_Macross</div></div></div><div class='schItem blockItem'><div class='showTime'>22:00 EST</div><div class='showTitle'>Midnight Mecha<ul><li>Show 1</li><li>Show 2</li><li>Show 3</li></ul></div></div>",
-    "viewerCount": "3"
-}

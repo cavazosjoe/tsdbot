@@ -1,11 +1,7 @@
 package org.tsd.tsdbot.functions;
 
-import org.jibble.pircbot.User;
 import org.tsd.tsdbot.Bot;
-import org.tsd.tsdbot.Function;
-import org.tsd.tsdbot.TSDBot;
-
-import java.util.Date;
+import org.tsd.tsdbot.module.Function;
 
 /**
  * Created by Joe on 5/24/14.

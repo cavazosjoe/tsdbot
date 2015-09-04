@@ -52,7 +52,7 @@ public class IRCUtil {
         return HandleScramble.applyRandom(nick);
     }
 
-    public static enum HandleScramble {
+    public enum HandleScramble {
         vowel_flip { // flip one random vowel if available
             @Override
             public String apply(String input) {

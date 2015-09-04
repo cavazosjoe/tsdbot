@@ -1,0 +1,68 @@
+# channels must start with a hash
+connection:
+  ident: tsdbot
+  nick: TSDBot
+  nickservPass: cashmoneyrecords
+  server: 192.168.1.100
+  mainChannel: "#tsdbot3"
+  auxChannels: ["#tsdbot4", "#tsdbot5"]
+  notifiers: {
+    hbon: ["#tsdbot3", "#tsdbot4"],
+    hbof: ["#tsdbot3"],
+    dbon: ["#tsdbot3"],
+    dbof: ["#tsdbot3"],
+    twitter: ["#tsdbot3"],
+    dboft: ["#tsdbot3"]
+  }
+  stage: dev
+
+database: "jdbc:h2:file:C:/Users/Joe/code/TSDBot/dist/tsdbot"
+
+archivist:
+  logs: "dist/archive/"
+  recaps: "dist/recaps/"
+
+printoutDir: "dist/printouts/"
+
+xbl:
+  apiKey: 6d0f995f0d45afd5375a872947b226ed740093d0
+  xuid: 2535415442359417
+
+twitter:
+  consumerKey: f8H6BJg8J6ddnE5IwFROZA
+  consumerKeySecret: CwKXxwsyAlMJYyT1XZCpRZ0OjbwuxTBmQfJwvhcU8
+  accessToken: 2349834990-ckfRDk81l1tOdaSBc15A7MVThOCauNFL1D12hSD
+  accessTokenSecret: EW2vPIdwHZhbGIKPgieyoACqucSfS1lnF2tHfEIiMLwmS
+
+tsdtv:
+  ffmpegExec: "/home/joe/bin/ffmpeg"
+  ffmpegArgs: "-re -y -i %s -c:v libx264 -r 20 -b:v 1200k -maxrate 1700k -bufsize 2560k -preset superfast -profile:v baseline -pix_fmt yuv420p -flags:v +global_header -vf %s -c:a aac -b:a 128k -ar 44100 -strict experimental -flags:a +global_header"
+  ffmpegOut: "-f flv rtmp://localhost/tsdtv/tsdtv"
+  directLink: "rtmp://irc.teamschoolyd.org/tsdtv/tsdtv"
+  videoFmt: "rtmp/mp4"
+  catalog: "C:/Users/Joe/TSDTV"
+  raws: "C:/Users/Joe/TSDTVraws"
+  scheduleFile: "C:/Users/Joe/TSDTV/tsdtvSchedule.txt"
+  logFile: "C:/Users/Joe/TSDTV/tsdtv.log"
+
+# ffserver config
+#   ffmpegOut: "http://localhost:8090/feed1.ffm"
+#   directLink: "http://irc.teamschoolyd.org:8090/tsdtv.flv"
+#   videoFmt: "video/flv"
+
+# nginx-hls config
+#   ffmpegOut: "rtmp://localhost/hls/tsdtv"
+#   directLink: "http://irc.teamschoolyd.org/hls/tsdtv.m3u8"
+#   videoFmt: "application/x-mpegURL"
+
+mashapeKey: BW1iD3A3ddmsh6QS7fvulnjO2VaVp1iXOFBjsnDgBgmBV3WPpq
+
+google:
+  clientSecret: "r4V-A6fKw_-9qzMpD0X6Qx96"
+  clientId: "72896288732-lo38bqcvda9arfur057cao8qdch0kne0.apps.googleusercontent.com"
+  refreshToken: "1/5fjCF1M5k3qcmyLJL4W-5q9wJsRZ1d83EcnQpnr6Hog"
+  appId: "tsdbot-irc"
+
+jetty:
+  hostname: localhost
+  port: 7777

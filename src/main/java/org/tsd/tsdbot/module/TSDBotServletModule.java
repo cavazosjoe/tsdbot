@@ -1,4 +1,4 @@
-package org.tsd.tsdbot;
+package org.tsd.tsdbot.module;
 
 import com.google.inject.servlet.ServletModule;
 import org.tsd.tsdbot.servlets.PrintoutServlet;

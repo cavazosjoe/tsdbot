@@ -5,6 +5,7 @@ import com.google.inject.multibindings.Multibinder;
 import org.mockito.Mockito;
 import org.reflections.Reflections;
 import org.tsd.tsdbot.functions.MainFunction;
+import org.tsd.tsdbot.module.Function;
 
 import java.util.HashSet;
 import java.util.Set;

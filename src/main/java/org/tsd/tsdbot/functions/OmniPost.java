@@ -3,8 +3,8 @@ package org.tsd.tsdbot.functions;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.tsd.tsdbot.Bot;
-import org.tsd.tsdbot.Function;
 import org.tsd.tsdbot.NotificationType;
+import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.notifications.NotificationEntity;
 import org.tsd.tsdbot.notifications.NotificationManager;
 

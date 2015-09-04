@@ -9,14 +9,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.NotificationType;
-import org.tsd.tsdbot.NotifierChannels;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.module.NotifierChannels;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
 
 import java.net.URL;
-import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,9 +38,9 @@ public class HboNewsManager extends NotificationManager<HboNewsManager.HboNewsPo
     }
 
     @Inject
-    public HboNewsManager(Bot bot, @NotifierChannels HashMap notifierChannels) {
+    public HboNewsManager(Bot bot, @NotifierChannels Map notifierChannels) {
         super(bot, 5, true);
-        this.channels = (String[]) notifierChannels.get("hbon");
+        this.channels = (List<String>) notifierChannels.get("hbon");
     }
 
     @Override

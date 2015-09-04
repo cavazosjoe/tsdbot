@@ -25,6 +25,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.config.TSDBotConfiguration;
 import org.tsd.tsdbot.util.CircularBuffer;
 
 import java.awt.*;
@@ -62,10 +63,10 @@ public class HustleStats implements Stats {
     boolean error = false;
 
     @Inject
-    public HustleStats(Bot bot, HttpClient httpClient, Properties properties) {
+    public HustleStats(Bot bot, HttpClient httpClient, TSDBotConfiguration config) {
         this.bot = bot;
         this.httpClient = httpClient;
-        this.apiKey = properties.getProperty("mashape.apiKey");
+        this.apiKey = config.mashapeKey;
     }
 
     public JFreeChart getChart() {

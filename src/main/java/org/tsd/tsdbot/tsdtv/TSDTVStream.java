@@ -4,10 +4,10 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.config.TSDBotConfiguration;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Properties;
 
 /**
  * Created by Joe on 3/9/14.
@@ -20,7 +20,7 @@ public class TSDTVStream extends Thread {
     protected TSDTV tsdtv;
 
     @Inject
-    protected Properties properties;
+    protected TSDBotConfiguration config;
 
     @Inject @Named(value = "ffmpegExec")
     private String ffmpegExec;
@@ -46,7 +46,7 @@ public class TSDTVStream extends Thread {
 
     public void init(String videoFilter, TSDTVQueueItem program) {
         this.movie = program;
-        this.logFile = new File(properties.getProperty("tsdtv.log"));
+        this.logFile = new File(config.tsdtv.logFile);
         this.ffmpegCommand = ffmpegExec + " " + ffmpegArgs + " " + ffmpegOut;
         this.ffmpegCommand = String.format(ffmpegCommand, movie.video.getFile().getAbsolutePath(), videoFilter);
         this.streamState = StreamState.ready;

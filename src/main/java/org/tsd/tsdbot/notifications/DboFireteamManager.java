@@ -12,10 +12,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.NotificationType;
-import org.tsd.tsdbot.NotifierChannels;
-import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.JdbcConnectionProvider;
 import org.tsd.tsdbot.model.dboft.*;
+import org.tsd.tsdbot.module.NotifierChannels;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
 
@@ -61,11 +60,11 @@ public class DboFireteamManager extends NotificationManager<DboFireteamManager.D
     public DboFireteamManager(Bot bot,
                               WebClient webClient,
                               JdbcConnectionProvider connectionProvider,
-                              @NotifierChannels HashMap notifierChannels) {
+                              @NotifierChannels Map notifierChannels) {
         super(bot, 20, false);
         this.webClient = webClient;
         this.connectionProvider = connectionProvider;
-        this.channels = (String[]) notifierChannels.get("dboft");
+        this.channels = (List<String>) notifierChannels.get("dboft");
     }
 
     @Override

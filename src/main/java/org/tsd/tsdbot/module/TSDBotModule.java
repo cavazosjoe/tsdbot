@@ -1,4 +1,4 @@
-package org.tsd.tsdbot;
+package org.tsd.tsdbot.module;
 
 import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.NicelyResynchronizingAjaxController;
@@ -28,6 +28,8 @@ import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.spi.JobFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.*;
+import org.tsd.tsdbot.config.TSDBotConfiguration;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.DBConnectionString;
 import org.tsd.tsdbot.database.JdbcConnectionProvider;
@@ -45,7 +47,9 @@ import twitter4j.TwitterFactory;
 
 import java.io.*;
 import java.sql.Connection;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -53,29 +57,16 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by Joe on 9/19/2014.
  */
-public class TSDBotConfigModule extends AbstractModule {
+public class TSDBotModule extends AbstractModule {
 
-    Logger log = LoggerFactory.getLogger(TSDBotConfigModule.class);
+    Logger log = LoggerFactory.getLogger(TSDBotModule.class);
 
     private TSDBot bot;
-    private Stage stage;
-    private Properties properties;
+    private TSDBotConfiguration configuration;
 
-    private List<String> allChannels = new LinkedList<>();
-    private String mainChannel;
-    private String[] auxChannels;
-    private HashMap<String, String[]> notifierChannels;
-
-    public TSDBotConfigModule(TSDBot bot, Properties properties, Stage stage, String mainChannel, String[] auxChannels, HashMap<String, String[]> notifierChannels) {
+    public TSDBotModule(TSDBot bot, TSDBotConfiguration configuration) {
         this.bot = bot;
-        this.properties = properties;
-        this.stage = stage;
-
-        this.mainChannel = mainChannel;
-        this.auxChannels = auxChannels;
-        this.notifierChannels = notifierChannels;
-        this.allChannels.add(mainChannel);
-        this.allChannels.addAll(Arrays.asList(auxChannels));
+        this.configuration = configuration;
     }
 
     @Override
@@ -123,11 +114,11 @@ public class TSDBotConfigModule extends AbstractModule {
             log.error("Error loading SIGAR libraries", e);
         }
 
-        String hostname = properties.getProperty("server.hostname");
+        String hostname = configuration.jetty.hostname;
         bind(String.class).annotatedWith(ServerHostname.class)
                 .toInstance(hostname);
 
-        int port = Integer.parseInt(properties.getProperty("server.port"));
+        int port = configuration.jetty.port;
         bind(Integer.class).annotatedWith(ServerPort.class)
                 .toInstance(port);
 
@@ -141,26 +132,26 @@ public class TSDBotConfigModule extends AbstractModule {
         bind(String.class).annotatedWith(Names.named("serverUrl"))
                 .toInstance(serverUrl);
 
-        bind(Stage.class).toInstance(stage);
+        bind(Stage.class).toInstance(configuration.connection.stage);
 
         bind(Bot.class).toInstance(bot);
 
-        bind(Properties.class).toInstance(properties);
+        bind(TSDBotConfiguration.class).toInstance(configuration);
 
         bind(String.class).annotatedWith(MainChannel.class)
-                .toInstance(mainChannel);
+                .toInstance(configuration.connection.mainChannel);
 
-        bind(String[].class).annotatedWith(AuxChannels.class)
-                .toInstance(auxChannels);
+        bind(List.class).annotatedWith(AuxChannels.class)
+                .toInstance(configuration.connection.auxChannels);
 
         bind(List.class).annotatedWith(AllChannels.class)
-                .toInstance(allChannels);
+                .toInstance(configuration.connection.getAllChannels());
 
-        bind(HashMap.class).annotatedWith(NotifierChannels.class)
-                .toInstance(notifierChannels);
+        bind(Map.class).annotatedWith(NotifierChannels.class)
+                .toInstance(configuration.connection.notifiers);
 
         bind(String.class).annotatedWith(Names.named("mashapeKey"))
-                .toInstance(properties.getProperty("mashape.apiKey"));
+                .toInstance(configuration.mashapeKey);
 
         bind(PrintoutLibrary.class).asEagerSingleton();
 
@@ -211,7 +202,7 @@ public class TSDBotConfigModule extends AbstractModule {
 
         bind(String.class)
                 .annotatedWith(DBConnectionString.class)
-                .toInstance(properties.getProperty("db.connstring"));
+                .toInstance(configuration.database);
 
         bind(Connection.class).toProvider(DBConnectionProvider.class);
         bind(JdbcConnectionSource.class).toProvider(JdbcConnectionProvider.class);
@@ -221,38 +212,38 @@ public class TSDBotConfigModule extends AbstractModule {
         // path to ffmpeg executable
         bind(String.class)
                 .annotatedWith(Names.named("ffmpegExec"))
-                .toInstance(properties.getProperty("tsdtv.ffmpegExec"));
+                .toInstance(configuration.tsdtv.ffmpegExec);
 
         // arguments to ffmpeg commands
         bind(String.class)
                 .annotatedWith(Names.named("ffmpegArgs"))
-                .toInstance(properties.getProperty("tsdtv.ffmpegArgs"));
+                .toInstance(configuration.tsdtv.ffmpegArgs);
 
         // output of ffmpeg commands
         bind(String.class)
                 .annotatedWith(Names.named("ffmpegOut"))
-                .toInstance(properties.getProperty("tsdtv.ffmpegOut"));
+                .toInstance(configuration.tsdtv.ffmpegOut);
 
         // direct link to TSDTV stream (to be opened in video players)
         bind(String.class)
                 .annotatedWith(Names.named("tsdtvDirect"))
-                .toInstance(properties.getProperty("tsdtv.directLink"));
+                .toInstance(configuration.tsdtv.directLink);
 
         // video format used by web player
         bind(String.class)
                 .annotatedWith(Names.named("videoFmt"))
-                .toInstance(properties.getProperty("tsdtv.videoFmt"));
+                .toInstance(configuration.tsdtv.videoFmt);
 
         bind(File.class)
                 .annotatedWith(Names.named("tsdtvLibrary"))
-                .toInstance(new File(properties.getProperty("tsdtv.catalog")));
+                .toInstance(new File(configuration.tsdtv.catalog));
         bind(File.class)
                 .annotatedWith(Names.named("tsdtvRaws"))
-                .toInstance(new File(properties.getProperty("tsdtv.raws")));
+                .toInstance(new File(configuration.tsdtv.raws));
         bind(TSDTVLibrary.class).asEagerSingleton();
         bind(TSDTVFileProcessor.class).asEagerSingleton();
 
-        GoogleAuthHolder googleAuthHolder = new GoogleAuthHolder(properties);
+        GoogleAuthHolder googleAuthHolder = new GoogleAuthHolder(configuration.google);
         GoogleCredential googleCredential = new GoogleCredential.Builder()
                 .setTransport(new NetHttpTransport())
                 .setJsonFactory(new JacksonFactory())
