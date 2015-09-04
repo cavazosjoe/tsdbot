@@ -77,7 +77,7 @@ public class DboFireteamManager extends NotificationManager<DboFireteamManager.D
         JdbcConnectionSource connectionSource = null;
         try {
 
-            logger.info("Beginning sweep of DBO Fireteams...");
+            logger.debug("Beginning sweep of DBO Fireteams...");
             LinkedList<DboftNotification> notifications = new LinkedList<>();
 
             connectionSource = connectionProvider.get();
@@ -370,7 +370,7 @@ public class DboFireteamManager extends NotificationManager<DboFireteamManager.D
                 }
             }
 
-            logger.info("Fireteam sweep ended normally, compiled {} notifications", notifications.size());
+            logger.debug("Fireteam sweep ended normally, compiled {} notifications", notifications.size());
 
             return notifications;
 
