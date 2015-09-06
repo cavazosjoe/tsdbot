@@ -4,7 +4,6 @@
 out/
 db/
 *.db
-*.properties
 src/main/resources/tsdbot.yml
 dist/
 target/
