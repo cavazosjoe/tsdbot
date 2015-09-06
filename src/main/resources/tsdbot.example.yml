@@ -1,0 +1,103 @@
+# THIS IS A SAMPLE CONFIGURATION FILE
+# FILL IN YOUR OWN SHIT
+
+connection:
+  ident: tsdbot
+  nick: MyTSDBot
+  nickservPass: dark420sniper
+  server: localhost
+
+  # !! NOTE: all channels must start with a hash. And since YAML understands hashes as comments, it's
+  #   best to single- or double-quote them
+
+  # This is TSDBot's "main" channel. Certain functions are protected based on a user's privileges
+  # Functions that have impact across multiple channels should use this channel to check a user's privileges
+  #   when deciding whether to permit the action
+  mainChannel: "#chat"
+
+  # These are other channels for the bot to join
+  auxChannels: ["#memes", "#dankmemes"]
+
+  # TSDBot sweeps notifications from different sources, and displays them in the chat
+  # This setting determines which channels the different notifications go to
+  # Note: take care to only include channels here that the bot has joined via "mainChannel" and "auxChannels" above
+  notifiers: {
+    hbon: ["#memes", "#dankmemes"], # HBO News
+    hbof: ["#memes"],               # HBO Forum
+    dbon: ["#memes"],               # DBO News
+    dbof: ["#memes"],               # DBO Forum
+    twitter: ["#memes"],            # Twitter
+    dboft: ["#memes", "#dankmemes"] # DBO Fireteam
+  }
+
+  # one of {dev|production}
+  stage: dev
+
+# Database connection string
+database: "jdbc:h2:file:/home/me/tsdbot-db"
+
+archivist:
+  logs: "/home/me/archive/"
+  recaps: "/home/me/recaps/"
+
+printoutDir: "dist/printouts/"
+
+xbl:
+  apiKey: 0123456789abcdef
+  xuid: 0123456789abcdef
+
+twitter:
+  consumerKey: 0123456789abcdef
+  consumerKeySecret: 0123456789abcdef
+  accessToken: 0123456789abcdef
+  accessTokenSecret: 0123456789abcdef
+
+tsdtv:
+  # This is the ffmpeg executable
+  # If you don't know where yours is, run "which ffmpeg" on the command line
+  ffmpegExec: "/home/me/bin/ffmpeg"
+
+  # These arguments will be formatted at play time
+  # (1) %s -> path to video file, e.g. "/path/to/movie.mkv"
+  # (2) %s -> video filter, e.g. "yadif"
+  ffmpegArgs: "-re -y -i %s -c:v libx264 -r 20 -b:v 1200k -maxrate 1700k -bufsize 2560k -preset superfast -profile:v baseline -pix_fmt yuv420p -flags:v +global_header -vf %s -c:a aac -b:a 128k -ar 44100 -strict experimental -flags:a +global_header"
+
+  # Begin nginx-rtmp config
+  ffmpegOut: "-f flv rtmp://localhost/tsdtv/tsdtv"
+  directLink: "rtmp://irc.teamschoolyd.org/tsdtv/tsdtv" # for people to connect directly via VLC or some other player
+  videoFmt: "rtmp/mp4"
+
+  # Location of proper TSDTV files are located, ready to be played
+  catalog: "/home/me/tsdtv"
+
+  # Location of raw video files that might need processing
+  # See: TSDTVFileProcessor
+  raws: "/home/me/tsdtv-raws"
+
+  # TSDTV schedule file. Can be reloaded
+  scheduleFile: "/home/me/tsdtvSchedule.txt"
+
+  # Separate log file for TSDTV streams so they don't clutter the main TSDBot log file
+  logFile: "/home/me/tsdtv.log"
+
+# ffserver config
+#   ffmpegOut: "http://localhost:8090/feed1.ffm"
+#   directLink: "http://irc.teamschoolyd.org:8090/tsdtv.flv"
+#   videoFmt: "video/flv"
+
+# nginx-hls config
+#   ffmpegOut: "rtmp://localhost/hls/tsdtv"
+#   directLink: "http://irc.teamschoolyd.org/hls/tsdtv.m3u8"
+#   videoFmt: "application/x-mpegURL"
+
+mashapeKey: 0123456789abcdef
+
+google:
+  clientSecret: "0123456789abcdef"
+  clientId: "0123456789abcdef"
+  refreshToken: "0123456789abcdef"
+  appId: "tsdbot-irc"
+
+jetty:
+  hostname: localhost
+  port: 7777

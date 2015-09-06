@@ -5,7 +5,7 @@ out/
 db/
 *.db
 *.properties
-*.yml
+src/main/resources/tsdbot.yml
 dist/
 target/
 src/org/tsd/tsdbot/deploy/

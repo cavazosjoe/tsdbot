@@ -1,7 +1,7 @@
 package org.tsd.tsdbot.config;
 
 /**
- * Created by Joe on 9/3/2015.
+ * For an example file see /resources/tsdbot.example.yml
  */
 public class TSDBotConfiguration {
 
