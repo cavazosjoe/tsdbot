@@ -1,6 +1,8 @@
 package org.tsd.tsdbot.module;
 
 import com.google.inject.servlet.ServletModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.servlets.PrintoutServlet;
 import org.tsd.tsdbot.servlets.StatusServlet;
 import org.tsd.tsdbot.servlets.hustle.HustleChartServlet;
@@ -11,8 +13,13 @@ import org.tsd.tsdbot.servlets.tsdtv.*;
  * Created by Joe on 1/11/2015.
  */
 public class TSDBotServletModule extends ServletModule {
+
+    private static Logger log = LoggerFactory.getLogger(TSDBotServletModule.class);
+
     @Override
     protected void configureServlets() {
+
+        log.info("Binding servlets...");
 
         /**
          * Hustle
@@ -54,6 +61,8 @@ public class TSDBotServletModule extends ServletModule {
          */
         bind(StatusServlet.class);
         serve("/status").with(StatusServlet.class);
+
+        log.info("TSDBotServletModule.configure() successful");
 
     }
 }

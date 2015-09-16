@@ -33,6 +33,7 @@ public class DBConnectionProvider implements Provider<Connection> {
             if(connection == null || connection.isClosed()) {
                 logger.info("Connection is null or closed, retrying with connectionString={}", connectionString);
                 connection = DriverManager.getConnection(connectionString);
+                logger.info("Connection created, properties: {}", connection.getClientInfo().toString());
             }
             try(PreparedStatement ps = connection.prepareStatement(testQuery);ResultSet result = ps.executeQuery()) {}
         } catch (SQLException sqle) {

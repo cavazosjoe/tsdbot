@@ -3,6 +3,8 @@ package org.tsd.tsdbot.module;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
 import org.reflections.Reflections;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.functions.MainFunction;
 import org.tsd.tsdbot.notifications.*;
 import org.tsd.tsdbot.stats.GvStats;
@@ -14,11 +16,18 @@ import org.tsd.tsdbot.stats.SystemStats;
  * Created by Joe on 3/28/2015.
  */
 public class TSDBotFunctionalModule extends AbstractModule {
+
+    private static Logger log = LoggerFactory.getLogger(TSDBotFunctionalModule.class);
+
     @Override
     protected void configure() {
+        log.info("Binding stats...");
         bindStats();
+        log.info("Binding notifiers...");
         bindNotifiers();
+        log.info("Binding functions...");
         bindFunctions();
+        log.info("TSDBotFunctionalModule.configure() successful");
     }
 
     private void bindStats() {
@@ -32,6 +41,7 @@ public class TSDBotFunctionalModule extends AbstractModule {
         Multibinder<MainFunction> functionBinder = Multibinder.newSetBinder(binder(), MainFunction.class);
         Reflections reflections = new Reflections("org.tsd.tsdbot.functions");
         for(Class clazz : reflections.getTypesAnnotatedWith(Function.class)) {
+            log.info("- Binding function: {}...", clazz);
             functionBinder.addBinding().to(clazz);
         }
     }

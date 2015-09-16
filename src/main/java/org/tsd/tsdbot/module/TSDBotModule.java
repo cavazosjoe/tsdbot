@@ -12,6 +12,7 @@ import com.google.inject.name.Names;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpRequestRetryHandler;
@@ -117,10 +118,12 @@ public class TSDBotModule extends AbstractModule {
         String hostname = configuration.jetty.hostname;
         bind(String.class).annotatedWith(ServerHostname.class)
                 .toInstance(hostname);
+        log.info("Bound hostname: {}", hostname);
 
         int port = configuration.jetty.port;
         bind(Integer.class).annotatedWith(ServerPort.class)
                 .toInstance(port);
+        log.info("Bound port: {}", port);
 
         StringBuilder urlBuilder = new StringBuilder();
         urlBuilder.append("http://").append(hostname);
@@ -131,41 +134,60 @@ public class TSDBotModule extends AbstractModule {
         String serverUrl = urlBuilder.toString();
         bind(String.class).annotatedWith(Names.named("serverUrl"))
                 .toInstance(serverUrl);
+        log.info("Bound server URL: {}", serverUrl);
 
         bind(Stage.class).toInstance(configuration.connection.stage);
+        log.info("Bound stage: {}", configuration.connection.stage);
 
         bind(Bot.class).toInstance(bot);
+        log.info("** TSDBot bound successfully **");
 
         bind(TSDBotConfiguration.class).toInstance(configuration);
+        log.info("Bound config");
 
         bind(String.class).annotatedWith(MainChannel.class)
                 .toInstance(configuration.connection.mainChannel);
+        log.info("Bound main channel: {}", configuration.connection.mainChannel);
 
         bind(List.class).annotatedWith(AuxChannels.class)
                 .toInstance(configuration.connection.auxChannels);
+        log.info("Bound aux channels: {}", StringUtils.join(configuration.connection.auxChannels, ","));
 
         bind(List.class).annotatedWith(AllChannels.class)
                 .toInstance(configuration.connection.getAllChannels());
+        log.info("Bound all channels: {}", StringUtils.join(configuration.connection.getAllChannels(), ","));
 
         bind(Map.class).annotatedWith(NotifierChannels.class)
                 .toInstance(configuration.connection.notifiers);
+        log.info("Bound notifier channels: {}", configuration.connection.notifiers.toString());
 
         bind(String.class).annotatedWith(Names.named("mashapeKey"))
                 .toInstance(configuration.mashapeKey);
+        log.info("Bound mashape key: {}", configuration.mashapeKey);
 
+        log.info("Binding printout library...");
         bind(PrintoutLibrary.class).asEagerSingleton();
 
+        log.info("Binding history buff...");
         bind(HistoryBuff.class).asEagerSingleton();
+
+        log.info("Binding archivist...");
         bind(Archivist.class).asEagerSingleton();
 
+        log.info("Binding thread manager...");
         bind(ThreadManager.class).toInstance(new ThreadManager(10));
+
+        log.info("Binding injectable thread factory...");
         bind(InjectableIRCThreadFactory.class).asEagerSingleton();
 
+        log.info("Binding injectable stream factory...");
         bind(InjectableStreamFactory.class).toInstance(new InjectableStreamFactory());
 
+        log.info("Binding executor service...");
         ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         bind(ExecutorService.class).toInstance(executorService);
 
+        log.info("Binding HttpClient...");
         final PoolingHttpClientConnectionManager poolingManager = new PoolingHttpClientConnectionManager();
         poolingManager.setMaxTotal(100);
         HttpRequestRetryHandler retryHandler = new HttpRequestRetryHandler() {
@@ -183,14 +205,17 @@ public class TSDBotModule extends AbstractModule {
         bind(PoolingHttpClientConnectionManager.class).toInstance(poolingManager);
         bind(HttpClient.class).toInstance(httpClient);
 
+        log.info("Binding WebClient...");
         WebClient webClient = new WebClient(BrowserVersion.FIREFOX_24);
         webClient.setAjaxController(new NicelyResynchronizingAjaxController());
         webClient.getCookieManager().setCookiesEnabled(false);
         bind(WebClient.class).toInstance(webClient);
 
+        log.info("Binding twitter client...");
         bind(Twitter.class).toInstance(TwitterFactory.getSingleton());
 
         try {
+            log.info("Binding job scheduler...");
             SchedulerFactory schedulerFactory = new StdSchedulerFactory();
             Scheduler scheduler = schedulerFactory.getScheduler();
             bind(Scheduler.class).toInstance(scheduler);
@@ -203,46 +228,64 @@ public class TSDBotModule extends AbstractModule {
         bind(String.class)
                 .annotatedWith(DBConnectionString.class)
                 .toInstance(configuration.database);
+        log.info("Bound DBConnectionString: {}", configuration.database);
 
+        log.info("Binding JDBC connection provider...");
         bind(Connection.class).toProvider(DBConnectionProvider.class);
         bind(JdbcConnectionSource.class).toProvider(JdbcConnectionProvider.class);
 
+        log.info("Binding random...");
         bind(Random.class).toInstance(new Random());
 
         // path to ffmpeg executable
         bind(String.class)
                 .annotatedWith(Names.named("ffmpegExec"))
                 .toInstance(configuration.tsdtv.ffmpegExec);
+        log.info("Bound ffmpeg executable to {}", configuration.tsdtv.ffmpegExec);
 
         // arguments to ffmpeg commands
         bind(String.class)
                 .annotatedWith(Names.named("ffmpegArgs"))
                 .toInstance(configuration.tsdtv.ffmpegArgs);
+        log.info("Bound ffmpeg arguments to {}", configuration.tsdtv.ffmpegArgs);
 
         // output of ffmpeg commands
         bind(String.class)
                 .annotatedWith(Names.named("ffmpegOut"))
                 .toInstance(configuration.tsdtv.ffmpegOut);
+        log.info("Bound ffmpeg output to {}", configuration.tsdtv.ffmpegOut);
 
         // direct link to TSDTV stream (to be opened in video players)
         bind(String.class)
                 .annotatedWith(Names.named("tsdtvDirect"))
                 .toInstance(configuration.tsdtv.directLink);
+        log.info("Bound TSDTV direct link to {}", configuration.tsdtv.directLink);
 
         // video format used by web player
         bind(String.class)
                 .annotatedWith(Names.named("videoFmt"))
                 .toInstance(configuration.tsdtv.videoFmt);
+        log.info("Bound ffmpeg video format to {}", configuration.tsdtv.videoFmt);
 
+        File tsdtvLibrary = new File(configuration.tsdtv.catalog);
         bind(File.class)
                 .annotatedWith(Names.named("tsdtvLibrary"))
-                .toInstance(new File(configuration.tsdtv.catalog));
+                .toInstance(tsdtvLibrary);
+        log.info("Bound TSDTV library directory to {}", tsdtvLibrary.getAbsolutePath());
+
+        File tsdtvRaws = new File(configuration.tsdtv.raws);
         bind(File.class)
                 .annotatedWith(Names.named("tsdtvRaws"))
-                .toInstance(new File(configuration.tsdtv.raws));
+                .toInstance(tsdtvRaws);
+        log.info("Bound TSDTV raws directory to {}", tsdtvRaws.getAbsolutePath());
+
+        log.info("Binding TSDTV library...");
         bind(TSDTVLibrary.class).asEagerSingleton();
+
+        log.info("Binding TSDTV file processor...");
         bind(TSDTVFileProcessor.class).asEagerSingleton();
 
+        log.info("Binding google credentials...");
         GoogleAuthHolder googleAuthHolder = new GoogleAuthHolder(configuration.google);
         GoogleCredential googleCredential = new GoogleCredential.Builder()
                 .setTransport(new NetHttpTransport())
@@ -250,6 +293,7 @@ public class TSDBotModule extends AbstractModule {
                 .setClientSecrets(googleAuthHolder.getClientId(), googleAuthHolder.getClientSecret()).build();
         googleCredential.setRefreshToken(googleAuthHolder.getRefreshToken());
 
+        log.info("Binding youtube client...");
         YouTube youTube = new YouTube.Builder(
                 googleCredential.getTransport(),
                 googleCredential.getJsonFactory(),
@@ -259,6 +303,7 @@ public class TSDBotModule extends AbstractModule {
 
         bind(YouTube.class).toInstance(youTube);
 
+        log.info("Binding TSDTV client...");
         bind(TSDTV.class).asEagerSingleton();
 
         final boolean shutdown = false;
@@ -266,6 +311,7 @@ public class TSDBotModule extends AbstractModule {
             @Override
             public void run() {
                 try {
+                    log.info("Starting idle connection monitor...");
                     while (!shutdown) {
                         synchronized (this) {
                             wait(1000 * 30);
@@ -282,6 +328,8 @@ public class TSDBotModule extends AbstractModule {
                 }
             }
         });
+
+        log.info("TSDBotModule.configure() successful");
 
     }
 

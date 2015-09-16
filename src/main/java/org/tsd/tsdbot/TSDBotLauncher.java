@@ -81,8 +81,11 @@ public class TSDBotLauncher {
         TSDBotFunctionalModule functionalModule = new TSDBotFunctionalModule();
 
         Injector injector = Guice.createInjector(module, functionalModule, servletModule);
+        log.info("Injector created successfully");
         configureScheduler(injector);
+        log.info("Scheduler configured successfully");
         injector.injectMembers(Bot.class);
+        log.info("Bot injected successfully");
 
         log.info("TSDBot loaded successfully. Starting server...");
         initializeJettyServer(injector);
