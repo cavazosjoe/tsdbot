@@ -15,5 +15,6 @@ public class TSDBotConfiguration {
     public String mashapeKey;
     public GoogleConfig google;
     public JettyConfig jetty;
+    public String haloApiKey;
 
 }

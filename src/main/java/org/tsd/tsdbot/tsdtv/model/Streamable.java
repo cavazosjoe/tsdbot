@@ -36,7 +36,7 @@ public abstract class Streamable {
 
     public long getDuration(String ffmpegExec) {
         String durationString = getMetadata(ffmpegExec).get(TSDTVConstants.METADATA_DURATION_FIELD);
-        log.info("Parsing duration {} for file {}", durationString, file.getAbsolutePath());
+        log.debug("Parsing duration {} for file {}", durationString, file.getAbsolutePath());
         Matcher m = durationPattern.matcher(durationString);
         long duration = 0;
         while(m.find()) {
@@ -49,7 +49,7 @@ public abstract class Streamable {
 
     public HashMap<String, String> getMetadata(String ffmpegExec) {
 
-        log.info("Retrieving metadata for {}", file.getAbsolutePath());
+        log.debug("Retrieving metadata for {}", file.getAbsolutePath());
         HashMap<String, String> metadata = new HashMap<>();
 
         try {
@@ -66,7 +66,7 @@ public abstract class Streamable {
                     while( (line = br.readLine()) != null && (!line.contains("Duration")) ) { // stop on duration
                         String[] parts = line.split(":",2);
                         if(parts.length == 2) {
-                            log.info("Adding line to metadata: {} -> {}", parts[0].trim(), parts[1].trim());
+                            log.debug("Adding line to metadata: {} -> {}", parts[0].trim(), parts[1].trim());
                             metadata.put(parts[0].trim(), parts[1].trim());
                         }
                     }
@@ -76,7 +76,7 @@ public abstract class Streamable {
                     // Duration: 00:00:00.0, start=0000blahblah
                     log.debug("Raw duration line: {}", line);
                     String duration = line.substring(line.indexOf(":") + 1, line.indexOf(","));
-                    log.info("Adding parsed duration to metadata: {}", duration);
+                    log.debug("Adding parsed duration to metadata: {}", duration);
                     metadata.put(TSDTVConstants.METADATA_DURATION_FIELD, duration);
                     break;
                 }

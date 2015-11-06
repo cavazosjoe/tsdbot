@@ -123,15 +123,15 @@ public class TSDTVStream extends Thread {
         try {
             Process p = pb.start();
             try {
-                logger.info("TSDTV stream started, waiting...");
+                logger.info("TSDTV stream started, playing...");
                 this.streamState = StreamState.running;
                 p.waitFor();
                 logger.info("TSDTV stream ended normally");
             } catch (InterruptedException e) {
-                logger.info("TSDTV stream interrupted");
+                logger.debug("TSDTV stream interrupted");
             } finally {
                 p.destroy();
-                logger.info("TSDTV stream destroyed");
+                logger.debug("TSDTV stream destroyed");
             }
         } catch (IOException e) {
             logger.error("IOException", e);

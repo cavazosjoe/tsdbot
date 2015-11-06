@@ -53,4 +53,13 @@ public class TSDTVQueueItem {
         result = 31 * result + endTime.hashCode();
         return result;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("TSDTVQueueItem: ");
+        if(block != null)
+            sb.append(block.name).append(" -- ");
+        sb.append(video.getFile().getAbsolutePath());
+        return sb.toString();
+    }
 }

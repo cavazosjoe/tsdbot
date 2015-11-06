@@ -73,7 +73,7 @@ public class GVTest {
         protected void configureTest() {
             bind(Random.class).toInstance(new Random());
 
-            TestBot testBot = new TestBot(channel, null);
+            TestBot testBot = new TestBot(channel);
             bind(Bot.class).toInstance(testBot);
 
             bind(HistoryBuff.class).asEagerSingleton();
