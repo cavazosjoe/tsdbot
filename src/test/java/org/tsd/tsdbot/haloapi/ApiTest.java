@@ -14,6 +14,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.tsd.tsdbot.haloapi.model.stats.arena.ArenaMatch;
 import org.tsd.tsdbot.haloapi.model.stats.arena.ArenaServiceRecordSearch;
+import org.tsd.tsdbot.haloapi.model.stats.custom.CustomServiceRecordSearch;
 import org.tsd.tsdbot.haloapi.model.stats.warzone.WarzoneMatch;
 import org.tsd.tsdbot.haloapi.model.stats.warzone.WarzoneServiceRecordSearch;
 import org.tsd.tsdbot.module.HttpModule;
@@ -34,16 +35,30 @@ public class ApiTest {
         objectMapper.setVisibility(objectMapper.getVisibilityChecker().withFieldVisibility(JsonAutoDetect.Visibility.ANY));
     }
 
+    private static final String customServiceRecordEndpoint = "https://www.haloapi.com/stats/h5/servicerecords/custom?players=%s";
     private static final String warzoneServiceRecordEndpoint = "https://www.haloapi.com/stats/h5/servicerecords/warzone?players=%s";
     private static final String arenaServiceRecordEndpoint = "https://www.haloapi.com/stats/h5/servicerecords/arena?players=%s";
+
+    private static final String customCarnageEndpoint = "https://www.haloapi.com/stats/h5/custom/matches/%s";
     private static final String warzoneCarnageEndpoint = "https://www.haloapi.com/stats/h5/warzone/matches/%s";
     private static final String arenaCarnageEndpoint = "https://www.haloapi.com/stats/h5/arena/matches/%s";
+
+    @Test
+    public void testCustomServiceRecord(HttpClient client, HttpGet get) throws Exception {
+        get.setURI(new URI(String.format(customServiceRecordEndpoint, "Schooly%20D")));
+        HttpResponse response = client.execute(get);
+        CustomServiceRecordSearch search =
+                objectMapper.readValue(EntityUtils.toByteArray(response.getEntity()), CustomServiceRecordSearch.class);
+        assertNotNull(search);
+        assertEquals("Schooly D", search.getResults().get(0).getId());
+    }
 
     @Test
     public void testWarzoneServiceRecord(HttpClient client, HttpGet get) throws Exception {
         get.setURI(new URI(String.format(warzoneServiceRecordEndpoint, "Schooly%20D")));
         HttpResponse response = client.execute(get);
-        WarzoneServiceRecordSearch search = objectMapper.readValue(EntityUtils.toByteArray(response.getEntity()), WarzoneServiceRecordSearch.class);
+        WarzoneServiceRecordSearch search =
+                objectMapper.readValue(EntityUtils.toByteArray(response.getEntity()), WarzoneServiceRecordSearch.class);
         assertNotNull(search);
         assertEquals(1, search.getResults().size());
         assertEquals("Schooly D", search.getResults().get(0).getId());
@@ -82,6 +97,8 @@ public class ApiTest {
         assertTrue(match.isMatchOver());
         assertEquals("PT3M38.7341149S", match.getTotalDuration());
     }
+
+    // TODO: play a custom game so I can test a carnage report
 
     @AfterClass
     public static void shutdown() {

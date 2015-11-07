@@ -1,20 +1,22 @@
 package org.tsd.tsdbot.haloapi.model.metadata;
 
-@HaloMeta(path = "enemies")
-public class EnemyMeta implements Metadata {
-
-    // The faction that this enemy is affiliated with. One of the following options:
-    //   - UNSC
-    //   - Covenant
-    //   - Promethean
-    String faction;
+@HaloMeta(path = "weapons")
+public class WeaponMeta implements Metadata {
 
     // A localized name for the object, suitable for display to users. The text is title
     // cased.
     String name;
 
-    // A localized description, suitable for display to users. Note: This may be null.
+    // A localized description, suitable for display to users.
     String description;
+
+    // The type of the vehicle. Options are:
+    //   - Grenade
+    //   - Turret
+    //   - Vehicle
+    //   - Standard
+    //   - Power
+    String type;
 
     // A reference to a large image for icon use. This may be null if there is no image
     // defined.
@@ -24,15 +26,14 @@ public class EnemyMeta implements Metadata {
     // defined.
     String smallIconImageUrl;
 
-    // The ID that uniquely identifies this enemy.
+    // Indicates whether the weapon is usable by a player.
+    boolean isUsableByPlayer;
+
+    // The ID that uniquely identifies the weapon.
     String id;
 
     // Internal use only. Do not use.
     String contentId;
-
-    public String getFaction() {
-        return faction;
-    }
 
     public String getName() {
         return name;
@@ -42,12 +43,20 @@ public class EnemyMeta implements Metadata {
         return description;
     }
 
+    public String getType() {
+        return type;
+    }
+
     public String getLargeIconImageUrl() {
         return largeIconImageUrl;
     }
 
     public String getSmallIconImageUrl() {
         return smallIconImageUrl;
+    }
+
+    public boolean isUsableByPlayer() {
+        return isUsableByPlayer;
     }
 
     @Override

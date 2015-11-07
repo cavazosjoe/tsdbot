@@ -54,7 +54,7 @@ public class CsrDesignationMeta implements Metadata {
         return contentId;
     }
 
-    public class Tier {
+    public static class Tier {
 
         // An image to use as the icon for th tier.
         String iconImageUrl;
