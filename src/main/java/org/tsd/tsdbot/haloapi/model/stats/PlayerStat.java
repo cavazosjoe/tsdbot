@@ -56,4 +56,63 @@ public abstract class PlayerStat extends Stat {
     // Internal use only. This will always be null.
     Object PostMatchRatings;
 
+    public org.tsd.tsdbot.haloapi.model.stats.XpInfo getXpInfo() {
+        return XpInfo;
+    }
+
+    public List<KilledDetail> getKilledOpponentDetails() {
+        return KilledOpponentDetails;
+    }
+
+    public List<KilledDetail> getKilledByOpponentDetails() {
+        return KilledByOpponentDetails;
+    }
+
+    public org.tsd.tsdbot.haloapi.model.stats.FlexibleStats getFlexibleStats() {
+        return FlexibleStats;
+    }
+
+    public List<RewardSet> getRewardSets() {
+        return RewardSets;
+    }
+
+    public org.tsd.tsdbot.haloapi.model.stats.CreditsEarned getCreditsEarned() {
+        return CreditsEarned;
+    }
+
+    public List<MetaCommendationDelta> getMetaCommendationDeltas() {
+        return MetaCommendationDeltas;
+    }
+
+    public List<ProgressiveDelta> getProgressiveCommendationDeltas() {
+        return ProgressiveCommendationDeltas;
+    }
+
+    public org.tsd.tsdbot.haloapi.model.Player getPlayer() {
+        return Player;
+    }
+
+    public int getTeamId() {
+        return TeamId;
+    }
+
+    public int getRank() {
+        return Rank;
+    }
+
+    public boolean isDNF() {
+        return DNF;
+    }
+
+    public String getAvgLifeTimeOfPlayer() {
+        return AvgLifeTimeOfPlayer;
+    }
+
+    public Object getPreMatchRatings() {
+        return PreMatchRatings;
+    }
+
+    public Object getPostMatchRatings() {
+        return PostMatchRatings;
+    }
 }

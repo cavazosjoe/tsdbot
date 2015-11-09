@@ -11,4 +11,15 @@ public class RoundStat {
     // The end score for the team this round.
     int Score;
 
+    public int getRoundNumber() {
+        return RoundNumber;
+    }
+
+    public int getRank() {
+        return Rank;
+    }
+
+    public int getScore() {
+        return Score;
+    }
 }

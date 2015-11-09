@@ -1,0 +1,1853 @@
+{
+  "PlayerStats": [
+    {
+      "XpInfo": {
+        "PrevSpartanRank": 27,
+        "SpartanRank": 27,
+        "PrevTotalXP": 269086,
+        "TotalXP": 269729,
+        "SpartanRankMatchXPScalar": 1.85,
+        "PlayerTimePerformanceXPAward": 298,
+        "PerformanceXP": 0,
+        "PlayerRankXPAward": 50,
+        "BoostAmount": 0
+      },
+      "PreviousCsr": {
+        "Tier": 1,
+        "DesignationId": 6,
+        "Csr": 1683,
+        "PercentToNextTier": 0,
+        "Rank": null
+      },
+      "CurrentCsr": {
+        "Tier": 1,
+        "DesignationId": 6,
+        "Csr": 1670,
+        "PercentToNextTier": 0,
+        "Rank": null
+      },
+      "MeasurementMatchesLeft": 0,
+      "RewardSets": [],
+      "KilledOpponentDetails": [
+        {
+          "GamerTag": "CACAW MissingNo",
+          "TotalKills": 7
+        },
+        {
+          "GamerTag": "S3RpEnTiN377",
+          "TotalKills": 5
+        },
+        {
+          "GamerTag": "MagicBeanDream",
+          "TotalKills": 2
+        },
+        {
+          "GamerTag": "Schooly D",
+          "TotalKills": 4
+        }
+      ],
+      "KilledByOpponentDetails": [
+        {
+          "GamerTag": "Schooly D",
+          "TotalKills": 4
+        },
+        {
+          "GamerTag": "S3RpEnTiN377",
+          "TotalKills": 3
+        },
+        {
+          "GamerTag": "CACAW MissingNo",
+          "TotalKills": 1
+        },
+        {
+          "GamerTag": "MagicBeanDream",
+          "TotalKills": 3
+        }
+      ],
+      "FlexibleStats": {
+        "MedalStatCounts": [],
+        "ImpulseStatCounts": [
+          {
+            "Id": "ba327946-418c-495d-90c0-89f084bf7447",
+            "Count": 18
+          },
+          {
+            "Id": "7dcd7306-f905-401a-97f2-345d4b25170a",
+            "Count": 1
+          },
+          {
+            "Id": "ea38d25f-d887-4bdf-b17b-8e8e649b9a87",
+            "Count": 11
+          },
+          {
+            "Id": "a1d97ad4-c1d9-4807-b619-ca3710cc5a8d",
+            "Count": 0
+          },
+          {
+            "Id": "3465eba1-608c-47d7-9cb6-ef4c7a55a2dd",
+            "Count": 17
+          },
+          {
+            "Id": "780104cb-5b86-4ed9-8fb1-40b919de0766",
+            "Count": 0
+          },
+          {
+            "Id": "a5a0d0d5-5c9f-4888-b42a-2c87f8e58336",
+            "Count": 0
+          },
+          {
+            "Id": "71ce2293-23bb-492f-a8c0-46e095b55eb7",
+            "Count": 0
+          }
+        ],
+        "MedalTimelapses": [],
+        "ImpulseTimelapses": [
+          {
+            "Id": "f1c317ee-1ac4-4089-85e8-a9c536c6cf18",
+            "Timelapse": "PT3M38.7323992S"
+          }
+        ]
+      },
+      "CreditsEarned": {
+        "Result": 2,
+        "TotalCreditsEarned": 538,
+        "SpartanRankModifier": 1.0,
+        "PlayerRankAmount": 250,
+        "TimePlayedAmount": 287.16198926997356,
+        "BoostAmount": 0
+      },
+      "MetaCommendationDeltas": [],
+      "ProgressiveCommendationDeltas": [
+        {
+          "Id": "20dc7d74-be8f-4a60-ae4f-15230855cced",
+          "PreviousProgress": 3072,
+          "Progress": 3090
+        },
+        {
+          "Id": "f33f1aec-59ad-47eb-be13-fd0e654a53aa",
+          "PreviousProgress": 1494,
+          "Progress": 1512
+        },
+        {
+          "Id": "07653860-9949-4a12-b341-90c8b9653165",
+          "PreviousProgress": 2155,
+          "Progress": 2172
+        },
+        {
+          "Id": "e1203a73-2067-4479-9a47-2abccb0069ae",
+          "PreviousProgress": 339,
+          "Progress": 343
+        },
+        {
+          "Id": "1d32707e-9bbc-4cbe-af33-fdc0c8bd64b2",
+          "PreviousProgress": 248,
+          "Progress": 252
+        }
+      ],
+      "Player": {
+        "Gamertag": "Squeeze Me Off",
+        "Xuid": null
+      },
+      "TeamId": 0,
+      "Rank": 5,
+      "DNF": false,
+      "AvgLifeTimeOfPlayer": "PT15.8974363S",
+      "PreMatchRatings": null,
+      "PostMatchRatings": null,
+      "TotalKills": 18,
+      "TotalHeadshots": 17,
+      "TotalWeaponDamage": 786.66666793823242,
+      "TotalShotsFired": 49,
+      "TotalShotsLanded": 26,
+      "WeaponWithMostKills": {
+        "WeaponId": {
+          "StockId": 4096745987,
+          "Attachments": []
+        },
+        "TotalShotsFired": 49,
+        "TotalShotsLanded": 26,
+        "TotalHeadshots": 17,
+        "TotalKills": 18,
+        "TotalDamageDealt": 786.66666793823242,
+        "TotalPossessionTime": "PT3M10.1832S"
+      },
+      "TotalMeleeKills": 0,
+      "TotalMeleeDamage": 0.0,
+      "TotalAssassinations": 0,
+      "TotalGroundPoundKills": 0,
+      "TotalGroundPoundDamage": 0.0,
+      "TotalShoulderBashKills": 0,
+      "TotalShoulderBashDamage": 0.0,
+      "TotalGrenadeDamage": 0.0,
+      "TotalPowerWeaponKills": 0,
+      "TotalPowerWeaponDamage": 0.0,
+      "TotalPowerWeaponGrabs": 0,
+      "TotalPowerWeaponPossessionTime": "PT0S",
+      "TotalDeaths": 11,
+      "TotalAssists": 1,
+      "TotalGamesCompleted": 0,
+      "TotalGamesWon": 0,
+      "TotalGamesLost": 0,
+      "TotalGamesTied": 0,
+      "TotalTimePlayed": "PT3M38.7323992S",
+      "TotalGrenadeKills": 0,
+      "MedalAwards": [
+        {
+          "MedalId": 3261908037,
+          "Count": 17
+        },
+        {
+          "MedalId": 2078758684,
+          "Count": 4
+        },
+        {
+          "MedalId": 2782465081,
+          "Count": 4
+        },
+        {
+          "MedalId": 466059351,
+          "Count": 1
+        },
+        {
+          "MedalId": 824733727,
+          "Count": 4
+        }
+      ],
+      "DestroyedEnemyVehicles": [],
+      "EnemyKills": [],
+      "WeaponStats": [
+        {
+          "WeaponId": {
+            "StockId": 4096745987,
+            "Attachments": []
+          },
+          "TotalShotsFired": 49,
+          "TotalShotsLanded": 26,
+          "TotalHeadshots": 17,
+          "TotalKills": 18,
+          "TotalDamageDealt": 786.66666793823242,
+          "TotalPossessionTime": "PT3M10.1832S"
+        }
+      ],
+      "Impulses": [],
+      "TotalSpartanKills": 18
+    },
+    {
+      "XpInfo": {
+        "PrevSpartanRank": 15,
+        "SpartanRank": 15,
+        "PrevTotalXP": 79689,
+        "TotalXP": 80582,
+        "SpartanRankMatchXPScalar": 1.56,
+        "PlayerTimePerformanceXPAward": 298,
+        "PerformanceXP": 0,
+        "PlayerRankXPAward": 25,
+        "BoostAmount": 250
+      },
+      "PreviousCsr": {
+        "Tier": 1,
+        "DesignationId": 6,
+        "Csr": 1720,
+        "PercentToNextTier": 0,
+        "Rank": null
+      },
+      "CurrentCsr": {
+        "Tier": 1,
+        "DesignationId": 6,
+        "Csr": 1706,
+        "PercentToNextTier": 0,
+        "Rank": null
+      },
+      "MeasurementMatchesLeft": 0,
+      "RewardSets": [],
+      "KilledOpponentDetails": [
+        {
+          "GamerTag": "Schooly D",
+          "TotalKills": 3
+        },
+        {
+          "GamerTag": "S3RpEnTiN377",
+          "TotalKills": 4
+        },
+        {
+          "GamerTag": "CACAW MissingNo",
+          "TotalKills": 2
+        },
+        {
+          "GamerTag": "MagicBeanDream",
+          "TotalKills": 5
+        }
+      ],
+      "KilledByOpponentDetails": [
+        {
+          "GamerTag": "S3RpEnTiN377",
+          "TotalKills": 4
+        },
+        {
+          "GamerTag": "CACAW MissingNo",
+          "TotalKills": 4
+        },
+        {
+          "GamerTag": "Schooly D",
+          "TotalKills": 6
+        },
+        {
+          "GamerTag": "MagicBeanDream",
+          "TotalKills": 3
+        }
+      ],
+      "FlexibleStats": {
+        "MedalStatCounts": [],
+        "ImpulseStatCounts": [
+          {
+            "Id": "ba327946-418c-495d-90c0-89f084bf7447",
+            "Count": 14
+          },
+          {
+            "Id": "7dcd7306-f905-401a-97f2-345d4b25170a",
+            "Count": 2
+          },
+          {
+            "Id": "ea38d25f-d887-4bdf-b17b-8e8e649b9a87",
+            "Count": 17
+          },
+          {
+            "Id": "a1d97ad4-c1d9-4807-b619-ca3710cc5a8d",
+            "Count": 0
+          },
+          {
+            "Id": "3465eba1-608c-47d7-9cb6-ef4c7a55a2dd",
+            "Count": 14
+          },
+          {
+            "Id": "780104cb-5b86-4ed9-8fb1-40b919de0766",
+            "Count": 0
+          },
+          {
+            "Id": "a5a0d0d5-5c9f-4888-b42a-2c87f8e58336",
+            "Count": 0
+          },
+          {
+            "Id": "71ce2293-23bb-492f-a8c0-46e095b55eb7",
+            "Count": 0
+          }
+        ],
+        "MedalTimelapses": [],
+        "ImpulseTimelapses": [
+          {
+            "Id": "f1c317ee-1ac4-4089-85e8-a9c536c6cf18",
+            "Timelapse": "PT3M38.7233994S"
+          }
+        ]
+      },
+      "CreditsEarned": {
+        "Result": 2,
+        "TotalCreditsEarned": 513,
+        "SpartanRankModifier": 1.0,
+        "PlayerRankAmount": 225,
+        "TimePlayedAmount": 287.14893955954437,
+        "BoostAmount": 0
+      },
+      "MetaCommendationDeltas": [],
+      "ProgressiveCommendationDeltas": [
+        {
+          "Id": "20dc7d74-be8f-4a60-ae4f-15230855cced",
+          "PreviousProgress": 1202,
+          "Progress": 1216
+        },
+        {
+          "Id": "f33f1aec-59ad-47eb-be13-fd0e654a53aa",
+          "PreviousProgress": 549,
+          "Progress": 563
+        },
+        {
+          "Id": "07653860-9949-4a12-b341-90c8b9653165",
+          "PreviousProgress": 1147,
+          "Progress": 1161
+        },
+        {
+          "Id": "e1203a73-2067-4479-9a47-2abccb0069ae",
+          "PreviousProgress": 237,
+          "Progress": 241
+        },
+        {
+          "Id": "750783af-3332-4c7d-b5b5-26aa8800655a",
+          "PreviousProgress": 45,
+          "Progress": 46
+        }
+      ],
+      "Player": {
+        "Gamertag": "HELLBRINGTH 4TH",
+        "Xuid": null
+      },
+      "TeamId": 0,
+      "Rank": 6,
+      "DNF": false,
+      "AvgLifeTimeOfPlayer": "PT10.2619123S",
+      "PreMatchRatings": null,
+      "PostMatchRatings": null,
+      "TotalKills": 14,
+      "TotalHeadshots": 14,
+      "TotalWeaponDamage": 663.96011734008789,
+      "TotalShotsFired": 40,
+      "TotalShotsLanded": 22,
+      "WeaponWithMostKills": {
+        "WeaponId": {
+          "StockId": 4096745987,
+          "Attachments": []
+        },
+        "TotalShotsFired": 40,
+        "TotalShotsLanded": 22,
+        "TotalHeadshots": 14,
+        "TotalKills": 14,
+        "TotalDamageDealt": 663.96011734008789,
+        "TotalPossessionTime": "PT3M4.1831S"
+      },
+      "TotalMeleeKills": 0,
+      "TotalMeleeDamage": 0.0,
+      "TotalAssassinations": 0,
+      "TotalGroundPoundKills": 0,
+      "TotalGroundPoundDamage": 0.0,
+      "TotalShoulderBashKills": 0,
+      "TotalShoulderBashDamage": 0.0,
+      "TotalGrenadeDamage": 0.0,
+      "TotalPowerWeaponKills": 0,
+      "TotalPowerWeaponDamage": 0.0,
+      "TotalPowerWeaponGrabs": 0,
+      "TotalPowerWeaponPossessionTime": "PT0S",
+      "TotalDeaths": 17,
+      "TotalAssists": 2,
+      "TotalGamesCompleted": 0,
+      "TotalGamesWon": 0,
+      "TotalGamesLost": 0,
+      "TotalGamesTied": 0,
+      "TotalTimePlayed": "PT3M38.7233994S",
+      "TotalGrenadeKills": 0,
+      "MedalAwards": [
+        {
+          "MedalId": 3261908037,
+          "Count": 14
+        },
+        {
+          "MedalId": 2078758684,
+          "Count": 3
+        },
+        {
+          "MedalId": 2763748638,
+          "Count": 1
+        },
+        {
+          "MedalId": 2782465081,
+          "Count": 4
+        },
+        {
+          "MedalId": 2430242797,
+          "Count": 1
+        }
+      ],
+      "DestroyedEnemyVehicles": [],
+      "EnemyKills": [],
+      "WeaponStats": [
+        {
+          "WeaponId": {
+            "StockId": 4096745987,
+            "Attachments": []
+          },
+          "TotalShotsFired": 40,
+          "TotalShotsLanded": 22,
+          "TotalHeadshots": 14,
+          "TotalKills": 14,
+          "TotalDamageDealt": 663.96011734008789,
+          "TotalPossessionTime": "PT3M4.1831S"
+        }
+      ],
+      "Impulses": [],
+      "TotalSpartanKills": 14
+    },
+    {
+      "XpInfo": {
+        "PrevSpartanRank": 27,
+        "SpartanRank": 27,
+        "PrevTotalXP": 275110,
+        "TotalXP": 276029,
+        "SpartanRankMatchXPScalar": 1.85,
+        "PlayerTimePerformanceXPAward": 298,
+        "PerformanceXP": 99,
+        "PlayerRankXPAward": 100,
+        "BoostAmount": 0
+      },
+      "PreviousCsr": {
+        "Tier": 1,
+        "DesignationId": 6,
+        "Csr": 1766,
+        "PercentToNextTier": 0,
+        "Rank": null
+      },
+      "CurrentCsr": {
+        "Tier": 1,
+        "DesignationId": 6,
+        "Csr": 1781,
+        "PercentToNextTier": 0,
+        "Rank": null
+      },
+      "MeasurementMatchesLeft": 0,
+      "RewardSets": [],
+      "KilledOpponentDetails": [
+        {
+          "GamerTag": "lxlZABUZAlxl",
+          "TotalKills": 4
+        },
+        {
+          "GamerTag": "HELLBRINGTH 4TH",
+          "TotalKills": 4
+        },
+        {
+          "GamerTag": "Squeeze Me Off",
+          "TotalKills": 1
+        },
+        {
+          "GamerTag": "zendrith",
+          "TotalKills": 3
+        }
+      ],
+      "KilledByOpponentDetails": [
+        {
+          "GamerTag": "Squeeze Me Off",
+          "TotalKills": 7
+        },
+        {
+          "GamerTag": "HELLBRINGTH 4TH",
+          "TotalKills": 2
+        },
+        {
+          "GamerTag": "lxlZABUZAlxl",
+          "TotalKills": 1
+        },
+        {
+          "GamerTag": "zendrith",
+          "TotalKills": 4
+        }
+      ],
+      "FlexibleStats": {
+        "MedalStatCounts": [],
+        "ImpulseStatCounts": [
+          {
+            "Id": "ba327946-418c-495d-90c0-89f084bf7447",
+            "Count": 12
+          },
+          {
+            "Id": "7dcd7306-f905-401a-97f2-345d4b25170a",
+            "Count": 1
+          },
+          {
+            "Id": "ea38d25f-d887-4bdf-b17b-8e8e649b9a87",
+            "Count": 14
+          },
+          {
+            "Id": "a1d97ad4-c1d9-4807-b619-ca3710cc5a8d",
+            "Count": 0
+          },
+          {
+            "Id": "3465eba1-608c-47d7-9cb6-ef4c7a55a2dd",
+            "Count": 12
+          },
+          {
+            "Id": "780104cb-5b86-4ed9-8fb1-40b919de0766",
+            "Count": 0
+          },
+          {
+            "Id": "a5a0d0d5-5c9f-4888-b42a-2c87f8e58336",
+            "Count": 0
+          },
+          {
+            "Id": "71ce2293-23bb-492f-a8c0-46e095b55eb7",
+            "Count": 0
+          }
+        ],
+        "MedalTimelapses": [],
+        "ImpulseTimelapses": [
+          {
+            "Id": "f1c317ee-1ac4-4089-85e8-a9c536c6cf18",
+            "Timelapse": "PT3M38.7233994S"
+          }
+        ]
+      },
+      "CreditsEarned": {
+        "Result": 2,
+        "TotalCreditsEarned": 588,
+        "SpartanRankModifier": 1.0,
+        "PlayerRankAmount": 300,
+        "TimePlayedAmount": 287.14893955954437,
+        "BoostAmount": 0
+      },
+      "MetaCommendationDeltas": [],
+      "ProgressiveCommendationDeltas": [
+        {
+          "Id": "20dc7d74-be8f-4a60-ae4f-15230855cced",
+          "PreviousProgress": 2901,
+          "Progress": 2913
+        },
+        {
+          "Id": "f33f1aec-59ad-47eb-be13-fd0e654a53aa",
+          "PreviousProgress": 996,
+          "Progress": 1008
+        },
+        {
+          "Id": "07653860-9949-4a12-b341-90c8b9653165",
+          "PreviousProgress": 1973,
+          "Progress": 1985
+        },
+        {
+          "Id": "e1203a73-2067-4479-9a47-2abccb0069ae",
+          "PreviousProgress": 306,
+          "Progress": 309
+        },
+        {
+          "Id": "d3b6b1ce-c5f0-4cbf-b443-ca76c2917b77",
+          "PreviousProgress": 119,
+          "Progress": 120
+        }
+      ],
+      "Player": {
+        "Gamertag": "CACAW MissingNo",
+        "Xuid": null
+      },
+      "TeamId": 1,
+      "Rank": 3,
+      "DNF": false,
+      "AvgLifeTimeOfPlayer": "PT12.5213252S",
+      "PreMatchRatings": null,
+      "PostMatchRatings": null,
+      "TotalKills": 12,
+      "TotalHeadshots": 12,
+      "TotalWeaponDamage": 631.99851989746094,
+      "TotalShotsFired": 65,
+      "TotalShotsLanded": 27,
+      "WeaponWithMostKills": {
+        "WeaponId": {
+          "StockId": 4096745987,
+          "Attachments": []
+        },
+        "TotalShotsFired": 65,
+        "TotalShotsLanded": 27,
+        "TotalHeadshots": 12,
+        "TotalKills": 12,
+        "TotalDamageDealt": 631.99851989746094,
+        "TotalPossessionTime": "PT3M7.2501S"
+      },
+      "TotalMeleeKills": 0,
+      "TotalMeleeDamage": 0.0,
+      "TotalAssassinations": 0,
+      "TotalGroundPoundKills": 0,
+      "TotalGroundPoundDamage": 0.0,
+      "TotalShoulderBashKills": 0,
+      "TotalShoulderBashDamage": 0.0,
+      "TotalGrenadeDamage": 0.0,
+      "TotalPowerWeaponKills": 0,
+      "TotalPowerWeaponDamage": 0.0,
+      "TotalPowerWeaponGrabs": 0,
+      "TotalPowerWeaponPossessionTime": "PT0S",
+      "TotalDeaths": 14,
+      "TotalAssists": 1,
+      "TotalGamesCompleted": 0,
+      "TotalGamesWon": 0,
+      "TotalGamesLost": 0,
+      "TotalGamesTied": 0,
+      "TotalTimePlayed": "PT3M38.7233994S",
+      "TotalGrenadeKills": 0,
+      "MedalAwards": [
+        {
+          "MedalId": 3261908037,
+          "Count": 12
+        },
+        {
+          "MedalId": 2078758684,
+          "Count": 3
+        },
+        {
+          "MedalId": 2782465081,
+          "Count": 1
+        }
+      ],
+      "DestroyedEnemyVehicles": [],
+      "EnemyKills": [],
+      "WeaponStats": [
+        {
+          "WeaponId": {
+            "StockId": 4096745987,
+            "Attachments": []
+          },
+          "TotalShotsFired": 65,
+          "TotalShotsLanded": 27,
+          "TotalHeadshots": 12,
+          "TotalKills": 12,
+          "TotalDamageDealt": 631.99851989746094,
+          "TotalPossessionTime": "PT3M7.2501S"
+        }
+      ],
+      "Impulses": [],
+      "TotalSpartanKills": 12
+    },
+    {
+      "XpInfo": {
+        "PrevSpartanRank": 27,
+        "SpartanRank": 27,
+        "PrevTotalXP": 268701,
+        "TotalXP": 269298,
+        "SpartanRankMatchXPScalar": 1.85,
+        "PlayerTimePerformanceXPAward": 298,
+        "PerformanceXP": 0,
+        "PlayerRankXPAward": 25,
+        "BoostAmount": 0
+      },
+      "PreviousCsr": {
+        "Tier": 1,
+        "DesignationId": 6,
+        "Csr": 1900,
+        "PercentToNextTier": 0,
+        "Rank": null
+      },
+      "CurrentCsr": {
+        "Tier": 1,
+        "DesignationId": 6,
+        "Csr": 1884,
+        "PercentToNextTier": 0,
+        "Rank": null
+      },
+      "MeasurementMatchesLeft": 0,
+      "RewardSets": [],
+      "KilledOpponentDetails": [
+        {
+          "GamerTag": "S3RpEnTiN377",
+          "TotalKills": 4
+        },
+        {
+          "GamerTag": "MagicBeanDream",
+          "TotalKills": 4
+        },
+        {
+          "GamerTag": "Schooly D",
+          "TotalKills": 1
+        },
+        {
+          "GamerTag": "CACAW MissingNo",
+          "TotalKills": 4
+        }
+      ],
+      "KilledByOpponentDetails": [
+        {
+          "GamerTag": "MagicBeanDream",
+          "TotalKills": 5
+        },
+        {
+          "GamerTag": "CACAW MissingNo",
+          "TotalKills": 3
+        },
+        {
+          "GamerTag": "Schooly D",
+          "TotalKills": 1
+        },
+        {
+          "GamerTag": "S3RpEnTiN377",
+          "TotalKills": 1
+        }
+      ],
+      "FlexibleStats": {
+        "MedalStatCounts": [],
+        "ImpulseStatCounts": [
+          {
+            "Id": "ba327946-418c-495d-90c0-89f084bf7447",
+            "Count": 13
+          },
+          {
+            "Id": "7dcd7306-f905-401a-97f2-345d4b25170a",
+            "Count": 1
+          },
+          {
+            "Id": "ea38d25f-d887-4bdf-b17b-8e8e649b9a87",
+            "Count": 10
+          },
+          {
+            "Id": "a1d97ad4-c1d9-4807-b619-ca3710cc5a8d",
+            "Count": 0
+          },
+          {
+            "Id": "3465eba1-608c-47d7-9cb6-ef4c7a55a2dd",
+            "Count": 13
+          },
+          {
+            "Id": "780104cb-5b86-4ed9-8fb1-40b919de0766",
+            "Count": 0
+          },
+          {
+            "Id": "a5a0d0d5-5c9f-4888-b42a-2c87f8e58336",
+            "Count": 0
+          },
+          {
+            "Id": "71ce2293-23bb-492f-a8c0-46e095b55eb7",
+            "Count": 0
+          }
+        ],
+        "MedalTimelapses": [],
+        "ImpulseTimelapses": [
+          {
+            "Id": "f1c317ee-1ac4-4089-85e8-a9c536c6cf18",
+            "Timelapse": "PT3M38.7233994S"
+          }
+        ]
+      },
+      "CreditsEarned": {
+        "Result": 2,
+        "TotalCreditsEarned": 513,
+        "SpartanRankModifier": 1.0,
+        "PlayerRankAmount": 225,
+        "TimePlayedAmount": 287.14893955954437,
+        "BoostAmount": 0
+      },
+      "MetaCommendationDeltas": [],
+      "ProgressiveCommendationDeltas": [
+        {
+          "Id": "20dc7d74-be8f-4a60-ae4f-15230855cced",
+          "PreviousProgress": 3279,
+          "Progress": 3292
+        },
+        {
+          "Id": "f33f1aec-59ad-47eb-be13-fd0e654a53aa",
+          "PreviousProgress": 1508,
+          "Progress": 1521
+        },
+        {
+          "Id": "07653860-9949-4a12-b341-90c8b9653165",
+          "PreviousProgress": 3070,
+          "Progress": 3083
+        },
+        {
+          "Id": "1d32707e-9bbc-4cbe-af33-fdc0c8bd64b2",
+          "PreviousProgress": 296,
+          "Progress": 299
+        },
+        {
+          "Id": "e1203a73-2067-4479-9a47-2abccb0069ae",
+          "PreviousProgress": 630,
+          "Progress": 633
+        }
+      ],
+      "Player": {
+        "Gamertag": "zendrith",
+        "Xuid": null
+      },
+      "TeamId": 0,
+      "Rank": 7,
+      "DNF": false,
+      "AvgLifeTimeOfPlayer": "PT17.4400894S",
+      "PreMatchRatings": null,
+      "PostMatchRatings": null,
+      "TotalKills": 13,
+      "TotalHeadshots": 13,
+      "TotalWeaponDamage": 596.66667175292969,
+      "TotalShotsFired": 59,
+      "TotalShotsLanded": 22,
+      "WeaponWithMostKills": {
+        "WeaponId": {
+          "StockId": 4096745987,
+          "Attachments": []
+        },
+        "TotalShotsFired": 59,
+        "TotalShotsLanded": 22,
+        "TotalHeadshots": 13,
+        "TotalKills": 13,
+        "TotalDamageDealt": 596.66667175292969,
+        "TotalPossessionTime": "PT3M11.25S"
+      },
+      "TotalMeleeKills": 0,
+      "TotalMeleeDamage": 0.0,
+      "TotalAssassinations": 0,
+      "TotalGroundPoundKills": 0,
+      "TotalGroundPoundDamage": 0.0,
+      "TotalShoulderBashKills": 0,
+      "TotalShoulderBashDamage": 0.0,
+      "TotalGrenadeDamage": 0.0,
+      "TotalPowerWeaponKills": 0,
+      "TotalPowerWeaponDamage": 0.0,
+      "TotalPowerWeaponGrabs": 0,
+      "TotalPowerWeaponPossessionTime": "PT0S",
+      "TotalDeaths": 10,
+      "TotalAssists": 1,
+      "TotalGamesCompleted": 0,
+      "TotalGamesWon": 0,
+      "TotalGamesLost": 0,
+      "TotalGamesTied": 0,
+      "TotalTimePlayed": "PT3M38.7233994S",
+      "TotalGrenadeKills": 0,
+      "MedalAwards": [
+        {
+          "MedalId": 3261908037,
+          "Count": 13
+        },
+        {
+          "MedalId": 2782465081,
+          "Count": 1
+        },
+        {
+          "MedalId": 824733727,
+          "Count": 3
+        },
+        {
+          "MedalId": 2078758684,
+          "Count": 3
+        }
+      ],
+      "DestroyedEnemyVehicles": [],
+      "EnemyKills": [],
+      "WeaponStats": [
+        {
+          "WeaponId": {
+            "StockId": 4096745987,
+            "Attachments": []
+          },
+          "TotalShotsFired": 59,
+          "TotalShotsLanded": 22,
+          "TotalHeadshots": 13,
+          "TotalKills": 13,
+          "TotalDamageDealt": 596.66667175292969,
+          "TotalPossessionTime": "PT3M11.25S"
+        }
+      ],
+      "Impulses": [],
+      "TotalSpartanKills": 13
+    },
+    {
+      "XpInfo": {
+        "PrevSpartanRank": 18,
+        "SpartanRank": 18,
+        "PrevTotalXP": 133871,
+        "TotalXP": 134691,
+        "SpartanRankMatchXPScalar": 1.65,
+        "PlayerTimePerformanceXPAward": 298,
+        "PerformanceXP": 99,
+        "PlayerRankXPAward": 100,
+        "BoostAmount": 0
+      },
+      "PreviousCsr": null,
+      "CurrentCsr": null,
+      "MeasurementMatchesLeft": 1,
+      "RewardSets": [],
+      "KilledOpponentDetails": [
+        {
+          "GamerTag": "Squeeze Me Off",
+          "TotalKills": 4
+        },
+        {
+          "GamerTag": "HELLBRINGTH 4TH",
+          "TotalKills": 6
+        },
+        {
+          "GamerTag": "lxlZABUZAlxl",
+          "TotalKills": 3
+        },
+        {
+          "GamerTag": "zendrith",
+          "TotalKills": 1
+        }
+      ],
+      "KilledByOpponentDetails": [
+        {
+          "GamerTag": "HELLBRINGTH 4TH",
+          "TotalKills": 3
+        },
+        {
+          "GamerTag": "Squeeze Me Off",
+          "TotalKills": 4
+        },
+        {
+          "GamerTag": "zendrith",
+          "TotalKills": 1
+        },
+        {
+          "GamerTag": "lxlZABUZAlxl",
+          "TotalKills": 3
+        }
+      ],
+      "FlexibleStats": {
+        "MedalStatCounts": [],
+        "ImpulseStatCounts": [
+          {
+            "Id": "ba327946-418c-495d-90c0-89f084bf7447",
+            "Count": 14
+          },
+          {
+            "Id": "7dcd7306-f905-401a-97f2-345d4b25170a",
+            "Count": 0
+          },
+          {
+            "Id": "ea38d25f-d887-4bdf-b17b-8e8e649b9a87",
+            "Count": 11
+          },
+          {
+            "Id": "a1d97ad4-c1d9-4807-b619-ca3710cc5a8d",
+            "Count": 0
+          },
+          {
+            "Id": "3465eba1-608c-47d7-9cb6-ef4c7a55a2dd",
+            "Count": 14
+          },
+          {
+            "Id": "780104cb-5b86-4ed9-8fb1-40b919de0766",
+            "Count": 0
+          },
+          {
+            "Id": "a5a0d0d5-5c9f-4888-b42a-2c87f8e58336",
+            "Count": 0
+          },
+          {
+            "Id": "71ce2293-23bb-492f-a8c0-46e095b55eb7",
+            "Count": 0
+          }
+        ],
+        "MedalTimelapses": [],
+        "ImpulseTimelapses": [
+          {
+            "Id": "f1c317ee-1ac4-4089-85e8-a9c536c6cf18",
+            "Timelapse": "PT3M38.7233994S"
+          }
+        ]
+      },
+      "CreditsEarned": {
+        "Result": 2,
+        "TotalCreditsEarned": 588,
+        "SpartanRankModifier": 1.0,
+        "PlayerRankAmount": 300,
+        "TimePlayedAmount": 287.14893955954437,
+        "BoostAmount": 0
+      },
+      "MetaCommendationDeltas": [],
+      "ProgressiveCommendationDeltas": [
+        {
+          "Id": "20dc7d74-be8f-4a60-ae4f-15230855cced",
+          "PreviousProgress": 1198,
+          "Progress": 1212
+        },
+        {
+          "Id": "f33f1aec-59ad-47eb-be13-fd0e654a53aa",
+          "PreviousProgress": 417,
+          "Progress": 431
+        },
+        {
+          "Id": "07653860-9949-4a12-b341-90c8b9653165",
+          "PreviousProgress": 920,
+          "Progress": 934
+        },
+        {
+          "Id": "1d32707e-9bbc-4cbe-af33-fdc0c8bd64b2",
+          "PreviousProgress": 107,
+          "Progress": 110
+        },
+        {
+          "Id": "e1203a73-2067-4479-9a47-2abccb0069ae",
+          "PreviousProgress": 101,
+          "Progress": 106
+        },
+        {
+          "Id": "750783af-3332-4c7d-b5b5-26aa8800655a",
+          "PreviousProgress": 73,
+          "Progress": 74
+        },
+        {
+          "Id": "d3b6b1ce-c5f0-4cbf-b443-ca76c2917b77",
+          "PreviousProgress": 34,
+          "Progress": 35
+        }
+      ],
+      "Player": {
+        "Gamertag": "Schooly D",
+        "Xuid": null
+      },
+      "TeamId": 1,
+      "Rank": 2,
+      "DNF": false,
+      "AvgLifeTimeOfPlayer": "PT15.8960937S",
+      "PreMatchRatings": null,
+      "PostMatchRatings": null,
+      "TotalKills": 14,
+      "TotalHeadshots": 14,
+      "TotalWeaponDamage": 618.33333206176758,
+      "TotalShotsFired": 42,
+      "TotalShotsLanded": 16,
+      "WeaponWithMostKills": {
+        "WeaponId": {
+          "StockId": 4096745987,
+          "Attachments": []
+        },
+        "TotalShotsFired": 42,
+        "TotalShotsLanded": 16,
+        "TotalHeadshots": 14,
+        "TotalKills": 14,
+        "TotalDamageDealt": 618.33333206176758,
+        "TotalPossessionTime": "PT3M10.2001S"
+      },
+      "TotalMeleeKills": 0,
+      "TotalMeleeDamage": 0.0,
+      "TotalAssassinations": 0,
+      "TotalGroundPoundKills": 0,
+      "TotalGroundPoundDamage": 0.0,
+      "TotalShoulderBashKills": 0,
+      "TotalShoulderBashDamage": 0.0,
+      "TotalGrenadeDamage": 0.0,
+      "TotalPowerWeaponKills": 0,
+      "TotalPowerWeaponDamage": 0.0,
+      "TotalPowerWeaponGrabs": 0,
+      "TotalPowerWeaponPossessionTime": "PT0S",
+      "TotalDeaths": 11,
+      "TotalAssists": 0,
+      "TotalGamesCompleted": 0,
+      "TotalGamesWon": 0,
+      "TotalGamesLost": 0,
+      "TotalGamesTied": 0,
+      "TotalTimePlayed": "PT3M38.7233994S",
+      "TotalGrenadeKills": 0,
+      "MedalAwards": [
+        {
+          "MedalId": 3261908037,
+          "Count": 14
+        },
+        {
+          "MedalId": 824733727,
+          "Count": 3
+        },
+        {
+          "MedalId": 2078758684,
+          "Count": 3
+        },
+        {
+          "MedalId": 2782465081,
+          "Count": 3
+        },
+        {
+          "MedalId": 2763748638,
+          "Count": 2
+        },
+        {
+          "MedalId": 2430242797,
+          "Count": 1
+        }
+      ],
+      "DestroyedEnemyVehicles": [],
+      "EnemyKills": [],
+      "WeaponStats": [
+        {
+          "WeaponId": {
+            "StockId": 4096745987,
+            "Attachments": []
+          },
+          "TotalShotsFired": 42,
+          "TotalShotsLanded": 16,
+          "TotalHeadshots": 14,
+          "TotalKills": 14,
+          "TotalDamageDealt": 618.33333206176758,
+          "TotalPossessionTime": "PT3M10.2001S"
+        }
+      ],
+      "Impulses": [],
+      "TotalSpartanKills": 14
+    },
+    {
+      "XpInfo": {
+        "PrevSpartanRank": 20,
+        "SpartanRank": 20,
+        "PrevTotalXP": 163894,
+        "TotalXP": 164914,
+        "SpartanRankMatchXPScalar": 1.71,
+        "PlayerTimePerformanceXPAward": 298,
+        "PerformanceXP": 99,
+        "PlayerRankXPAward": 200,
+        "BoostAmount": 0
+      },
+      "PreviousCsr": {
+        "Tier": 1,
+        "DesignationId": 6,
+        "Csr": 1642,
+        "PercentToNextTier": 0,
+        "Rank": null
+      },
+      "CurrentCsr": {
+        "Tier": 1,
+        "DesignationId": 6,
+        "Csr": 1659,
+        "PercentToNextTier": 0,
+        "Rank": null
+      },
+      "MeasurementMatchesLeft": 0,
+      "RewardSets": [],
+      "KilledOpponentDetails": [
+        {
+          "GamerTag": "lxlZABUZAlxl",
+          "TotalKills": 3
+        },
+        {
+          "GamerTag": "zendrith",
+          "TotalKills": 5
+        },
+        {
+          "GamerTag": "Squeeze Me Off",
+          "TotalKills": 3
+        },
+        {
+          "GamerTag": "HELLBRINGTH 4TH",
+          "TotalKills": 3
+        }
+      ],
+      "KilledByOpponentDetails": [
+        {
+          "GamerTag": "zendrith",
+          "TotalKills": 4
+        },
+        {
+          "GamerTag": "Squeeze Me Off",
+          "TotalKills": 2
+        },
+        {
+          "GamerTag": "HELLBRINGTH 4TH",
+          "TotalKills": 5
+        }
+      ],
+      "FlexibleStats": {
+        "MedalStatCounts": [],
+        "ImpulseStatCounts": [
+          {
+            "Id": "ba327946-418c-495d-90c0-89f084bf7447",
+            "Count": 14
+          },
+          {
+            "Id": "7dcd7306-f905-401a-97f2-345d4b25170a",
+            "Count": 2
+          },
+          {
+            "Id": "ea38d25f-d887-4bdf-b17b-8e8e649b9a87",
+            "Count": 11
+          },
+          {
+            "Id": "a1d97ad4-c1d9-4807-b619-ca3710cc5a8d",
+            "Count": 0
+          },
+          {
+            "Id": "3465eba1-608c-47d7-9cb6-ef4c7a55a2dd",
+            "Count": 13
+          },
+          {
+            "Id": "780104cb-5b86-4ed9-8fb1-40b919de0766",
+            "Count": 0
+          },
+          {
+            "Id": "a5a0d0d5-5c9f-4888-b42a-2c87f8e58336",
+            "Count": 0
+          },
+          {
+            "Id": "71ce2293-23bb-492f-a8c0-46e095b55eb7",
+            "Count": 0
+          }
+        ],
+        "MedalTimelapses": [],
+        "ImpulseTimelapses": [
+          {
+            "Id": "f1c317ee-1ac4-4089-85e8-a9c536c6cf18",
+            "Timelapse": "PT3M38.7233994S"
+          }
+        ]
+      },
+      "CreditsEarned": {
+        "Result": 2,
+        "TotalCreditsEarned": 663,
+        "SpartanRankModifier": 1.0,
+        "PlayerRankAmount": 375,
+        "TimePlayedAmount": 287.14893955954437,
+        "BoostAmount": 0
+      },
+      "MetaCommendationDeltas": [],
+      "ProgressiveCommendationDeltas": [
+        {
+          "Id": "20dc7d74-be8f-4a60-ae4f-15230855cced",
+          "PreviousProgress": 1996,
+          "Progress": 2010
+        },
+        {
+          "Id": "f33f1aec-59ad-47eb-be13-fd0e654a53aa",
+          "PreviousProgress": 637,
+          "Progress": 651
+        },
+        {
+          "Id": "07653860-9949-4a12-b341-90c8b9653165",
+          "PreviousProgress": 1319,
+          "Progress": 1332
+        },
+        {
+          "Id": "e1203a73-2067-4479-9a47-2abccb0069ae",
+          "PreviousProgress": 248,
+          "Progress": 250
+        },
+        {
+          "Id": "1d32707e-9bbc-4cbe-af33-fdc0c8bd64b2",
+          "PreviousProgress": 104,
+          "Progress": 105
+        },
+        {
+          "Id": "d3b6b1ce-c5f0-4cbf-b443-ca76c2917b77",
+          "PreviousProgress": 59,
+          "Progress": 60
+        }
+      ],
+      "Player": {
+        "Gamertag": "MagicBeanDream",
+        "Xuid": null
+      },
+      "TeamId": 1,
+      "Rank": 1,
+      "DNF": false,
+      "AvgLifeTimeOfPlayer": "PT15.8998617S",
+      "PreMatchRatings": null,
+      "PostMatchRatings": null,
+      "TotalKills": 14,
+      "TotalHeadshots": 13,
+      "TotalWeaponDamage": 665.00000381469727,
+      "TotalShotsFired": 55,
+      "TotalShotsLanded": 26,
+      "WeaponWithMostKills": {
+        "WeaponId": {
+          "StockId": 4096745987,
+          "Attachments": []
+        },
+        "TotalShotsFired": 55,
+        "TotalShotsLanded": 26,
+        "TotalHeadshots": 13,
+        "TotalKills": 14,
+        "TotalDamageDealt": 665.00000381469727,
+        "TotalPossessionTime": "PT3M10.2499S"
+      },
+      "TotalMeleeKills": 0,
+      "TotalMeleeDamage": 0.0,
+      "TotalAssassinations": 0,
+      "TotalGroundPoundKills": 0,
+      "TotalGroundPoundDamage": 0.0,
+      "TotalShoulderBashKills": 0,
+      "TotalShoulderBashDamage": 0.0,
+      "TotalGrenadeDamage": 0.0,
+      "TotalPowerWeaponKills": 0,
+      "TotalPowerWeaponDamage": 0.0,
+      "TotalPowerWeaponGrabs": 0,
+      "TotalPowerWeaponPossessionTime": "PT0S",
+      "TotalDeaths": 11,
+      "TotalAssists": 2,
+      "TotalGamesCompleted": 0,
+      "TotalGamesWon": 0,
+      "TotalGamesLost": 0,
+      "TotalGamesTied": 0,
+      "TotalTimePlayed": "PT3M38.7233994S",
+      "TotalGrenadeKills": 0,
+      "MedalAwards": [
+        {
+          "MedalId": 3261908037,
+          "Count": 13
+        },
+        {
+          "MedalId": 2078758684,
+          "Count": 2
+        },
+        {
+          "MedalId": 2782465081,
+          "Count": 1
+        },
+        {
+          "MedalId": 824733727,
+          "Count": 1
+        }
+      ],
+      "DestroyedEnemyVehicles": [],
+      "EnemyKills": [],
+      "WeaponStats": [
+        {
+          "WeaponId": {
+            "StockId": 4096745987,
+            "Attachments": []
+          },
+          "TotalShotsFired": 55,
+          "TotalShotsLanded": 26,
+          "TotalHeadshots": 13,
+          "TotalKills": 14,
+          "TotalDamageDealt": 665.00000381469727,
+          "TotalPossessionTime": "PT3M10.2499S"
+        }
+      ],
+      "Impulses": [],
+      "TotalSpartanKills": 14
+    },
+    {
+      "XpInfo": {
+        "PrevSpartanRank": 29,
+        "SpartanRank": 29,
+        "PrevTotalXP": 318368,
+        "TotalXP": 319203,
+        "SpartanRankMatchXPScalar": 1.87,
+        "PlayerTimePerformanceXPAward": 298,
+        "PerformanceXP": 99,
+        "PlayerRankXPAward": 50,
+        "BoostAmount": 0
+      },
+      "PreviousCsr": {
+        "Tier": 1,
+        "DesignationId": 6,
+        "Csr": 1867,
+        "PercentToNextTier": 0,
+        "Rank": null
+      },
+      "CurrentCsr": {
+        "Tier": 1,
+        "DesignationId": 6,
+        "Csr": 1882,
+        "PercentToNextTier": 0,
+        "Rank": null
+      },
+      "MeasurementMatchesLeft": 0,
+      "RewardSets": [],
+      "KilledOpponentDetails": [
+        {
+          "GamerTag": "lxlZABUZAlxl",
+          "TotalKills": 2
+        },
+        {
+          "GamerTag": "HELLBRINGTH 4TH",
+          "TotalKills": 4
+        },
+        {
+          "GamerTag": "Squeeze Me Off",
+          "TotalKills": 3
+        },
+        {
+          "GamerTag": "zendrith",
+          "TotalKills": 1
+        }
+      ],
+      "KilledByOpponentDetails": [
+        {
+          "GamerTag": "zendrith",
+          "TotalKills": 4
+        },
+        {
+          "GamerTag": "Squeeze Me Off",
+          "TotalKills": 5
+        },
+        {
+          "GamerTag": "HELLBRINGTH 4TH",
+          "TotalKills": 4
+        }
+      ],
+      "FlexibleStats": {
+        "MedalStatCounts": [],
+        "ImpulseStatCounts": [
+          {
+            "Id": "ba327946-418c-495d-90c0-89f084bf7447",
+            "Count": 10
+          },
+          {
+            "Id": "7dcd7306-f905-401a-97f2-345d4b25170a",
+            "Count": 1
+          },
+          {
+            "Id": "ea38d25f-d887-4bdf-b17b-8e8e649b9a87",
+            "Count": 13
+          },
+          {
+            "Id": "a1d97ad4-c1d9-4807-b619-ca3710cc5a8d",
+            "Count": 0
+          },
+          {
+            "Id": "3465eba1-608c-47d7-9cb6-ef4c7a55a2dd",
+            "Count": 10
+          },
+          {
+            "Id": "780104cb-5b86-4ed9-8fb1-40b919de0766",
+            "Count": 0
+          },
+          {
+            "Id": "a5a0d0d5-5c9f-4888-b42a-2c87f8e58336",
+            "Count": 0
+          },
+          {
+            "Id": "71ce2293-23bb-492f-a8c0-46e095b55eb7",
+            "Count": 0
+          }
+        ],
+        "MedalTimelapses": [],
+        "ImpulseTimelapses": [
+          {
+            "Id": "f1c317ee-1ac4-4089-85e8-a9c536c6cf18",
+            "Timelapse": "PT3M38.7223991S"
+          }
+        ]
+      },
+      "CreditsEarned": {
+        "Result": 2,
+        "TotalCreditsEarned": 538,
+        "SpartanRankModifier": 1.0,
+        "PlayerRankAmount": 250,
+        "TimePlayedAmount": 287.1474891244967,
+        "BoostAmount": 0
+      },
+      "MetaCommendationDeltas": [],
+      "ProgressiveCommendationDeltas": [
+        {
+          "Id": "20dc7d74-be8f-4a60-ae4f-15230855cced",
+          "PreviousProgress": 3387,
+          "Progress": 3397
+        },
+        {
+          "Id": "f33f1aec-59ad-47eb-be13-fd0e654a53aa",
+          "PreviousProgress": 1003,
+          "Progress": 1013
+        },
+        {
+          "Id": "07653860-9949-4a12-b341-90c8b9653165",
+          "PreviousProgress": 2127,
+          "Progress": 2137
+        },
+        {
+          "Id": "e1203a73-2067-4479-9a47-2abccb0069ae",
+          "PreviousProgress": 435,
+          "Progress": 437
+        },
+        {
+          "Id": "d3b6b1ce-c5f0-4cbf-b443-ca76c2917b77",
+          "PreviousProgress": 142,
+          "Progress": 143
+        }
+      ],
+      "Player": {
+        "Gamertag": "S3RpEnTiN377",
+        "Xuid": null
+      },
+      "TeamId": 1,
+      "Rank": 4,
+      "DNF": false,
+      "AvgLifeTimeOfPlayer": "PT13.4847144S",
+      "PreMatchRatings": null,
+      "PostMatchRatings": null,
+      "TotalKills": 10,
+      "TotalHeadshots": 10,
+      "TotalWeaponDamage": 496.66666793823242,
+      "TotalShotsFired": 46,
+      "TotalShotsLanded": 19,
+      "WeaponWithMostKills": {
+        "WeaponId": {
+          "StockId": 4096745987,
+          "Attachments": []
+        },
+        "TotalShotsFired": 46,
+        "TotalShotsLanded": 19,
+        "TotalHeadshots": 10,
+        "TotalKills": 10,
+        "TotalDamageDealt": 496.66666793823242,
+        "TotalPossessionTime": "PT3M8.1833S"
+      },
+      "TotalMeleeKills": 0,
+      "TotalMeleeDamage": 0.0,
+      "TotalAssassinations": 0,
+      "TotalGroundPoundKills": 0,
+      "TotalGroundPoundDamage": 0.0,
+      "TotalShoulderBashKills": 0,
+      "TotalShoulderBashDamage": 0.0,
+      "TotalGrenadeDamage": 0.0,
+      "TotalPowerWeaponKills": 0,
+      "TotalPowerWeaponDamage": 0.0,
+      "TotalPowerWeaponGrabs": 0,
+      "TotalPowerWeaponPossessionTime": "PT0S",
+      "TotalDeaths": 13,
+      "TotalAssists": 1,
+      "TotalGamesCompleted": 0,
+      "TotalGamesWon": 0,
+      "TotalGamesLost": 0,
+      "TotalGamesTied": 0,
+      "TotalTimePlayed": "PT3M38.7223991S",
+      "TotalGrenadeKills": 0,
+      "MedalAwards": [
+        {
+          "MedalId": 3261908037,
+          "Count": 10
+        },
+        {
+          "MedalId": 3001183151,
+          "Count": 1
+        },
+        {
+          "MedalId": 2782465081,
+          "Count": 1
+        },
+        {
+          "MedalId": 2078758684,
+          "Count": 2
+        }
+      ],
+      "DestroyedEnemyVehicles": [],
+      "EnemyKills": [],
+      "WeaponStats": [
+        {
+          "WeaponId": {
+            "StockId": 4096745987,
+            "Attachments": []
+          },
+          "TotalShotsFired": 46,
+          "TotalShotsLanded": 19,
+          "TotalHeadshots": 10,
+          "TotalKills": 10,
+          "TotalDamageDealt": 496.66666793823242,
+          "TotalPossessionTime": "PT3M8.1833S"
+        }
+      ],
+      "Impulses": [],
+      "TotalSpartanKills": 10
+    },
+    {
+      "XpInfo": {
+        "PrevSpartanRank": 24,
+        "SpartanRank": 24,
+        "PrevTotalXP": 208846,
+        "TotalXP": 209427,
+        "SpartanRankMatchXPScalar": 1.8,
+        "PlayerTimePerformanceXPAward": 298,
+        "PerformanceXP": 0,
+        "PlayerRankXPAward": 25,
+        "BoostAmount": 0
+      },
+      "PreviousCsr": {
+        "Tier": 1,
+        "DesignationId": 6,
+        "Csr": 1518,
+        "PercentToNextTier": 0,
+        "Rank": null
+      },
+      "CurrentCsr": {
+        "Tier": 1,
+        "DesignationId": 6,
+        "Csr": 1506,
+        "PercentToNextTier": 0,
+        "Rank": null
+      },
+      "MeasurementMatchesLeft": 0,
+      "RewardSets": [],
+      "KilledOpponentDetails": [
+        {
+          "GamerTag": "Schooly D",
+          "TotalKills": 3
+        },
+        {
+          "GamerTag": "CACAW MissingNo",
+          "TotalKills": 1
+        }
+      ],
+      "KilledByOpponentDetails": [
+        {
+          "GamerTag": "S3RpEnTiN377",
+          "TotalKills": 2
+        },
+        {
+          "GamerTag": "MagicBeanDream",
+          "TotalKills": 3
+        },
+        {
+          "GamerTag": "CACAW MissingNo",
+          "TotalKills": 4
+        },
+        {
+          "GamerTag": "Schooly D",
+          "TotalKills": 3
+        }
+      ],
+      "FlexibleStats": {
+        "MedalStatCounts": [],
+        "ImpulseStatCounts": [
+          {
+            "Id": "ba327946-418c-495d-90c0-89f084bf7447",
+            "Count": 4
+          },
+          {
+            "Id": "7dcd7306-f905-401a-97f2-345d4b25170a",
+            "Count": 2
+          },
+          {
+            "Id": "ea38d25f-d887-4bdf-b17b-8e8e649b9a87",
+            "Count": 12
+          },
+          {
+            "Id": "a1d97ad4-c1d9-4807-b619-ca3710cc5a8d",
+            "Count": 0
+          },
+          {
+            "Id": "3465eba1-608c-47d7-9cb6-ef4c7a55a2dd",
+            "Count": 4
+          },
+          {
+            "Id": "780104cb-5b86-4ed9-8fb1-40b919de0766",
+            "Count": 0
+          },
+          {
+            "Id": "a5a0d0d5-5c9f-4888-b42a-2c87f8e58336",
+            "Count": 0
+          },
+          {
+            "Id": "71ce2293-23bb-492f-a8c0-46e095b55eb7",
+            "Count": 0
+          }
+        ],
+        "MedalTimelapses": [],
+        "ImpulseTimelapses": [
+          {
+            "Id": "f1c317ee-1ac4-4089-85e8-a9c536c6cf18",
+            "Timelapse": "PT3M38.7223991S"
+          }
+        ]
+      },
+      "CreditsEarned": {
+        "Result": 2,
+        "TotalCreditsEarned": 513,
+        "SpartanRankModifier": 1.0,
+        "PlayerRankAmount": 225,
+        "TimePlayedAmount": 287.1474891244967,
+        "BoostAmount": 0
+      },
+      "MetaCommendationDeltas": [],
+      "ProgressiveCommendationDeltas": [
+        {
+          "Id": "20dc7d74-be8f-4a60-ae4f-15230855cced",
+          "PreviousProgress": 1152,
+          "Progress": 1156
+        },
+        {
+          "Id": "f33f1aec-59ad-47eb-be13-fd0e654a53aa",
+          "PreviousProgress": 165,
+          "Progress": 169
+        },
+        {
+          "Id": "07653860-9949-4a12-b341-90c8b9653165",
+          "PreviousProgress": 370,
+          "Progress": 374
+        },
+        {
+          "Id": "e1203a73-2067-4479-9a47-2abccb0069ae",
+          "PreviousProgress": 125,
+          "Progress": 126
+        }
+      ],
+      "Player": {
+        "Gamertag": "lxlZABUZAlxl",
+        "Xuid": null
+      },
+      "TeamId": 0,
+      "Rank": 8,
+      "DNF": false,
+      "AvgLifeTimeOfPlayer": "PT15.8950982S",
+      "PreMatchRatings": null,
+      "PostMatchRatings": null,
+      "TotalKills": 4,
+      "TotalHeadshots": 4,
+      "TotalWeaponDamage": 250.00000762939453,
+      "TotalShotsFired": 24,
+      "TotalShotsLanded": 11,
+      "WeaponWithMostKills": {
+        "WeaponId": {
+          "StockId": 4096745987,
+          "Attachments": []
+        },
+        "TotalShotsFired": 24,
+        "TotalShotsLanded": 11,
+        "TotalHeadshots": 4,
+        "TotalKills": 4,
+        "TotalDamageDealt": 250.00000762939453,
+        "TotalPossessionTime": "PT3M10.25S"
+      },
+      "TotalMeleeKills": 0,
+      "TotalMeleeDamage": 0.0,
+      "TotalAssassinations": 0,
+      "TotalGroundPoundKills": 0,
+      "TotalGroundPoundDamage": 0.0,
+      "TotalShoulderBashKills": 0,
+      "TotalShoulderBashDamage": 0.0,
+      "TotalGrenadeDamage": 0.0,
+      "TotalPowerWeaponKills": 0,
+      "TotalPowerWeaponDamage": 0.0,
+      "TotalPowerWeaponGrabs": 0,
+      "TotalPowerWeaponPossessionTime": "PT0S",
+      "TotalDeaths": 12,
+      "TotalAssists": 2,
+      "TotalGamesCompleted": 0,
+      "TotalGamesWon": 0,
+      "TotalGamesLost": 0,
+      "TotalGamesTied": 0,
+      "TotalTimePlayed": "PT3M38.7223991S",
+      "TotalGrenadeKills": 0,
+      "MedalAwards": [
+        {
+          "MedalId": 3261908037,
+          "Count": 4
+        },
+        {
+          "MedalId": 2078758684,
+          "Count": 1
+        },
+        {
+          "MedalId": 2782465081,
+          "Count": 1
+        }
+      ],
+      "DestroyedEnemyVehicles": [],
+      "EnemyKills": [],
+      "WeaponStats": [
+        {
+          "WeaponId": {
+            "StockId": 4096745987,
+            "Attachments": []
+          },
+          "TotalShotsFired": 24,
+          "TotalShotsLanded": 11,
+          "TotalHeadshots": 4,
+          "TotalKills": 4,
+          "TotalDamageDealt": 250.00000762939453,
+          "TotalPossessionTime": "PT3M10.25S"
+        }
+      ],
+      "Impulses": [],
+      "TotalSpartanKills": 4
+    }
+  ],
+  "TeamStats": [
+    {
+      "TeamId": 0,
+      "Score": 49,
+      "Rank": 2,
+      "RoundStats": [
+        {
+          "RoundNumber": 1,
+          "Rank": 2,
+          "Score": 49
+        }
+      ]
+    },
+    {
+      "TeamId": 1,
+      "Score": 50,
+      "Rank": 1,
+      "RoundStats": [
+        {
+          "RoundNumber": 1,
+          "Rank": 1,
+          "Score": 50
+        }
+      ]
+    }
+  ],
+  "IsMatchOver": true,
+  "TotalDuration": "PT3M38.7341149S",
+  "MapVariantId": "f5411fcf-49a3-4496-b1cc-2a388b8fc3df",
+  "GameVariantId": "6ee3a5ec-4024-40b9-b0ce-7397a936791f",
+  "PlaylistId": "f27a65eb-2d11-4965-aa9c-daa088fa5c9c",
+  "MapId": "cdee4e70-f206-11e4-87a2-24be05e24f7e",
+  "GameBaseVariantId": "257a305e-4dd3-41f1-9824-dfe7e8bd59e1",
+  "IsTeamGame": true,
+  "SeasonId": "2041d318-dd22-47c2-a487-2818ecf14e41"
+}

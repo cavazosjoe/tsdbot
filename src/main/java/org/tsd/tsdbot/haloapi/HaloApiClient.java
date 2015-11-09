@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.haloapi.model.metadata.HaloMeta;
 import org.tsd.tsdbot.haloapi.model.metadata.Metadata;
+import org.tsd.tsdbot.haloapi.model.stats.warzone.WarzoneMatch;
 
 import java.lang.reflect.Array;
 
@@ -33,6 +34,10 @@ public class HaloApiClient {
                          @Named("haloApiKey") String apiKey) {
         this.apiKey = apiKey;
         this.httpClient = httpClient;
+    }
+
+    public WarzoneMatch getWarzoneMatch(String id) throws Exception {
+        return sendRequest(String.format(warzoneCarnageEndpoint, id), WarzoneMatch.class);
     }
 
     public <T extends Metadata> T[] getMetadataCollection(Class<T> metadataClass) throws Exception {
@@ -83,6 +88,8 @@ public class HaloApiClient {
 
     private static final String metadataListTarget = "https://www.haloapi.com/metadata/h5/metadata/%s";
     private static final String metadataSingleTarget = "https://www.haloapi.com/metadata/h5/metadata/%s/%s";
+
+    private static final String warzoneCarnageEndpoint = "https://www.haloapi.com/stats/h5/warzone/matches/%s";
 
     static class ApiError {
         int statusCode;

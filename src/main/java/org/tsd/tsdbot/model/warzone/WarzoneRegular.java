@@ -1,8 +1,6 @@
 package org.tsd.tsdbot.model.warzone;
 
-import com.j256.ormlite.dao.ForeignCollection;
 import com.j256.ormlite.field.DatabaseField;
-import com.j256.ormlite.field.ForeignCollectionField;
 import com.j256.ormlite.table.DatabaseTable;
 
 /**
@@ -16,9 +14,6 @@ public class WarzoneRegular {
 
     @DatabaseField
     private String forumHandle;
-
-    @ForeignCollectionField(foreignFieldName = "regular")
-    private ForeignCollection<WarzoneGamePlayer> games;
 
     public String getGamertag() {
         return gamertag;
@@ -52,11 +47,4 @@ public class WarzoneRegular {
         return gamertag != null ? gamertag.hashCode() : 0;
     }
 
-    public ForeignCollection<WarzoneGamePlayer> getGames() {
-        return games;
-    }
-
-    public void setGames(ForeignCollection<WarzoneGamePlayer> games) {
-        this.games = games;
-    }
 }

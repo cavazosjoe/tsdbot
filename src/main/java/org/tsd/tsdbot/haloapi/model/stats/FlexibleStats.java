@@ -19,4 +19,19 @@ public class FlexibleStats {
     // The set of flexible stats that are derived from impulse time lapses.
     List<Timelapse> ImpulseTimelapses;
 
+    public List<Count> getMedalStatCounts() {
+        return MedalStatCounts;
+    }
+
+    public List<Count> getImpulseStatCounts() {
+        return ImpulseStatCounts;
+    }
+
+    public List<Timelapse> getMedalTimelapses() {
+        return MedalTimelapses;
+    }
+
+    public List<Timelapse> getImpulseTimelapses() {
+        return ImpulseTimelapses;
+    }
 }

@@ -6,6 +6,6 @@ public class Enemy {
     long BaseId;
 
     // The attachments (variants) for the enemy.
-    int[] Attachments;
+    long[] Attachments;
 
 }

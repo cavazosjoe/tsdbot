@@ -47,8 +47,8 @@ public class ApiTest {
     public void testCustomServiceRecord(HttpClient client, HttpGet get) throws Exception {
         get.setURI(new URI(String.format(customServiceRecordEndpoint, "Schooly%20D")));
         HttpResponse response = client.execute(get);
-        CustomServiceRecordSearch search =
-                objectMapper.readValue(EntityUtils.toByteArray(response.getEntity()), CustomServiceRecordSearch.class);
+        String responseString = EntityUtils.toString(response.getEntity());
+        CustomServiceRecordSearch search = objectMapper.readValue(responseString, CustomServiceRecordSearch.class);
         assertNotNull(search);
         assertEquals("Schooly D", search.getResults().get(0).getId());
     }
@@ -57,8 +57,8 @@ public class ApiTest {
     public void testWarzoneServiceRecord(HttpClient client, HttpGet get) throws Exception {
         get.setURI(new URI(String.format(warzoneServiceRecordEndpoint, "Schooly%20D")));
         HttpResponse response = client.execute(get);
-        WarzoneServiceRecordSearch search =
-                objectMapper.readValue(EntityUtils.toByteArray(response.getEntity()), WarzoneServiceRecordSearch.class);
+        String responseString = EntityUtils.toString(response.getEntity());
+        WarzoneServiceRecordSearch search = objectMapper.readValue(responseString, WarzoneServiceRecordSearch.class);
         assertNotNull(search);
         assertEquals(1, search.getResults().size());
         assertEquals("Schooly D", search.getResults().get(0).getId());
@@ -68,7 +68,8 @@ public class ApiTest {
     public void testArenaServiceRecord(HttpClient client, HttpGet get) throws Exception {
         get.setURI(new URI(String.format(arenaServiceRecordEndpoint, "Schooly%20D")));
         HttpResponse response = client.execute(get);
-        ArenaServiceRecordSearch search = objectMapper.readValue(EntityUtils.toByteArray(response.getEntity()), ArenaServiceRecordSearch.class);
+        String responseString = EntityUtils.toString(response.getEntity());
+        ArenaServiceRecordSearch search = objectMapper.readValue(responseString, ArenaServiceRecordSearch.class);
         assertNotNull(search);
         assertEquals(1, search.getResults().size());
         assertEquals("Schooly D", search.getResults().get(0).getId());
@@ -76,9 +77,11 @@ public class ApiTest {
 
     @Test
     public void testWarzoneCarnageReport(HttpClient client, HttpGet get) throws Exception {
-        get.setURI(new URI(String.format(warzoneCarnageEndpoint, "ee2db08e-1c71-4a78-9155-899dae2bec81")));
+//        get.setURI(new URI(String.format(warzoneCarnageEndpoint, "ee2db08e-1c71-4a78-9155-899dae2bec81")));
+        get.setURI(new URI(String.format(warzoneCarnageEndpoint, "a9f007cd-8c79-48f6-bdf9-23549d818808")));
         HttpResponse response = client.execute(get);
-        WarzoneMatch match = objectMapper.readValue(EntityUtils.toByteArray(response.getEntity()), WarzoneMatch.class);
+        String responseString = EntityUtils.toString(response.getEntity());
+        WarzoneMatch match = objectMapper.readValue(responseString, WarzoneMatch.class);
         assertNotNull(match);
         assertEquals(25, match.getPlayerStats().size());
         assertEquals(2, match.getTeamStats().size());
@@ -90,7 +93,8 @@ public class ApiTest {
     public void testArenaCarnageReport(HttpClient client, HttpGet get) throws Exception {
         get.setURI(new URI(String.format(arenaCarnageEndpoint, "48502809-f796-4213-927c-2690a27d9fd3")));
         HttpResponse response = client.execute(get);
-        ArenaMatch match = objectMapper.readValue(EntityUtils.toByteArray(response.getEntity()), ArenaMatch.class);
+        String responseString = EntityUtils.toString(response.getEntity());
+        ArenaMatch match = objectMapper.readValue(responseString, ArenaMatch.class);
         assertNotNull(match);
         assertEquals(8, match.getPlayerStats().size());
         assertEquals(2, match.getTeamStats().size());

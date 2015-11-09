@@ -35,4 +35,39 @@ public class XpInfo {
     // multiplier.
     int BoostAmount;
 
+    public int getPrevSpartanRank() {
+        return PrevSpartanRank;
+    }
+
+    public int getSpartanRank() {
+        return SpartanRank;
+    }
+
+    public int getPrevTotalXP() {
+        return PrevTotalXP;
+    }
+
+    public int getTotalXP() {
+        return TotalXP;
+    }
+
+    public double getSpartanRankMatchXPScalar() {
+        return SpartanRankMatchXPScalar;
+    }
+
+    public int getPlayerTimePerformanceXPAward() {
+        return PlayerTimePerformanceXPAward;
+    }
+
+    public int getPerformanceXP() {
+        return PerformanceXP;
+    }
+
+    public int getPlayerRankXPAward() {
+        return PlayerRankXPAward;
+    }
+
+    public int getBoostAmount() {
+        return BoostAmount;
+    }
 }

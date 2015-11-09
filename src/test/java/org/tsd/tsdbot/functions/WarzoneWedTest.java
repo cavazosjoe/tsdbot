@@ -70,7 +70,7 @@ public class WarzoneWedTest {
     public void testProcessGames(JdbcConnectionSource connectionSource,
                                  WarzoneWed warzoneFunction) throws Exception {
 
-        warzoneFunction.processGames(connectionSource, ".ww " + testGames[0]);
+//        warzoneFunction.processGames(connectionSource, ".ww " + testGames[0]);
 
     }
 

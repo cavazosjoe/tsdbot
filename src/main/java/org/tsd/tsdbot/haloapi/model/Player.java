@@ -8,4 +8,11 @@ public class Player {
     // Internal use only. This will always be null.
     Object Xuid;
 
+    public String getGamertag() {
+        return Gamertag;
+    }
+
+    public Object getXuid() {
+        return Xuid;
+    }
 }

@@ -10,4 +10,11 @@ public class WarzonePlayerStat extends PlayerStat {
     // The total number of "pies" (in-game currency) the player earned in the match.
     int TotalPiesEarned;
 
+    public int getWarzoneLevel() {
+        return WarzoneLevel;
+    }
+
+    public int getTotalPiesEarned() {
+        return TotalPiesEarned;
+    }
 }
