@@ -6,6 +6,7 @@ import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.tsd.tsdbot.haloapi.model.stats.TeamStat;
 import org.tsd.tsdbot.haloapi.model.stats.warzone.WarzoneMatch;
 
 import java.util.Arrays;
@@ -29,16 +30,16 @@ public class RecapGeneratorTest {
         );
 
         Set<String> regulars = new HashSet<>(Arrays.asList("Schooly D"));
-        int team = recapGenerator.identifyTeamByRegulars(match, regulars);
-        assertEquals(0, team);
+        TeamStat team = recapGenerator.identifyTeamByRegulars(match, regulars);
+        assertEquals(0, team.getTeamId());
 
         regulars = new HashSet<>(Arrays.asList("Schooly D", "tarehart", "Panda Owning Em"));
         team = recapGenerator.identifyTeamByRegulars(match, regulars);
-        assertEquals(0, team);
+        assertEquals(0, team.getTeamId());
 
         regulars = new HashSet<>(Arrays.asList("imperatorpat", "Wameedooo", "Im RubberDuck"));
         team = recapGenerator.identifyTeamByRegulars(match, regulars);
-        assertEquals(1, team);
+        assertEquals(1, team.getTeamId());
     }
 
     public static class Module extends JukitoModule {
