@@ -97,6 +97,8 @@ google:
   clientId: "0123456789abcdef"
   refreshToken: "0123456789abcdef"
   appId: "tsdbot-irc"
+  apiKey: "0123456"
+  gisCx: "789" # identifier of Custom Search Engine used for image searches
 
 jetty:
   hostname: localhost

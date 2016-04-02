@@ -22,6 +22,7 @@ import org.quartz.spi.JobFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.*;
+import org.tsd.tsdbot.config.GoogleConfig;
 import org.tsd.tsdbot.config.TSDBotConfiguration;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.DBConnectionString;
@@ -47,9 +48,6 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/**
- * Created by Joe on 9/19/2014.
- */
 public class TSDBotModule extends AbstractModule {
 
     Logger log = LoggerFactory.getLogger(TSDBotModule.class);
@@ -160,6 +158,9 @@ public class TSDBotModule extends AbstractModule {
         log.info("Binding printout library...");
         bind(PrintoutLibrary.class).asEagerSingleton();
 
+        log.info("Binding recap library...");
+        bind(RecapLibrary.class).asEagerSingleton();
+
         log.info("Binding history buff...");
         bind(HistoryBuff.class).asEagerSingleton();
 
@@ -267,19 +268,19 @@ public class TSDBotModule extends AbstractModule {
         bind(TSDTVFileProcessor.class).asEagerSingleton();
 
         log.info("Binding google credentials...");
-        GoogleAuthHolder googleAuthHolder = new GoogleAuthHolder(configuration.google);
+        bind(GoogleConfig.class).toInstance(configuration.google);
         GoogleCredential googleCredential = new GoogleCredential.Builder()
                 .setTransport(new NetHttpTransport())
                 .setJsonFactory(new JacksonFactory())
-                .setClientSecrets(googleAuthHolder.getClientId(), googleAuthHolder.getClientSecret()).build();
-        googleCredential.setRefreshToken(googleAuthHolder.getRefreshToken());
+                .setClientSecrets(configuration.google.clientId, configuration.google.clientSecret).build();
+        googleCredential.setRefreshToken(configuration.google.refreshToken);
 
         log.info("Binding youtube client...");
         YouTube youTube = new YouTube.Builder(
                 googleCredential.getTransport(),
                 googleCredential.getJsonFactory(),
                 googleCredential)
-                .setApplicationName(googleAuthHolder.getAppId())
+                .setApplicationName(configuration.google.appId)
                 .build();
 
         bind(YouTube.class).toInstance(youTube);
@@ -290,5 +291,7 @@ public class TSDBotModule extends AbstractModule {
         log.info("TSDBotModule.configure() successful");
 
     }
+
+
 
 }

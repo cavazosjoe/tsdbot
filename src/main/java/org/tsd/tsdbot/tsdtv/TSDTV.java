@@ -40,9 +40,6 @@ import static org.quartz.TriggerBuilder.newTrigger;
 import static org.tsd.tsdbot.util.IRCUtil.IRCColor;
 import static org.tsd.tsdbot.util.IRCUtil.color;
 
-/**
- * Created by Joe on 3/9/14.
- */
 @Singleton
 public class TSDTV implements Persistable {
 
@@ -80,6 +77,7 @@ public class TSDTV implements Persistable {
                  @Named("serverUrl") String serverUrl,
                  @Named("ffmpegExec") String ffmpegExec,
                  @Named("tsdtvDirect") String tsdtvDirect) throws SQLException {
+        logger.info("Constructing TSDTV... numShows = {}", library.getAllShows().size());
         this.bot = bot;
         this.processor = fileProcessor;
         this.library = library;

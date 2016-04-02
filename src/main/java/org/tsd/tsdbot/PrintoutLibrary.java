@@ -6,9 +6,6 @@ import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.LinkedList;
 
-/**
- * Created by Joe on 2/6/2015.
- */
 @Singleton
 public class PrintoutLibrary {
 

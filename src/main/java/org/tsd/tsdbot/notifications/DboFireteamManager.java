@@ -24,9 +24,6 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Created by Joe on 2/20/2015.
- */
 @Singleton
 public class DboFireteamManager extends NotificationManager<DboFireteamManager.DboftNotification> {
 

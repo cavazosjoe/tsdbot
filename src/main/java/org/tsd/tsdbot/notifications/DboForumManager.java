@@ -24,9 +24,6 @@ import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Created by Joe on 2/18/14.
- */
 @Singleton
 public class DboForumManager extends NotificationManager<DboForumManager.DboForumPost> {
 

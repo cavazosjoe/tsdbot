@@ -8,4 +8,5 @@ src/main/resources/tsdbot.yml
 dist/
 target/
 src/org/tsd/tsdbot/deploy/
+src/test/resources/test.properties
 

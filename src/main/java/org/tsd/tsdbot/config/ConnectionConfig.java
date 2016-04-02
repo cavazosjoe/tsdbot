@@ -6,9 +6,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Created by Joe on 9/3/2015.
- */
 public class ConnectionConfig {
 
     public String ident;

@@ -27,9 +27,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Random;
 
-/**
- * Created by Joe on 5/24/14.
- */
 @Singleton
 @Function(initialRegex = "^\\.tw.*")
 public class Twitter extends MainFunctionImpl {

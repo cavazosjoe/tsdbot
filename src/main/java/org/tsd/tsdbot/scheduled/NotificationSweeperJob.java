@@ -14,9 +14,6 @@ import org.tsd.tsdbot.notifications.NotificationManager;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Created by Joe on 9/20/2014.
- */
 public class NotificationSweeperJob implements Job {
 
     private static final Logger logger = LoggerFactory.getLogger(NotificationSweeperJob.class);

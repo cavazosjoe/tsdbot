@@ -19,9 +19,6 @@ import java.util.Random;
 import static org.tsd.tsdbot.util.IRCUtil.IRCColor;
 import static org.tsd.tsdbot.util.IRCUtil.color;
 
-/**
- * Created by Joe on 1/12/2015.
- */
 @Singleton
 @Function(initialRegex = "^\\.tsdtv.*")
 public class TSDTVFunction extends MainFunctionImpl {

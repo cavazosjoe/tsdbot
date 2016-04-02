@@ -14,20 +14,15 @@ import org.tsd.tsdbot.util.IRCUtil;
 import org.tsd.tsdbot.util.RelativeDate;
 import twitter4j.*;
 import twitter4j.auth.AccessToken;
-import twitter4j.conf.ConfigurationBuilder;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Created by Joe on 2/20/14.
- */
 @Singleton
 public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
 
@@ -39,7 +34,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
 
     private Stage stage;
     private Twitter twitter;
-    private TwitterStream stream;
+//    private TwitterStream stream;
     private HashMap<Long, User> following;
     private HashMap<Long, Long> cooldown; // userId -> timestamp of last tweet
     private List<String> channels;
@@ -74,94 +69,6 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
             for(Long id : followingIds) {
                 following.put(id, twitter.showUser(id));
                 cooldown.put(id, 0L);
-            }
-
-            if(stage.equals(Stage.production)) { // disable streaming if in dev mode
-
-                final DelayQueue<DelayedImpl> throttle = new DelayQueue<>();
-                throttle.put(new DelayedImpl(EXCEPTION_COOLDOWN)); // delay for two minutes
-
-                ConfigurationBuilder cb = new ConfigurationBuilder()
-                        .setOAuthConsumerKey(CONSUMER_KEY)
-                        .setOAuthConsumerSecret(CONSUMER_KEY_SECRET)
-                        .setOAuthAccessToken(ACCESS_TOKEN)
-                        .setOAuthAccessTokenSecret(ACCESS_TOKEN_SECRET);
-
-                stream = new TwitterStreamFactory(cb.build()).getInstance();
-                stream.addListener(new StatusListener() {
-                    @Override
-                    public void onStatus(Status status) {
-
-                        // don't display our tweets
-                        if(status.getUser().getId() == USER_ID) return;
-
-                        // don't display tweets from people we don't follow
-                        if(!following.containsKey(status.getUser().getId())) return;
-
-                        // don't display replies to tweets from people we don't follow
-                        if(status.getText() != null && status.getText().startsWith("@")) {
-                            boolean foundUser = false;
-                            String replyTo = status.getText().split("\\s+")[0]; // @DARKSNIPER99
-                            if(replyTo.length() > 1) {
-                                replyTo = replyTo.substring(1); // DARKSNIPER99
-                                for(User u : following.values()) {
-                                    if(u.getScreenName().equals(replyTo)) {
-                                        foundUser = true;
-                                        break;
-                                    }
-                                }
-
-                            }
-                            if(!foundUser) return; // we're not following whomever this is a reply to
-                        }
-
-                        // don't display the tweet if the tweeter has tweeted < 2 hours ago
-                        if(cooldown.containsKey(status.getUser().getId())) {
-                            if (System.currentTimeMillis() - cooldown.get(status.getUser().getId()) < COOLDOWN_PERIOD)
-                                return;
-                            else cooldown.put(status.getUser().getId(), System.currentTimeMillis());
-                        }
-
-                        Tweet newTweet = new Tweet(status);
-                        recentNotifications.addFirst(newTweet);
-                        trimHistory();
-
-                        for(String channel : channels)
-                            bot.sendMessage(channel, newTweet.getInline());
-
-                        logger.info("Successfully logged tweet");
-                    }
-
-                    @Override
-                    public void onDeletionNotice(StatusDeletionNotice statusDeletionNotice) {}
-
-                    @Override
-                    public void onTrackLimitationNotice(int i) {}
-
-                    @Override
-                    public void onScrubGeo(long l, long l2) {}
-
-                    @Override
-                    public void onStallWarning(StallWarning stallWarning) {}
-
-                    @Override
-                    public void onException(Exception e) {
-                        logger.error("Twitter Stream ERROR", e);
-                        bot.incrementBlunderCnt();
-                        try {
-                            throttle.take();
-                            throttle.put(new DelayedImpl(EXCEPTION_COOLDOWN));
-                        } catch (InterruptedException e1) {
-                            e1.printStackTrace();
-                        }
-                    }
-                });
-
-                FilterQuery fq = new FilterQuery(ArrayUtils.toPrimitive(following.keySet().toArray(new Long[]{})));
-                stream.filter(fq);
-
-                logger.info("Twitter Streaming API initialized successfully");
-
             }
 
         } catch (TwitterException e) {
@@ -303,8 +210,8 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     }
 
     private void refreshFollowersFilter() throws TwitterException {
-        if(stage.equals(Stage.production))
-            stream.filter(new FilterQuery(ArrayUtils.toPrimitive(following.keySet().toArray(new Long[]{}))));
+//        if(stage.equals(Stage.production))
+//            stream.filter(new FilterQuery(ArrayUtils.toPrimitive(following.keySet().toArray(new Long[]{}))));
     }
 
     @Override

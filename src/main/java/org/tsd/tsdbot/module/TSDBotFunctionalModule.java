@@ -12,9 +12,6 @@ import org.tsd.tsdbot.stats.HustleStats;
 import org.tsd.tsdbot.stats.Stats;
 import org.tsd.tsdbot.stats.SystemStats;
 
-/**
- * Created by Joe on 3/28/2015.
- */
 public class TSDBotFunctionalModule extends AbstractModule {
 
     private static Logger log = LoggerFactory.getLogger(TSDBotFunctionalModule.class);

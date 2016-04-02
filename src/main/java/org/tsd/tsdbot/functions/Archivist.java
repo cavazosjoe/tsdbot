@@ -5,6 +5,7 @@ import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.RecapLibrary;
 import org.tsd.tsdbot.config.TSDBotConfiguration;
 import org.tsd.tsdbot.module.AllChannels;
 import org.tsd.tsdbot.module.Function;
@@ -16,9 +17,6 @@ import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-/**
- * Created by Joe on 6/4/14.
- */
 @Singleton
 @Function(initialRegex = "^\\.catchup.*")
 public class Archivist /*Exedol*/ extends MainFunctionImpl {
@@ -34,12 +32,16 @@ public class Archivist /*Exedol*/ extends MainFunctionImpl {
     private static final long fiveMinutes = 1000 * 60 * 5;
 
     private static String archiveDir = null;
-    private static String recapDir = null;
+
+    private final RecapLibrary recapLibrary;
 
     private HashMap<String, PrintWriter> writerMap = new HashMap<>();
 
     @Inject
-    public Archivist(Bot bot, TSDBotConfiguration config, @AllChannels List channels) throws IOException {
+    public Archivist(Bot bot,
+                     TSDBotConfiguration config,
+                     RecapLibrary recapLibrary,
+                     @AllChannels List channels) throws IOException {
 
         super(bot);
 
@@ -48,7 +50,7 @@ public class Archivist /*Exedol*/ extends MainFunctionImpl {
 
         stdSdf.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
 
-        recapDir = config.archivist.recaps;
+        this.recapLibrary = recapLibrary;
         archiveDir = config.archivist.logs;
         File logDirF = new File(archiveDir);
         if(!logDirF.exists()) {
@@ -118,55 +120,65 @@ public class Archivist /*Exedol*/ extends MainFunctionImpl {
                 while( (line = br.readLine()) != null ) {
 
                     EventType lineEvent = EventType.getFromRaw(line);
-
-                    if(lineEvent.equals(EventType.JOIN)) {
-                        // someone joined, analyze to see if it's our guy
-                        String[] parts = line.split("\\s");
-                        if(ident.equals(parts[3])) {
-                            // it's a match, save buffer if it's not empty, otherwise save past five minutes
-                            if(captureBuffer.isEmpty()) {
-                                capturedText = new LinkedList<>();
-                                capturedText.add("--- YOU JOINED WITHOUT LEAVING FIRST: DISPLAYING FIVE MINUTES OF " +
-                                        "CHAT PRIOR TO YOUR LAST JOIN ---");
-                                for(Long key : pastFiveMinutes.keySet()) {
-                                    capturedText.addAll(pastFiveMinutes.get(key));
+                    if(lineEvent != null) {
+                        switch(lineEvent) {
+                            case JOIN: {
+                                // someone joined, analyze to see if it's our guy
+                                String[] parts = line.split("\\s");
+                                if (ident.equals(parts[3])) {
+                                    // it's a match, save buffer if it's not empty, otherwise save past five minutes
+                                    if (captureBuffer.isEmpty()) {
+                                        capturedText = new LinkedList<>();
+                                        capturedText.add("--- YOU JOINED WITHOUT LEAVING FIRST: DISPLAYING FIVE MINUTES OF " +
+                                                "CHAT PRIOR TO YOUR LAST JOIN ---");
+                                        for (Long key : pastFiveMinutes.keySet()) {
+                                            capturedText.addAll(pastFiveMinutes.get(key));
+                                        }
+                                    } else {
+                                        captureBuffer.addLast(line);
+                                        capturedText = (LinkedList<String>) captureBuffer.clone();
+                                    }
+                                    captureBuffer.clear(); // clear the buffer when we detect the person joined
+                                    recording = false;
                                 }
-                            } else {
-                                captureBuffer.addLast(line);
-                                capturedText = (LinkedList<String>) captureBuffer.clone();
+                                break;
                             }
-                            captureBuffer.clear(); // clear the buffer when we detect the person joined
-                            recording = false;
-                        }
-                    } else if(lineEvent.equals(EventType.PART) || lineEvent.equals(EventType.QUIT)) {
-                        // someone left, analyze to see if it's our guy
-                        String[] parts = line.split("\\s");
-                        if(ident.equals(parts[3])) {
-                            // it's a match, if we're not recording, start
-                            // if we are recording, dump what's been captured -- the guy was here to see it anyway
-                            if(recording) {
-                                captureBuffer.clear();
-                                capturedText.clear();
+                            case PART:
+                            case QUIT: {
+                                // someone left, analyze to see if it's our guy
+                                String[] parts = line.split("\\s");
+                                if (ident.equals(parts[3])) {
+                                    // it's a match, if we're not recording, start
+                                    // if we are recording, dump what's been captured -- the guy was here to see it anyway
+                                    if (recording) {
+                                        captureBuffer.clear();
+                                        capturedText.clear();
+                                    }
+                                    recording = true;
+                                }
+                                break;
                             }
-                            recording = true;
                         }
-                    }
 
-                    if(recording) {
-                        captureBuffer.addLast(line);
-                    }
+                        if (recording) {
+                            captureBuffer.addLast(line);
+                        }
 
-                    // get the message's time
-                    Long now = Long.parseLong(line.split("\\s")[1]);
-                    if(pastFiveMinutes.containsKey(now)) {
-                        pastFiveMinutes.get(now).addLast(lineEvent.getPrettyFormatted(line));
-                    } else {
-                        LinkedList<String> m = new LinkedList<>();
-                        m.add(lineEvent.getPrettyFormatted(line));
-                        pastFiveMinutes.put(now, m);
-                    }
+                        // get the message's time
+                        Long now = Long.parseLong(line.split("\\s")[1]);
+                        if (pastFiveMinutes.containsKey(now)) {
+//                            pastFiveMinutes.get(now).addLast(lineEvent.getPrettyFormatted(line));
+                            pastFiveMinutes.get(now).addLast(line);
+                        } else {
+                            LinkedList<String> m = new LinkedList<>();
+//                            m.add(lineEvent.getPrettyFormatted(line));
+                            m.add(line);
+                            pastFiveMinutes.put(now, m);
+                        }
 
-                    pastFiveMinutes = trimFiveMinuteBuffer(pastFiveMinutes, now);
+                        pastFiveMinutes = trimFiveMinuteBuffer(pastFiveMinutes, now);
+
+                    }
 
                 }
 
@@ -175,14 +187,24 @@ public class Archivist /*Exedol*/ extends MainFunctionImpl {
                 if(capturedText.isEmpty()) {
                     for(Long key : pastFiveMinutes.keySet()) {
                         for(String s : pastFiveMinutes.get(key)) {
-                            log.info("-5MIN RECAP || " + s);
-                            output.append(EventType.getFromRaw(s).getPrettyFormatted(s)).append(IRCUtil.LINE_SEPARATOR);
+                            EventType eventType = EventType.getFromRaw(s);
+                            if(eventType != null) {
+                                log.info("-5MIN RECAP || " + s);
+                                output.append(eventType.getPrettyFormatted(s)).append(IRCUtil.LINE_SEPARATOR);
+                            } else {
+                                log.warn("Null EventType from raw: {}", s);
+                            }
                         }
                     }
                 } else {
                     for(String s : capturedText) {
-                        log.info("RECAP || " + s);
-                        output.append(EventType.getFromRaw(s).getPrettyFormatted(s)).append(IRCUtil.LINE_SEPARATOR);
+                        EventType eventType = EventType.getFromRaw(s);
+                        if(eventType != null) {
+                            log.info("RECAP || " + s);
+                            output.append(eventType.getPrettyFormatted(s)).append(IRCUtil.LINE_SEPARATOR);
+                        } else {
+                            log.warn("Null EventType from raw: {}", s);
+                        }
                     }
                 }
 
@@ -190,13 +212,9 @@ public class Archivist /*Exedol*/ extends MainFunctionImpl {
                     if(capturedText.isEmpty())
                         bot.sendMessage(channel, "I don't think you've missed anything. I'll recap the last five minutes");
 
-                    String fileName = MiscUtils.getRandomString() + ".txt";
-                    File recapFile = new File(recapDir + fileName);
-                    try(BufferedWriter writer = new BufferedWriter(new FileWriter(recapFile))) {
-                        writer.write(output.toString());
-                        writer.flush();
-                        bot.sendMessage(channel, "http://irc.teamschoolyd.org/recaps/" + fileName);
-                    }
+                    String recapId = MiscUtils.getRandomString();
+                    recapLibrary.addRecap(recapId, output.toString());
+                    bot.sendMessage(channel, "http://irc.teamschoolyd.org/recaps/" + recapId);
                 }
 
             } catch (Exception e) {
@@ -225,16 +243,18 @@ public class Archivist /*Exedol*/ extends MainFunctionImpl {
 
                     StringBuilder output = new StringBuilder();
                     for(String s : catchup) {
-                        output.append(EventType.getFromRaw(s).getPrettyFormatted(s)).append(IRCUtil.LINE_SEPARATOR);
+                        EventType eventType = EventType.getFromRaw(s);
+                        if(eventType != null) {
+                            output.append(eventType.getPrettyFormatted(s)).append(IRCUtil.LINE_SEPARATOR);
+                        } else {
+                            log.warn("Null EventType from raw: {}", s);
+                        }
                     }
 
-                    String fileName = MiscUtils.getRandomString() + ".txt";
-                    File recapFile = new File(recapDir + fileName);
-                    try(BufferedWriter writer = new BufferedWriter(new FileWriter(recapFile))) {
-                        writer.write(output.toString());
-                        writer.flush();
-                        bot.sendMessage(channel, "Here are the chat logs from the past " + minutes + " minutes: http://irc.teamschoolyd.org/recaps/" + fileName);
-                    }
+                    String recapId = MiscUtils.getRandomString();
+                    recapLibrary.addRecap(recapId, output.toString());
+                    bot.sendMessage(channel, String.format("Here are the chat logs from the past %s minutes: " +
+                            "http://irc.teamschoolyd.org/recaps/%s", minutes, recapId));
 
                 } catch (Exception e) {
                     log.error("There was an error processing the channel archive", e);

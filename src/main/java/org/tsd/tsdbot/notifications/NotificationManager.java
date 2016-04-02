@@ -6,9 +6,6 @@ import org.tsd.tsdbot.NotificationType;
 import java.util.LinkedList;
 import java.util.List;
 
-/**
- * Created by Joe on 2/18/14.
- */
 public abstract class NotificationManager<T extends NotificationEntity> {
 
     protected Bot bot;

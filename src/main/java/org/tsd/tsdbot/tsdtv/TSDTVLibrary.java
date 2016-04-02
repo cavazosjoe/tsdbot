@@ -15,19 +15,20 @@ import javax.inject.Named;
 import java.io.File;
 import java.util.*;
 
-/**
- * Created by Joe on 2/1/2015.
- */
 @Singleton
 public class TSDTVLibrary {
 
     private static final Logger logger = LoggerFactory.getLogger(TSDTVLibrary.class);
 
-    @Inject @Named("tsdtvLibrary")
-    private File libraryDirectory;
+    private final File libraryDirectory;
+    private final Random random;
 
     @Inject
-    private Random random;
+    public TSDTVLibrary(Random random, @Named("tsdtvLibrary") File libraryDirectory) {
+        logger.info("Constructing TSDTV library in path {}...", libraryDirectory.getAbsolutePath());
+        this.random = random;
+        this.libraryDirectory = libraryDirectory;
+    }
 
     public TreeMap<TSDTVShow, TreeSet<TSDTVEpisode>> getCatalog() {
         TreeMap<TSDTVShow, TreeSet<TSDTVEpisode>> catalog = new TreeMap<>();

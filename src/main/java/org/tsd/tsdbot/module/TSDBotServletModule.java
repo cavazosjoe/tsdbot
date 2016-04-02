@@ -4,14 +4,12 @@ import com.google.inject.servlet.ServletModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.servlets.PrintoutServlet;
+import org.tsd.tsdbot.servlets.RecapServlet;
 import org.tsd.tsdbot.servlets.StatusServlet;
 import org.tsd.tsdbot.servlets.hustle.HustleChartServlet;
 import org.tsd.tsdbot.servlets.hustle.HustleServlet;
 import org.tsd.tsdbot.servlets.tsdtv.*;
 
-/**
- * Created by Joe on 1/11/2015.
- */
 public class TSDBotServletModule extends ServletModule {
 
     private static Logger log = LoggerFactory.getLogger(TSDBotServletModule.class);
@@ -51,10 +49,13 @@ public class TSDBotServletModule extends ServletModule {
 
 
         /**
-         * Printouts
+         * Printouts and recaps
          */
         bind(PrintoutServlet.class);
         serve("/printouts/*").with(PrintoutServlet.class);
+
+        bind(RecapServlet.class);
+        serve("/recaps/*").with(RecapServlet.class);
 
         /**
          * Status

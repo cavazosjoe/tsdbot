@@ -1,7 +1,6 @@
 package org.tsd.tsdbot.functions;
 
 import com.google.inject.Injector;
-import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
 import org.jibble.pircbot.User;
 import org.jukito.JukitoModule;
@@ -9,15 +8,14 @@ import org.jukito.JukitoRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.tsd.tsdbot.*;
+import org.tsd.tsdbot.config.GoogleConfig;
 
 import java.io.FileNotFoundException;
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Joe on 3/26/2015.
- */
 @RunWith(JukitoRunner.class)
 public class PrintoutTest {
 
@@ -111,6 +109,11 @@ public class PrintoutTest {
             TestBot testBot = new TestBot(channel, null);
             testBot.addChannelUser(channel, User.Priv.OP, "OpUser");
             bind(Bot.class).toInstance(testBot);
+
+            GoogleConfig googleConfig = new GoogleConfig();
+            googleConfig.gisCx = IntegTestUtils.loadProperty("gisCx");
+            googleConfig.apiKey = IntegTestUtils.loadProperty("apiKey");
+            bind(GoogleConfig.class).toInstance(googleConfig);
 
             IntegTestUtils.loadFunctions(binder(), Printout.class);
 

@@ -1,8 +1,8 @@
 connection:
   ident: tsdbot
   nick: TSDBot
-  nickservPass: cashmoneyrecords
-  server: 192.168.1.100
+  #nickservPass: cashmoneyrecords
+  server: grizzly.bearcopter.com
 
   # !! NOTE: all channels must start with a hash. And since YAML understands hashes as comments, it's
   #   best to single- or double-quote them
@@ -10,10 +10,10 @@ connection:
   # This is TSDBot's "main" channel. Certain functions are protected based on a user's privileges
   # Functions that have impact across multiple channels should use this channel to check a user's privileges
   #   when deciding whether to permit the action
-  mainChannel: "#tsdbot3"
+  mainChannel: "#bloop"
 
   # These are other channels for the bot to join
-  auxChannels: ["#tsdbot4", "#tsdbot5"]
+  auxChannels: ["#tsdbot3", "#tsdbot4"]
 
   # TSDBot sweeps notifications from different sources, and displays them in the chat
   # This setting determines which channels the different notifications go to
@@ -93,6 +93,8 @@ google:
   clientId: "72896288732-lo38bqcvda9arfur057cao8qdch0kne0.apps.googleusercontent.com"
   refreshToken: "1/5fjCF1M5k3qcmyLJL4W-5q9wJsRZ1d83EcnQpnr6Hog"
   appId: "tsdbot-irc"
+  apiKey: "AIzaSyBHJlxD8VhFHDTP3kFVe8aaSi1RPOSyQtM"
+  gisCx: "013709194438609022554:3uhvjfl5hbo" # identifier of Custom Search Engine used for image searches
 
 jetty:
   hostname: localhost

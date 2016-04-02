@@ -22,9 +22,6 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Set;
 
-/**
- * Created by Joe on 2/18/14.
- */
 public class TSDBot extends PircBot implements Bot {
 
     private static Logger logger = LoggerFactory.getLogger(TSDBot.class);
@@ -61,8 +58,9 @@ public class TSDBot extends PircBot implements Bot {
         setLogin(ident);
         setVerbose(false);
         setMessageDelay(10); //10 ms
-        connect(server);
-        if(!StringUtils.isEmpty(nickservPass))
+        connect(server, 6667);
+        logger.info("Successfully connected to " + server);
+        if(StringUtils.isNotBlank(nickservPass))
             identify(nickservPass);
     }
 

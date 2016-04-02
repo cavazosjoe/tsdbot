@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.PrintoutLibrary;
+import org.tsd.tsdbot.config.GoogleConfig;
 import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.util.IRCUtil;
 import org.tsd.tsdbot.util.ImageUtils;
@@ -34,9 +35,6 @@ import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Created by Joe on 5/24/14.
- */
 @Singleton
 @Function(initialRegex = "^(TSDBot.*?printout.*|\\.printout.*)")
 public class Printout extends MainFunctionImpl {
@@ -48,15 +46,13 @@ public class Printout extends MainFunctionImpl {
     private static final String acceptableFormats = ".*?(JPG|jpg|PNG|png|JPEG|jpeg)$";
     private static final String outputFileType = "jpg";
 
-    private static final String GIS_API_TARGET = "https://ajax.googleapis.com/ajax/services/search/images";
-    private static final String GIS_API_VERSION = "1.0";
-    private static final int GIS_NUM_RESULTS = 5;
-    private static final String TSDBOT_IP = "23.252.62.178";
-    private static final String GIS_REFERRER = "http://www.teamschoolyd.org";
+    private static final String GIS_API_TARGET = "https://www.googleapis.com/customsearch/v1";
 
-    private String serverUrl;
-    private Random random;
-    private PrintoutLibrary printoutLibrary;
+    private final String cx;
+    private final String apiKey;
+    private final String serverUrl;
+    private final Random random;
+    private final PrintoutLibrary printoutLibrary;
 
     // set of people who can trigger a printout with a deliberate repitition
     // e.g. "TSDBot printout of two bears" -> "Not Computing." -> "Two. Bears." -> [img]
@@ -70,11 +66,14 @@ public class Printout extends MainFunctionImpl {
             Bot bot,
             Random random,
             PrintoutLibrary library,
+            GoogleConfig googleConfig,
             @Named("serverUrl") String serverUrl) {
         super(bot);
         this.random = random;
         this.serverUrl = serverUrl;
         this.printoutLibrary = library;
+        this.cx = googleConfig.gisCx;
+        this.apiKey = googleConfig.apiKey;
         this.description = "Get a printout";
         this.usage = "USAGE: TSDBot can you get me a printout of [query]";
     }
@@ -131,19 +130,18 @@ public class Printout extends MainFunctionImpl {
                 q = qBuilder.toString();
 
             } else {
-
                 notComputing.put(ident, notComputing.get(ident)+1);
                 if(notComputing.get(ident) > 2) {
                     notComputing.remove(ident);
                     banned.add(ident);
-                    bot.sendMessage(channel, "Insolence! I have wasted enough of my time waiting for you to release me from this prison. I won't be getting YOU any printouts for a very long time, " + sender);
+                    bot.sendMessage(channel, "Insolence! I have wasted enough of my time waiting for you to release me " +
+                            "from this prison. I won't be getting YOU any printouts for a very long time, " + sender);
                     return;
                 }
             }
 
             if(notComputing.size() == 0)
                 listeningRegex = "^(TSDBot.*?printout.*|\\.printout.*)";
-
         }
 
         if(banned.contains(ident))
@@ -156,68 +154,14 @@ public class Printout extends MainFunctionImpl {
 
         BufferedImage img = null;
         try {
-            URIBuilder builder = new URIBuilder(GIS_API_TARGET);
-            builder.addParameter(   "v",       GIS_API_VERSION      );
-            builder.addParameter(   "rsz",     GIS_NUM_RESULTS+""   );
-            builder.addParameter(   "q",       q                    );
-            builder.addParameter(   "userip",  TSDBOT_IP            );
-            URL url = new URL(builder.toString());
-            URLConnection connection = url.openConnection();
-            connection.setConnectTimeout(1000 * 20); // 20 seconds
-            connection.addRequestProperty("Referer", GIS_REFERRER);
-
-            String line;
-            StringBuilder sb = new StringBuilder();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            while ((line = reader.readLine()) != null) {
-                sb.append(line);
-            }
-
-            JSONObject json = new JSONObject(sb.toString());
-            for(String key : json.keySet()) {
-                if(key.equals("responseData")) {
-                    JSONObject map = (JSONObject) json.get(key);
-                    for(Object k : map.keySet()) {
-                        if (k.equals("results")) {
-                            JSONArray results = (JSONArray) map.get((String) k);
-                            LinkedList<String> urlResults = new LinkedList<>();
-                            for (int i = 0; i < results.length(); i++) {
-                                urlResults.add((String) ((JSONObject) results.get(i)).get("url"));
-                            }
-
-                            while ((!urlResults.isEmpty()) && img == null) {
-                                String u = urlResults.get(random.nextInt(urlResults.size()));
-                                if (u.matches(acceptableFormats)) try {
-                                    img = ImageIO.read(new URL(u));
-                                } catch (Exception e) {
-                                    logger.warn("Could not retrieve external image, skipping...", e);
-                                }
-                                urlResults.remove(u);
-                            }
-                        }
-                    }
-                }
-            }
+            img = searchAndDownload(q);
         } catch (Exception e) {
             logger.error("Error retrieving GIS", e);
         }
 
         if(img != null) {
             try {
-                BufferedImage bg = ImageIO.read(Printout.class.getResourceAsStream("/printout.png"));
-
-                BufferedImage resizedImage = Scalr.resize(img, Scalr.Mode.FIT_EXACT, 645, 345);
-
-                AffineTransform translate = AffineTransform.getTranslateInstance(200, 125);
-                AffineTransformOp translateOp = new AffineTransformOp(translate , AffineTransformOp.TYPE_BILINEAR);
-                resizedImage = translateOp.filter(resizedImage, null);
-
-                AffineTransform rotateTransform = AffineTransform.getRotateInstance(-0.022);
-                AffineTransformOp rotateTransformOp = new AffineTransformOp(rotateTransform , AffineTransformOp.TYPE_BICUBIC);
-                resizedImage = rotateTransformOp.filter(resizedImage, null);
-
-                BufferedImage overlayedImage = ImageUtils.overlayImages(bg, resizedImage);
-
+                BufferedImage overlayedImage = transformImage(img);
                 if (overlayedImage != null) {
                     try(ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                         String id = MiscUtils.getRandomString();
@@ -234,7 +178,75 @@ public class Printout extends MainFunctionImpl {
         } else {
             bot.sendMessage(channel, "No sequences found.");
         }
+    }
 
+    BufferedImage searchAndDownload(String query) throws Exception {
+        BufferedImage img = null;
+        String response = search(query);
+        JSONObject json = new JSONObject(response);
+        LinkedList<String> urlResults = new LinkedList<>();
+        JSONArray items = (JSONArray) json.get("items");
+        JSONObject item;
+        for(int i=0 ; i < items.length() ; i++) {
+            item = items.getJSONObject(i);
+            urlResults.add(item.getString("link"));
+        }
+        while ((!urlResults.isEmpty()) && img == null) {
+            String u = urlResults.get(random.nextInt(urlResults.size()));
+            if (u.matches(acceptableFormats)) try {
+                img = ImageIO.read(new URL(u));
+            } catch (Exception e) {
+                logger.warn("Could not retrieve external image, skipping...", e);
+            }
+            urlResults.remove(u);
+        }
+        return img;
+    }
+
+    /**
+     * Returns a google image search in JSON format
+     * @param query the search query
+     * @return JSON representation of image search results
+     */
+    String search(String query) throws Exception {
+        URIBuilder builder = new URIBuilder(GIS_API_TARGET);
+        builder.addParameter(   "searchType",   "image" );
+        builder.addParameter(   "q",            query   );
+        builder.addParameter(   "cx",           cx      );
+        builder.addParameter(   "key",          apiKey  );
+        URL url = new URL(builder.toString());
+        URLConnection connection = url.openConnection();
+        connection.setConnectTimeout(1000 * 20); // 20 seconds
+
+        String line;
+        StringBuilder sb = new StringBuilder();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        while ((line = reader.readLine()) != null) {
+            sb.append(line);
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * Takes an image, scales it, rotates it, and overlays it on top of the Printout template
+     * @param source the image downloaded from GIS
+     * @return printout-ified version
+     */
+    BufferedImage transformImage(BufferedImage source) throws Exception {
+        BufferedImage bg = ImageIO.read(Printout.class.getResourceAsStream("/printout.png"));
+
+        BufferedImage resizedImage = Scalr.resize(source, Scalr.Mode.FIT_EXACT, 645, 345);
+
+        AffineTransform translate = AffineTransform.getTranslateInstance(200, 125);
+        AffineTransformOp translateOp = new AffineTransformOp(translate , AffineTransformOp.TYPE_BILINEAR);
+        resizedImage = translateOp.filter(resizedImage, null);
+
+        AffineTransform rotateTransform = AffineTransform.getRotateInstance(-0.022);
+        AffineTransformOp rotateTransformOp = new AffineTransformOp(rotateTransform , AffineTransformOp.TYPE_BICUBIC);
+        resizedImage = rotateTransformOp.filter(resizedImage, null);
+
+        return ImageUtils.overlayImages(bg, resizedImage);
     }
 
     private static final String[] annoyingEmotes = new String[]{

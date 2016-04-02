@@ -13,9 +13,6 @@ import org.slf4j.LoggerFactory;
 import java.sql.SQLException;
 import java.util.Set;
 
-/**
- * Created by Joe on 2/7/2015.
- */
 @Singleton
 public class JdbcConnectionProvider implements Provider<JdbcConnectionSource> {
 
@@ -32,7 +29,7 @@ public class JdbcConnectionProvider implements Provider<JdbcConnectionSource> {
 
         if(jdbcConnectionSource == null || !(jdbcConnectionSource.isOpen())) try {
 
-            logger.debug("JdbcConnectionSource is null or closed, " +
+            logger.info("JdbcConnectionSource is null or closed, " +
                     "retrying with connectionString={}", connectionString);
             jdbcConnectionSource = new JdbcConnectionSource(connectionString);
 

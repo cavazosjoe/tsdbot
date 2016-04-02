@@ -10,6 +10,7 @@ import org.apache.http.util.EntityUtils;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
 import org.junit.AfterClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.tsd.tsdbot.haloapi.model.stats.arena.ArenaMatch;
@@ -26,6 +27,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import static org.junit.Assert.*;
 
 @RunWith(JukitoRunner.class)
+@Ignore
 public class ApiTest {
 
     private static final ExecutorService executorService = new ScheduledThreadPoolExecutor(1);

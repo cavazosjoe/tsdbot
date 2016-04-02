@@ -1,17 +1,13 @@
 package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import org.tsd.tsdbot.Bot;
-import org.tsd.tsdbot.module.Function;
 
 import java.util.Random;
 
-/**
- * Created by Joe on 3/1/14.
- */
-@Singleton
-@Function(initialRegex = "^\\.choose.*")
+// disabling because this is in pybot
+//@Singleton
+//@Function(initialRegex = "^\\.choose.*")
 public class Chooser extends MainFunctionImpl {
 
     private Random random;

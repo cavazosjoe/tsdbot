@@ -4,6 +4,7 @@ import com.google.inject.name.Names;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
 import org.junit.AfterClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.reflections.Reflections;
@@ -20,6 +21,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(JukitoRunner.class)
+@Ignore
 public class ApiClientTest {
 
     private static final ExecutorService executorService = new ScheduledThreadPoolExecutor(1);

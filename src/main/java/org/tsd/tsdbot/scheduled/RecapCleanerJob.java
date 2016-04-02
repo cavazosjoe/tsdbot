@@ -13,9 +13,6 @@ import java.io.FileNotFoundException;
 import java.nio.file.Files;
 import java.util.Calendar;
 
-/**
- * Created by Joe on 8/24/2014.
- */
 public class RecapCleanerJob implements Job {
 
     private static final Logger logger = LoggerFactory.getLogger(RecapCleanerJob.class);

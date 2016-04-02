@@ -28,14 +28,11 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 
-/**
- * Created by Joe on 4/24/2015.
- */
 @Singleton
 @Function(initialRegex = "^\\.smush$")
-public class YoutubeFunction extends MainFunctionImpl {
+public class SmushFunction extends MainFunctionImpl {
 
-    private static final Logger log = LoggerFactory.getLogger(YoutubeFunction.class);
+    private static final Logger log = LoggerFactory.getLogger(SmushFunction.class);
 
     private static final int videoLength = 9;
     private static final int numClips = 3;
@@ -54,7 +51,7 @@ public class YoutubeFunction extends MainFunctionImpl {
     private InjectableMsgFilterStrategyFactory msgFilterFact;
 
     @Inject
-    public YoutubeFunction(
+    public SmushFunction(
             Bot bot,
             HistoryBuff historyBuff,
             ExecutorService executorService,

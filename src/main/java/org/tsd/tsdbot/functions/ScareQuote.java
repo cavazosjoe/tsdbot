@@ -9,9 +9,6 @@ import org.tsd.tsdbot.util.IRCUtil;
 
 import java.util.*;
 
-/**
- * Created by Joe on 5/24/14.
- */
 @Singleton
 @Function(initialRegex = "^\\.quote")
 public class ScareQuote extends MainFunctionImpl {

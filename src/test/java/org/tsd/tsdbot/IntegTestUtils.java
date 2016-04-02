@@ -4,9 +4,9 @@ import com.google.inject.Binder;
 import com.google.inject.multibindings.Multibinder;
 import org.tsd.tsdbot.functions.MainFunction;
 
-/**
- * Created by Joe on 3/29/2015.
- */
+import java.io.InputStream;
+import java.util.Properties;
+
 public class IntegTestUtils {
 
     @SafeVarargs
@@ -14,5 +14,15 @@ public class IntegTestUtils {
         Multibinder<MainFunction> functionBinder = Multibinder.newSetBinder(binder, MainFunction.class);
         for(Class<? extends MainFunction> function : functions)
             functionBinder.addBinding().to(function);
+    }
+
+    public static String loadProperty(String key) {
+        try(InputStream is = IntegTestUtils.class.getResourceAsStream("/test.properties")) {
+            Properties properties = new Properties();
+            properties.load(is);
+            return properties.getProperty(key);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load properties file");
+        }
     }
 }

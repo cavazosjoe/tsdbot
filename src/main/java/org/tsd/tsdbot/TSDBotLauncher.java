@@ -43,9 +43,6 @@ import static org.quartz.CronScheduleBuilder.cronSchedule;
 import static org.quartz.JobBuilder.newJob;
 import static org.quartz.TriggerBuilder.newTrigger;
 
-/**
- * Created by Joe on 2/18/14.
- */
 public class TSDBotLauncher {
 
     private static Logger log = LoggerFactory.getLogger(TSDBotLauncher.class);
@@ -76,12 +73,18 @@ public class TSDBotLauncher {
 
         TSDBot bot = new TSDBot(ident, nick, pass, server);
 
-        TSDBotModule module = new TSDBotModule(bot, config);
-        TSDBotServletModule servletModule = new TSDBotServletModule();
-        TSDBotFunctionalModule functionalModule = new TSDBotFunctionalModule();
+        Injector injector = null;
+        try {
+            TSDBotModule module = new TSDBotModule(bot, config);
+            TSDBotServletModule servletModule = new TSDBotServletModule();
+            TSDBotFunctionalModule functionalModule = new TSDBotFunctionalModule();
+            log.info("Creating injector...");
+            injector = Guice.createInjector(module, functionalModule, servletModule);
+            log.info("Injector created successfully");
+        } catch (Exception e) {
+            throw new Exception("Error creating injector", e);
+        }
 
-        Injector injector = Guice.createInjector(module, functionalModule, servletModule);
-        log.info("Injector created successfully");
         configureScheduler(injector);
         log.info("Scheduler configured successfully");
         injector.injectMembers(Bot.class);
@@ -185,9 +188,9 @@ public class TSDBotLauncher {
                     .usingJobData(SchedulerConstants.PRINTOUT_DIR_FIELD, config.printoutDir)
                     .build();
 
-            JobDetail notificationJob = newJob(NotificationSweeperJob.class)
-                    .withIdentity(SchedulerConstants.NOTIFICATION_JOB_KEY)
-                    .build();
+//            JobDetail notificationJob = newJob(NotificationSweeperJob.class)
+//                    .withIdentity(SchedulerConstants.NOTIFICATION_JOB_KEY)
+//                    .build();
 
             CronTrigger logCleanerTrigger = newTrigger()
                     .withSchedule(cronSchedule("0 0 4 ? * MON")) //4AM every monday
@@ -201,14 +204,14 @@ public class TSDBotLauncher {
                     .withSchedule(cronSchedule("0 0 3 * * ?"))
                     .build();
 
-            CronTrigger notifyTrigger = newTrigger()
-                    .withSchedule(cronSchedule("0 0/5 * * * ?")) //every 5 minutes
-                    .build();
+//            CronTrigger notifyTrigger = newTrigger()
+//                    .withSchedule(cronSchedule("0 0/5 * * * ?")) //every 5 minutes
+//                    .build();
 
             scheduler.scheduleJob(logCleanerJob, logCleanerTrigger);
             scheduler.scheduleJob(recapCleanerJob, recapCleanerTrigger);
             scheduler.scheduleJob(printoutCleanerJob, printoutCleanerTrigger);
-            scheduler.scheduleJob(notificationJob, notifyTrigger);
+//            scheduler.scheduleJob(notificationJob, notifyTrigger);
 
             scheduler.start();
 

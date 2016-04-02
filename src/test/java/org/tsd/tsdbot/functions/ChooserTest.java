@@ -3,6 +3,7 @@ package org.tsd.tsdbot.functions;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.tsd.tsdbot.Bot;
@@ -10,15 +11,13 @@ import org.tsd.tsdbot.FauxRandom;
 import org.tsd.tsdbot.IntegTestUtils;
 import org.tsd.tsdbot.TestBot;
 
-import java.util.HashMap;
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Joe on 3/29/2015.
- */
 @RunWith(JukitoRunner.class)
+@Ignore
 public class ChooserTest {
 
     private static String channel = "#tsd";

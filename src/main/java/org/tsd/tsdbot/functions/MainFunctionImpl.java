@@ -3,9 +3,6 @@ package org.tsd.tsdbot.functions;
 import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.module.Function;
 
-/**
- * Created by Joe on 5/24/14.
- */
 public abstract class MainFunctionImpl implements MainFunction {
 
     protected Bot bot;

@@ -4,7 +4,6 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
 import org.jibble.pircbot.User;
@@ -14,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.config.TSDBotConfiguration;
-import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.util.FuzzyLogic;
 import org.tsd.tsdbot.util.RelativeDate;
 
@@ -30,11 +28,8 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Created by Joe on 5/24/14.
- */
-@Singleton
-@Function(initialRegex = "^\\.xbl.*")
+//@Singleton
+//@Function(initialRegex = "^\\.xbl.*")
 public class XboxLive extends MainFunctionImpl {
 
     private static final Logger logger = LoggerFactory.getLogger(XboxLive.class);
@@ -197,7 +192,7 @@ public class XboxLive extends MainFunctionImpl {
         URIBuilder builder = new URIBuilder(String.format(target, args));
         URL url = new URL(builder.toString());
         URLConnection connection = url.openConnection();
-        connection.setConnectTimeout(1000 * 20);
+        connection.setConnectTimeout(1000 * 10);
         connection.addRequestProperty("X-AUTH", xblApiKey);
         String line;
         StringBuilder sb = new StringBuilder();

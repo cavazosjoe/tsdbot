@@ -1,8 +1,5 @@
 package org.tsd.tsdbot.config;
 
-/**
- * Created by Joe on 9/3/2015.
- */
 public class TSDTVConfig {
     public String ffmpegExec;
     public String ffmpegArgs;

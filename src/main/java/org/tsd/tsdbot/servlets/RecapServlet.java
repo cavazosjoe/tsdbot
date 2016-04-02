@@ -5,7 +5,7 @@ import com.google.inject.Singleton;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.PrintoutLibrary;
+import org.tsd.tsdbot.RecapLibrary;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -16,24 +16,24 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 @Singleton
-public class PrintoutServlet extends HttpServlet {
+public class RecapServlet extends HttpServlet {
 
-    private static final Logger logger = LoggerFactory.getLogger(PrintoutServlet.class);
+    private static final Logger logger = LoggerFactory.getLogger(RecapServlet.class);
 
     @Inject
-    private PrintoutLibrary printoutLibrary;
+    private RecapLibrary recapLibrary;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String printoutId = req.getPathInfo().split("/")[1];
+        String recapId = req.getPathInfo().split("/")[1];
         try{
-            byte[] data = printoutLibrary.getPrintout(printoutId);
+            byte[] data = recapLibrary.getRecap(recapId).getBytes();
             IOUtils.copy(new ByteArrayInputStream(data), resp.getOutputStream());
             resp.getOutputStream().close();
         } catch (FileNotFoundException fnfe) {
-            resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Could not find printout with id " + printoutId);
+            resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Could not find recap with id " + recapId);
         } catch (Exception e) {
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Could not find printout due to unknown error: " + e.getMessage());
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Could not find recap due to unknown error: " + e.getMessage());
         }
     }
 }

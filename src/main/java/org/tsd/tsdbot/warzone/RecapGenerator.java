@@ -11,6 +11,7 @@ import org.tsd.tsdbot.haloapi.model.stats.TeamStat;
 import org.tsd.tsdbot.haloapi.model.stats.warzone.WarzoneMatch;
 import org.tsd.tsdbot.haloapi.model.stats.warzone.WarzonePlayerStat;
 import org.tsd.tsdbot.model.warzone.WarzoneRegular;
+import org.tsd.tsdbot.warzone.library.Library;
 
 import java.util.*;
 
@@ -41,6 +42,9 @@ public class RecapGenerator {
         List<WarzoneMatch> matches = fetchMatches(gameIds);
 
         StringBuilder content = new StringBuilder();
+
+        content.append(generateOpeningParagraph(matches, regulars));
+        content.append("\n\n");
 
     }
 
@@ -97,7 +101,7 @@ public class RecapGenerator {
                 gamesCount = regularsInGames.get(gt).gameCount();
             }
         }
-        return String.format(library.teamNames.pop(), personInMostGames);
+        return String.format(library.getTeamName(), personInMostGames);
     }
 
     TeamStat identifyTeamByRegulars(WarzoneMatch match, Set<String> regulars) {
