@@ -52,8 +52,8 @@ public class TSDBotModule extends AbstractModule {
 
     Logger log = LoggerFactory.getLogger(TSDBotModule.class);
 
-    private TSDBot bot;
-    private TSDBotConfiguration configuration;
+    private final TSDBot bot;
+    private final TSDBotConfiguration configuration;
 
     public TSDBotModule(TSDBot bot, TSDBotConfiguration configuration) {
         this.bot = bot;

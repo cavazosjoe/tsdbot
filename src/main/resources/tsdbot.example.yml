@@ -37,10 +37,7 @@ connection:
 database: "jdbc:h2:file:/home/me/tsdbot-db"
 
 archivist:
-  logs: "/home/me/archive/"
-  recaps: "/home/me/recaps/"
-
-printoutDir: "dist/printouts/"
+  logsDir: "/home/me/archive/"
 
 xbl:
   apiKey: 0123456789abcdef

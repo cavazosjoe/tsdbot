@@ -2,7 +2,8 @@ connection:
   ident: tsdbot
   nick: TSDBot
   #nickservPass: cashmoneyrecords
-  server: grizzly.bearcopter.com
+  server: 192.168.1.100
+  port: 6667
 
   # !! NOTE: all channels must start with a hash. And since YAML understands hashes as comments, it's
   #   best to single- or double-quote them
@@ -34,9 +35,6 @@ database: "jdbc:h2:file:C:/Users/Joe/code/TSDBot/dist/tsdbot"
 
 archivist:
   logs: "dist/archive/"
-  recaps: "dist/recaps/"
-
-printoutDir: "dist/printouts/"
 
 xbl:
   apiKey: 6d0f995f0d45afd5375a872947b226ed740093d0

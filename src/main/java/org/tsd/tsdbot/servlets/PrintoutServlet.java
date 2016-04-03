@@ -25,14 +25,19 @@ public class PrintoutServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String printoutId = req.getPathInfo().split("/")[1];
+        logger.info("Fetching printout from path: {}", req.getPathInfo());
+        String printoutId = null;
         try{
+            printoutId = req.getPathInfo().split("/")[1];
+            logger.info("Parsed printout id {}", printoutId);
             byte[] data = printoutLibrary.getPrintout(printoutId);
             IOUtils.copy(new ByteArrayInputStream(data), resp.getOutputStream());
             resp.getOutputStream().close();
         } catch (FileNotFoundException fnfe) {
+            logger.error("File not found, printout id = " + printoutId, fnfe);
             resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Could not find printout with id " + printoutId);
         } catch (Exception e) {
+            logger.error("Unknown error finding printout with id = " + printoutId, e);
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Could not find printout due to unknown error: " + e.getMessage());
         }
     }

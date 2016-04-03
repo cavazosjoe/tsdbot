@@ -11,9 +11,6 @@ import org.tsd.tsdbot.TSDBot;
 import java.io.*;
 import java.util.Calendar;
 
-/**
- * Created by Joe on 8/24/2014.
- */
 public class LogCleanerJob implements Job {
 
     private static final Logger logger = LoggerFactory.getLogger(LogCleanerJob.class);

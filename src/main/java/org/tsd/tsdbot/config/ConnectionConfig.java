@@ -12,6 +12,7 @@ public class ConnectionConfig {
     public String nick;
     public String nickservPass;
     public String server;
+    public Integer port = 6667;
     public String mainChannel;
     public List<String> auxChannels;
     public Map<String, List<String>> notifiers;

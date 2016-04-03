@@ -16,6 +16,7 @@ import org.tsd.tsdbot.util.MiscUtils;
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Singleton
 @Function(initialRegex = "^\\.catchup.*")
@@ -26,10 +27,8 @@ public class Archivist /*Exedol*/ extends MainFunctionImpl {
     private static final int timestampColumnWidth = 15; // [JUN 10 07:47] + space
     private static final int middleColumnWidth = 31; // max nick length = 30 + space
     private static final String prettyPrefixFormat = "%-"+timestampColumnWidth+"s%"+middleColumnWidth+"s||";
-
-    public static final SimpleDateFormat stdSdf = new SimpleDateFormat("[MMM dd HH:mm]");
-
-    private static final long fiveMinutes = 1000 * 60 * 5;
+    private static final SimpleDateFormat stdSdf = new SimpleDateFormat("[MMM dd HH:mm]");
+    private static final long fiveMinutes = TimeUnit.MINUTES.toMillis(5);
 
     private static String archiveDir = null;
 
@@ -51,7 +50,7 @@ public class Archivist /*Exedol*/ extends MainFunctionImpl {
         stdSdf.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
 
         this.recapLibrary = recapLibrary;
-        archiveDir = config.archivist.logs;
+        archiveDir = config.archivist.logsDir;
         File logDirF = new File(archiveDir);
         if(!logDirF.exists()) {
             log.info("Logging directory {} does not exist, creating...", archiveDir);
@@ -210,15 +209,17 @@ public class Archivist /*Exedol*/ extends MainFunctionImpl {
 
                 if(!(output.toString().isEmpty())) {
                     if(capturedText.isEmpty())
-                        bot.sendMessage(channel, "I don't think you've missed anything. I'll recap the last five minutes");
+                        bot.sendMessage(
+                                channel,
+                                String.format("I don't think you've missed anything, %s. I'll recap the last five minutes", sender));
 
                     String recapId = MiscUtils.getRandomString();
                     recapLibrary.addRecap(recapId, output.toString());
-                    bot.sendMessage(channel, "http://irc.teamschoolyd.org/recaps/" + recapId);
+                    bot.sendMessage(sender, "http://irc.teamschoolyd.org/recaps/" + recapId);
                 }
 
             } catch (Exception e) {
-                log.error("Error reading logging file",e);
+                log.error("Error reading logging file", e);
             }
 
         } else { // .recap 15
@@ -253,7 +254,8 @@ public class Archivist /*Exedol*/ extends MainFunctionImpl {
 
                     String recapId = MiscUtils.getRandomString();
                     recapLibrary.addRecap(recapId, output.toString());
-                    bot.sendMessage(channel, String.format("Here are the chat logs from the past %s minutes: " +
+                    bot.sendMessage(channel, String.format("Sending you logs from the past %s minutes, %s", minutes, sender));
+                    bot.sendMessage(sender, String.format("Here are the chat logs from the past %s minutes: " +
                             "http://irc.teamschoolyd.org/recaps/%s", minutes, recapId));
 
                 } catch (Exception e) {

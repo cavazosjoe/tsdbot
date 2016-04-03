@@ -27,7 +27,9 @@ import org.tsd.tsdbot.module.ServerPort;
 import org.tsd.tsdbot.module.TSDBotFunctionalModule;
 import org.tsd.tsdbot.module.TSDBotModule;
 import org.tsd.tsdbot.module.TSDBotServletModule;
-import org.tsd.tsdbot.scheduled.*;
+import org.tsd.tsdbot.scheduled.InjectableJobFactory;
+import org.tsd.tsdbot.scheduled.LogCleanerJob;
+import org.tsd.tsdbot.scheduled.SchedulerConstants;
 
 import javax.servlet.DispatcherType;
 import java.io.File;
@@ -47,7 +49,6 @@ public class TSDBotLauncher {
 
     private static Logger log = LoggerFactory.getLogger(TSDBotLauncher.class);
 
-    // TSDBot.jar tsd-test irc.teamschoolyd.org TSDBot /path/to/tsdbot.properties dev
     public static void main(String[] args) throws Exception {
 
         if(args.length != 1) {
@@ -62,18 +63,19 @@ public class TSDBotLauncher {
         String nick = config.connection.nick;
         String pass = config.connection.nickservPass;
         String server = config.connection.server;
+        int port = config.connection.port;
 
         Stage stage = config.connection.stage;
         if(stage == null) {
             throw new Exception("STAGE must be one of [dev, production]");
         }
 
-        log.info("ident={}, nick={}, pass=***, server={}, stage={}",
-                new Object[]{ident, nick, server, stage});
+        log.info("ident={}, nick={}, pass=***, server={}:{}, stage={}",
+                new Object[]{ident, nick, server, port, stage});
 
-        TSDBot bot = new TSDBot(ident, nick, pass, server);
+        TSDBot bot = new TSDBot(ident, nick, pass, server, port);
 
-        Injector injector = null;
+        Injector injector;
         try {
             TSDBotModule module = new TSDBotModule(bot, config);
             TSDBotServletModule servletModule = new TSDBotServletModule();
@@ -175,43 +177,14 @@ public class TSDBotLauncher {
 
             JobDetail logCleanerJob = newJob(LogCleanerJob.class)
                     .withIdentity(SchedulerConstants.LOG_JOB_KEY)
-                    .usingJobData(SchedulerConstants.LOGS_DIR_FIELD, config.archivist.logs)
+                    .usingJobData(SchedulerConstants.LOGS_DIR_FIELD, config.archivist.logsDir)
                     .build();
-
-            JobDetail recapCleanerJob = newJob(RecapCleanerJob.class)
-                    .withIdentity(SchedulerConstants.RECAP_JOB_KEY)
-                    .usingJobData(SchedulerConstants.RECAP_DIR_FIELD, config.archivist.recaps)
-                    .build();
-
-            JobDetail printoutCleanerJob = newJob(PrintoutCleanerJob.class)
-                    .withIdentity(SchedulerConstants.PRINTOUT_JOB_KEY)
-                    .usingJobData(SchedulerConstants.PRINTOUT_DIR_FIELD, config.printoutDir)
-                    .build();
-
-//            JobDetail notificationJob = newJob(NotificationSweeperJob.class)
-//                    .withIdentity(SchedulerConstants.NOTIFICATION_JOB_KEY)
-//                    .build();
 
             CronTrigger logCleanerTrigger = newTrigger()
                     .withSchedule(cronSchedule("0 0 4 ? * MON")) //4AM every monday
                     .build();
 
-            CronTrigger recapCleanerTrigger = newTrigger()
-                    .withSchedule(cronSchedule("0 0 3 * * ?")) //3AM every day
-                    .build();
-
-            CronTrigger printoutCleanerTrigger = newTrigger()
-                    .withSchedule(cronSchedule("0 0 3 * * ?"))
-                    .build();
-
-//            CronTrigger notifyTrigger = newTrigger()
-//                    .withSchedule(cronSchedule("0 0/5 * * * ?")) //every 5 minutes
-//                    .build();
-
             scheduler.scheduleJob(logCleanerJob, logCleanerTrigger);
-            scheduler.scheduleJob(recapCleanerJob, recapCleanerTrigger);
-            scheduler.scheduleJob(printoutCleanerJob, printoutCleanerTrigger);
-//            scheduler.scheduleJob(notificationJob, notifyTrigger);
 
             scheduler.start();
 

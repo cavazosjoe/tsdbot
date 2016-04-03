@@ -11,9 +11,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-/**
- * Created by Joe on 1/11/2015.
- */
 @Singleton
 public class HustleChartServlet extends HttpServlet {
 

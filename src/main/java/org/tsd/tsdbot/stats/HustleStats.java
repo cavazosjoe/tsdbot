@@ -33,9 +33,6 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-/**
- * Created by Joe on 1/11/2015.
- */
 @Singleton
 public class HustleStats implements Stats {
 

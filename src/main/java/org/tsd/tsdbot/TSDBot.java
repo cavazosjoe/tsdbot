@@ -52,14 +52,14 @@ public class TSDBot extends PircBot implements Bot {
     @Deprecated // used for testing
     public TSDBot() {}
 
-    public TSDBot(String ident, String name, String nickservPass, String server) throws IrcException, IOException {
+    public TSDBot(String ident, String name, String nickservPass, String server, int port) throws IrcException, IOException {
         setName(name);
         setAutoNickChange(true);
         setLogin(ident);
         setVerbose(false);
         setMessageDelay(10); //10 ms
-        connect(server, 6667);
-        logger.info("Successfully connected to " + server);
+        connect(server, port);
+        logger.info("Successfully connected to " + server + ":" + port);
         if(StringUtils.isNotBlank(nickservPass))
             identify(nickservPass);
     }

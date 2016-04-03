@@ -25,14 +25,18 @@ public class RecapServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        logger.info("Fetching recap from path: {}", req.getPathInfo());
         String recapId = req.getPathInfo().split("/")[1];
         try{
+            logger.info("Parsed recap id {}", recapId);
             byte[] data = recapLibrary.getRecap(recapId).getBytes();
             IOUtils.copy(new ByteArrayInputStream(data), resp.getOutputStream());
             resp.getOutputStream().close();
         } catch (FileNotFoundException fnfe) {
+            logger.error("File not found, recap id = " + recapId, fnfe);
             resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Could not find recap with id " + recapId);
         } catch (Exception e) {
+            logger.error("Unknown error finding recap with id = " + recapId, e);
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Could not find recap due to unknown error: " + e.getMessage());
         }
     }

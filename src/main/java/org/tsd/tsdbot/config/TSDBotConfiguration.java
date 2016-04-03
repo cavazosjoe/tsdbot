@@ -8,7 +8,6 @@ public class TSDBotConfiguration {
     public ConnectionConfig connection;
     public String database;
     public ArchivistConfig archivist;
-    public String printoutDir;
     public XBLConfig xbl;
     public TwitterConfig twitter;
     public TSDTVConfig tsdtv;
