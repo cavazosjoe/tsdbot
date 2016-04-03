@@ -6,9 +6,6 @@ import org.tsd.tsdbot.TSDBot;
 
 import java.util.LinkedHashMap;
 
-/**
- * Created by Joe on 1/12/2015.
- */
 public class GvStats implements Stats {
 
     @Inject

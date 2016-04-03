@@ -19,9 +19,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
-/**
- * Created by Joe on 1/22/2015.
- */
 @Singleton
 @Function(initialRegex = "^\\.odb.*")
 public class OmniDB extends MainFunctionImpl implements Persistable {
@@ -32,7 +29,6 @@ public class OmniDB extends MainFunctionImpl implements Persistable {
     private static final String OMNIDB_TAG_TABLE_NAME = "OMNIDB_TAG";
 
     private DBConnectionProvider connectionProvider;
-    private Random random;
 
     @Inject
     public OmniDB(Bot bot, DBConnectionProvider connectionProvider, Random random) throws SQLException {
@@ -40,7 +36,6 @@ public class OmniDB extends MainFunctionImpl implements Persistable {
         this.description = "Use the patented TSD Omni Database";
         this.usage = "USAGE: .odb [ add #tag1 #tag2 <item> | get tag1 tag2 ]";
         this.connectionProvider = connectionProvider;
-        this.random = random;
         initDB();
     }
 
@@ -102,128 +97,137 @@ public class OmniDB extends MainFunctionImpl implements Persistable {
 
         String subCmd = cmdParts[1];
 
-        if(subCmd.equals("add")) {
+        switch (subCmd) {
+            case "add": {
 
-            if(cmdParts.length == 2) {
-                bot.sendMessage(channel, "Must provide something to add");
-                return;
-            }
-
-            List<String> tags = new LinkedList<>();
-            String item, word;
-            StringBuilder itemBuilder = new StringBuilder();
-            for(int i=2 ; i < cmdParts.length ; i++) {
-                word = cmdParts[i];
-                if(itemBuilder.length() > 0) {
-                    // we are currently capturing
-                    itemBuilder.append(word).append(" ");
-                } else {
-                    // we are not capturing, keep looking for tags
-                    if(word.startsWith("#")) {
-                        if(word.length() > 1) {
-                            // this is a tag
-                            tags.add(word.substring(1));
-                        }
-                    } else {
-                        // this is the start of item, start recording
-                        itemBuilder.append(word).append(" ");
-                    }
-                }
-            }
-
-            if(itemBuilder.length() == 0) {
-                bot.sendMessage(channel, "Must provide something to add");
-            } else try {
-                item = itemBuilder.toString().trim();
-                String itemId = addItem(item, tags);
-                bot.sendMessage(channel, "Successfully added item to the Omni DB ( " + itemId + " )");
-            } catch (Exception e) {
-                String msg = "Error adding to Omni DB";
-                logger.error(msg, e);
-                bot.sendMessage(channel, msg);
-            }
-
-        } else if(subCmd.equals("get")) {
-
-            Item item = null;
-            boolean includeTags = false;
-
-            if(cmdParts.length == 2) {
-
-                try {
-                    item = getAnyItem();
-                    includeTags = true;
-                } catch (Exception e) {
-                    String msg = "Error retrieving from Omni DB";
-                    logger.error(msg, e);
-                    bot.sendMessage(channel, msg);
-                }
-
-            } else {
-
-                List<String> tags = new LinkedList<>();
-                String word;
-                // add all words as tags, but help them out if they prefix with hashtags by stripping them
-                for (int i = 2; i < cmdParts.length; i++) {
-                    word = cmdParts[i];
-                    if (word.startsWith("#") && word.length() > 1) {
-                        tags.add(word.substring(1));
-                    } else if(!word.startsWith("#")) {
-                        tags.add(word);
-                    }
-                }
-
-                if (tags.isEmpty()) {
-                    bot.sendMessage(channel, "Must provide some tags to fetch");
+                if (cmdParts.length == 2) {
+                    bot.sendMessage(channel, "Must provide something to add");
                     return;
                 }
 
-                try {
-                    item = getTaggedItem(tags);
+                List<String> tags = new LinkedList<>();
+                String item, word;
+                StringBuilder itemBuilder = new StringBuilder();
+                for (int i = 2; i < cmdParts.length; i++) {
+                    word = cmdParts[i];
+                    if (itemBuilder.length() > 0) {
+                        // we are currently capturing
+                        itemBuilder.append(word).append(" ");
+                    } else {
+                        // we are not capturing, keep looking for tags
+                        if (word.startsWith("#")) {
+                            if (word.length() > 1) {
+                                // this is a tag
+                                tags.add(word.substring(1));
+                            }
+                        } else {
+                            // this is the start of item, start recording
+                            itemBuilder.append(word).append(" ");
+                        }
+                    }
+                }
+
+                if (itemBuilder.length() == 0) {
+                    bot.sendMessage(channel, "Must provide something to add");
+                } else try {
+                    item = itemBuilder.toString().trim();
+                    String itemId = addItem(item, tags);
+                    bot.sendMessage(channel, "Successfully added item to the Omni DB ( " + itemId + " )");
                 } catch (Exception e) {
-                    String msg = "Error retrieving from Omni DB";
+                    String msg = "Error adding to Omni DB";
                     logger.error(msg, e);
                     bot.sendMessage(channel, msg);
                 }
 
+                break;
             }
+            case "get": {
 
-            if(item != null) try {
-                StringBuilder sb = new StringBuilder();
-                sb.append("ODB: ").append(item.item);
-                if(includeTags) {
-                    for(String tag : getTagsForItem(item.itemId)) {
-                        sb.append(" #").append(tag);
+                Item item = null;
+                boolean includeTags = false;
+
+                if (cmdParts.length == 2) {
+
+                    try {
+                        item = getAnyItem();
+                        includeTags = true;
+                    } catch (Exception e) {
+                        String msg = "Error retrieving from Omni DB";
+                        logger.error(msg, e);
+                        bot.sendMessage(channel, msg);
                     }
+
+                } else {
+
+                    List<String> tags = new LinkedList<>();
+                    String word;
+                    // add all words as tags, but help them out if they prefix with hashtags by stripping them
+                    for (int i = 2; i < cmdParts.length; i++) {
+                        word = cmdParts[i];
+                        if (word.startsWith("#") && word.length() > 1) {
+                            tags.add(word.substring(1));
+                        } else if (!word.startsWith("#")) {
+                            tags.add(word);
+                        }
+                    }
+
+                    if (tags.isEmpty()) {
+                        bot.sendMessage(channel, "Must provide some tags to fetch");
+                        return;
+                    }
+
+                    try {
+                        item = getTaggedItem(tags);
+                    } catch (Exception e) {
+                        String msg = "Error retrieving from Omni DB";
+                        logger.error(msg, e);
+                        bot.sendMessage(channel, msg);
+                    }
+
                 }
-                bot.sendMessage(channel, sb.toString());
-            } catch (Exception e) {
-                String msg = "Error getting tags for item";
-                logger.error(msg, e);
-                bot.sendMessage(channel, msg);
-            } else {
-                bot.sendMessage(channel, "Couldn't find anything in Omni DB matching those tags");
+
+                if (item != null) try {
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("ODB: ").append(item.item);
+                    if (includeTags) {
+                        for (String tag : getTagsForItem(item.itemId)) {
+                            sb.append(" #").append(tag);
+                        }
+                    }
+                    bot.sendMessage(channel, sb.toString());
+                } catch (Exception e) {
+                    String msg = "Error getting tags for item";
+                    logger.error(msg, e);
+                    bot.sendMessage(channel, msg);
+                }
+                else {
+                    bot.sendMessage(channel, "Couldn't find anything in Omni DB matching those tags");
+                }
+
+                break;
             }
+            case "del":
 
-        } else if(subCmd.equals("del")){
+                if (!bot.userHasGlobalPriv(sender, User.Priv.HALFOP)) {
+                    bot.sendMessage(channel, "Only ops can use that");
+                    return;
+                }
 
-            if(!bot.userHasGlobalPriv(sender, User.Priv.HALFOP)) {
-                bot.sendMessage(channel, "Only ops can use that");
-                return;
-            }
+                if (cmdParts.length == 2) {
+                    bot.sendMessage(channel, "Must provide itemId to delete");
+                    return;
+                }
 
-            if(cmdParts.length == 2) {
-                bot.sendMessage(channel, "Must provide itemId to delete");
-                return;
-            }
+                String itemId = cmdParts[2];
+                deleteItem(channel, itemId);
 
-            String itemId = cmdParts[2];
-            deleteItem(channel, itemId);
-
-        } else if(subCmd.equals("size")){
-            printSize(channel);
-        } else {
-            bot.sendMessage(channel, usage);
+                break;
+            case "size":
+                printSize(channel);
+                break;
+            default:
+                bot.sendMessage(channel, usage);
+                break;
         }
     }
 

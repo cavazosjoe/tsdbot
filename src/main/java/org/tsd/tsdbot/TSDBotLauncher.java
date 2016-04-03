@@ -5,6 +5,8 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.servlet.GuiceFilter;
+import net.sf.oval.ConstraintViolation;
+import net.sf.oval.Validator;
 import org.apache.tomcat.InstanceManager;
 import org.apache.tomcat.SimpleInstanceManager;
 import org.eclipse.jetty.annotations.ServletContainerInitializersStarter;
@@ -58,6 +60,14 @@ public class TSDBotLauncher {
         String configLocation = args[0];
         YamlReader yamlReader = new YamlReader(new FileReader(configLocation));
         TSDBotConfiguration config = yamlReader.read(TSDBotConfiguration.class);
+        Validator validator = new Validator();
+        List<ConstraintViolation> violations = validator.validate(config);
+        if(violations.size() > 0) {
+            for(ConstraintViolation violation : violations) {
+                log.error("CONFIG ERROR: {}", violation.getMessage());
+            }
+            throw new Exception("Startup failed due to configuration errors");
+        }
 
         String ident = config.connection.ident;
         String nick = config.connection.nick;

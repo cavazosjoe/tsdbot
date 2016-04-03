@@ -75,6 +75,12 @@
   <dependencies>
 
     <dependency>
+      <groupId>net.sf.oval</groupId>
+      <artifactId>oval</artifactId>
+      <version>1.85</version>
+    </dependency>
+
+    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
       <version>2.6.3</version>

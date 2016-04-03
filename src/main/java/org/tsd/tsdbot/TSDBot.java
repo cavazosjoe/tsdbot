@@ -11,12 +11,14 @@ import org.tsd.tsdbot.functions.Archivist;
 import org.tsd.tsdbot.functions.Hustle;
 import org.tsd.tsdbot.functions.MainFunction;
 import org.tsd.tsdbot.history.HistoryBuff;
+import org.tsd.tsdbot.module.BotOwner;
 import org.tsd.tsdbot.module.MainChannel;
 import org.tsd.tsdbot.runnable.IRCListenerThread;
 import org.tsd.tsdbot.runnable.ThreadManager;
 import org.tsd.tsdbot.stats.Stats;
 import org.tsd.tsdbot.util.ArchivistUtil;
 import org.tsd.tsdbot.util.FuzzyLogic;
+import org.tsd.tsdbot.util.IRCUtil;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -48,6 +50,9 @@ public class TSDBot extends PircBot implements Bot {
 
     @Inject @MainChannel
     protected String mainChannel;
+
+    @Inject @BotOwner
+    protected String owner;
 
     @Deprecated // used for testing
     public TSDBot() {}
@@ -210,16 +215,14 @@ public class TSDBot extends PircBot implements Bot {
 
     public boolean userHasPrivInChannel(String nick, String channel, User.Priv priv) {
         User u = getUserFromNick(channel, nick);
-        if(u == null)
-            return false;
-        else return u.hasPriv(priv);
+        return u != null && (nick.equals(owner) || u.hasPriv(priv));
     }
 
     public User getUserFromNick(String channel, String nick) {
         User user = null;
         String prefixlessNick;
         for(User u : getUsers(channel)) {
-            prefixlessNick = u.getNick().replaceAll(u.getPrefix(), "");
+            prefixlessNick = IRCUtil.getPrefixlessNick(u);
             if(prefixlessNick.equals(nick)) {
                 user = u;
                 break;

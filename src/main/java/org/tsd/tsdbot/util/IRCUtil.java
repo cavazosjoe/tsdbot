@@ -1,6 +1,7 @@
 package org.tsd.tsdbot.util;
 
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.jibble.pircbot.User;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -10,9 +11,6 @@ import java.util.Random;
 import static com.rosaloves.bitlyj.Bitly.as;
 import static com.rosaloves.bitlyj.Bitly.shorten;
 
-/**
- * Created by Joe on 2/19/14.
- */
 public class IRCUtil {
 
     public static final String LINE_SEPARATOR = System.getProperty("line.separator");
@@ -20,6 +18,10 @@ public class IRCUtil {
     public static final String COLOR_CHAR = "\u0003";
 
     private static final int MAX_MSG_LEN = 510;
+
+    public static String getPrefixlessNick(User user) {
+        return user.getNick().replaceAll(user.getPrefix(), "");
+    }
 
     public static String[] splitLongString(String input) {
         int len = input.length();

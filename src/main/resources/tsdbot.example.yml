@@ -1,6 +1,9 @@
 # THIS IS A SAMPLE CONFIGURATION FILE
 # FILL IN YOUR OWN SHIT
 
+# The owner of this bot will have all privileges
+owner: Your_Nick_Here
+
 connection:
   ident: tsdbot
   nick: MyTSDBot

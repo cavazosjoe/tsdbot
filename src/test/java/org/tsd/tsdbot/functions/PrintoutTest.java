@@ -2,6 +2,8 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Injector;
 import com.google.inject.name.Names;
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.jibble.pircbot.User;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
@@ -105,6 +107,7 @@ public class PrintoutTest {
             bind(Random.class).toInstance(random);
             bind(PrintoutLibrary.class).toInstance(new PrintoutLibrary());
             bind(String.class).annotatedWith(Names.named("serverUrl")).toInstance(server);
+            bind(HttpClient.class).toInstance(HttpClients.createMinimal());
 
             TestBot testBot = new TestBot(channel, null);
             testBot.addChannelUser(channel, User.Priv.OP, "OpUser");

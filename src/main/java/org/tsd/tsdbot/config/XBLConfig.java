@@ -1,9 +1,16 @@
 package org.tsd.tsdbot.config;
 
-/**
- * Created by Joe on 9/3/2015.
- */
+import net.sf.oval.constraint.NotEmpty;
+import net.sf.oval.constraint.NotNull;
+
 public class XBLConfig {
+
+    @NotEmpty
+    @NotNull
     public String apiKey;
+
+    @NotEmpty
+    @NotNull
     public String xuid;
+
 }

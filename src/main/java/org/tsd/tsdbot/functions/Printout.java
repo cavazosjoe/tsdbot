@@ -4,7 +4,11 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.util.EntityUtils;
 import org.imgscalr.Scalr;
 import org.jibble.pircbot.User;
 import org.json.JSONArray;
@@ -23,15 +27,9 @@ import javax.imageio.ImageIO;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
-import java.io.InputStreamReader;
 import java.net.URL;
-import java.net.URLConnection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Random;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -52,6 +50,7 @@ public class Printout extends MainFunctionImpl {
     private final String apiKey;
     private final String serverUrl;
     private final Random random;
+    private final HttpClient httpClient;
     private final PrintoutLibrary printoutLibrary;
 
     // set of people who can trigger a printout with a deliberate repitition
@@ -67,6 +66,7 @@ public class Printout extends MainFunctionImpl {
             Random random,
             PrintoutLibrary library,
             GoogleConfig googleConfig,
+            HttpClient httpClient,
             @Named("serverUrl") String serverUrl) {
         super(bot);
         this.random = random;
@@ -74,6 +74,7 @@ public class Printout extends MainFunctionImpl {
         this.printoutLibrary = library;
         this.cx = googleConfig.gisCx;
         this.apiKey = googleConfig.apiKey;
+        this.httpClient = httpClient;
         this.description = "Get a printout";
         this.usage = "USAGE: TSDBot can you get me a printout of [query]";
     }
@@ -191,14 +192,14 @@ public class Printout extends MainFunctionImpl {
             item = items.getJSONObject(i);
             urlResults.add(item.getString("link"));
         }
-        while ((!urlResults.isEmpty()) && img == null) {
-            String u = urlResults.get(random.nextInt(urlResults.size()));
-            if (u.matches(acceptableFormats)) try {
-                img = ImageIO.read(new URL(u));
+        Collections.shuffle(urlResults);
+        String url;
+        while ( (url = urlResults.pollFirst()) != null && img == null ) {
+            if (url.matches(acceptableFormats)) try {
+                img = ImageIO.read(new URL(url));
             } catch (Exception e) {
                 logger.warn("Could not retrieve external image, skipping...", e);
             }
-            urlResults.remove(u);
         }
         return img;
     }
@@ -215,17 +216,9 @@ public class Printout extends MainFunctionImpl {
         builder.addParameter(   "cx",           cx      );
         builder.addParameter(   "key",          apiKey  );
         URL url = new URL(builder.toString());
-        URLConnection connection = url.openConnection();
-        connection.setConnectTimeout(1000 * 20); // 20 seconds
-
-        String line;
-        StringBuilder sb = new StringBuilder();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        while ((line = reader.readLine()) != null) {
-            sb.append(line);
-        }
-
-        return sb.toString();
+        HttpGet get = new HttpGet(url.toURI());
+        HttpResponse response = httpClient.execute(get);
+        return EntityUtils.toString(response.getEntity());
     }
 
     /**

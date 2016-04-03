@@ -135,6 +135,9 @@ public class TSDBotModule extends AbstractModule {
         bind(TSDBotConfiguration.class).toInstance(configuration);
         log.info("Bound config");
 
+        bind(String.class).annotatedWith(BotOwner.class)
+                .toInstance(configuration.owner);
+
         bind(String.class).annotatedWith(MainChannel.class)
                 .toInstance(configuration.connection.mainChannel);
         log.info("Bound main channel: {}", configuration.connection.mainChannel);

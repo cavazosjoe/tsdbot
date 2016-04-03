@@ -1,3 +1,5 @@
+owner: Schooly_D
+
 connection:
   ident: tsdbot
   nick: TSDBot
@@ -34,7 +36,7 @@ connection:
 database: "jdbc:h2:file:C:/Users/Joe/code/TSDBot/dist/tsdbot"
 
 archivist:
-  logs: "dist/archive/"
+  logsDir: "dist/archive/"
 
 xbl:
   apiKey: 6d0f995f0d45afd5375a872947b226ed740093d0
