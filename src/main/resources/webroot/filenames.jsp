@@ -9,7 +9,7 @@
     <ul>
         <c:forEach items="${filenames}" var="fname" varStatus="fnameIdx">
             <li>
-                <a href="${serverUrl}/filenames/${fname.name}">${fname.name}</a>
+                <a href="${serverUrl}/filenames/${fname.encoded}">${fname.unencoded}</a>
             </li>
         </c:forEach>
     </ul>

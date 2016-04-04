@@ -10,9 +10,6 @@ import org.tsd.tsdbot.module.Function;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Created by Joe on 3/28/2015.
- */
 public class MockFunctionModule extends AbstractModule {
 
     private HashSet<Class<? extends MainFunction>> ignoredFunctions;

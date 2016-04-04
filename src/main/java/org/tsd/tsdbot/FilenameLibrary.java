@@ -169,6 +169,10 @@ public class FilenameLibrary implements Serializable {
     }
 
     String correctNameIfNecessary(String name, String path) throws FilenameValidationException {
+
+        // hashes are weird and, when encoded, break the readability of filenames in chat
+        name = name.replaceAll("#", "");
+
         String extension = parseExtensionFromName(name);
         if(extension == null) {
             // the submitter didn't include an extension in their filename, help them out

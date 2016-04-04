@@ -14,6 +14,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URLDecoder;
 
 @Singleton
 public class FilenameImageServlet extends HttpServlet {
@@ -25,10 +26,11 @@ public class FilenameImageServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        logger.info("Fetching filename from path: {}", req.getPathInfo());
+        String path = URLDecoder.decode(req.getPathInfo(), "UTF-8");
+        logger.info("Fetching filename from path: {}", path);
         String filename = null;
         try{
-            filename = req.getPathInfo().split("/")[1];
+            filename = path.split("/")[1];
             logger.info("Parsed filename {}", filename);
             byte[] data = filenameLibrary.getFile(filename);
             IOUtils.copy(new ByteArrayInputStream(data), resp.getOutputStream());
