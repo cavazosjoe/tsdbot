@@ -6,9 +6,6 @@ import com.google.inject.name.Named;
 import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.module.Function;
 
-/**
- * Created by Joe on 5/24/14.
- */
 @Singleton
 @Function(initialRegex = "^\\.cmd$")
 public class CommandList extends MainFunctionImpl {

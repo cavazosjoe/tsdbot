@@ -2,9 +2,6 @@ package org.tsd.tsdbot.util;
 
 import java.util.LinkedList;
 
-/**
- * Created by Joe on 9/3/2014.
- */
 public class FuzzyLogic {
 
     public static boolean fuzzyMatches(String query, String text) {

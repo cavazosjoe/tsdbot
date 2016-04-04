@@ -4,6 +4,7 @@ import com.google.inject.AbstractModule;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpRequestRetryHandler;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.NoConnectionReuseStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -20,6 +21,8 @@ public class HttpModule extends AbstractModule {
 
     private static final Logger log = LoggerFactory.getLogger(HttpModule.class);
 
+    private static final int TIMEOUT_SECONDS = 20;
+
     private final ExecutorService executorService;
 
     public HttpModule(ExecutorService executorService) {
@@ -28,8 +31,10 @@ public class HttpModule extends AbstractModule {
 
     @Override
     protected void configure() {
+
         final PoolingHttpClientConnectionManager poolingManager = new PoolingHttpClientConnectionManager();
         poolingManager.setMaxTotal(100);
+
         HttpRequestRetryHandler retryHandler = new HttpRequestRetryHandler() {
             @Override
             public boolean retryRequest(IOException e, int i, HttpContext httpContext) {
@@ -37,11 +42,20 @@ public class HttpModule extends AbstractModule {
                 return i < 5 && e instanceof NoHttpResponseException;
             }
         };
+
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectTimeout(TIMEOUT_SECONDS * 1000)
+                .setConnectionRequestTimeout(TIMEOUT_SECONDS * 1000)
+                .setSocketTimeout(TIMEOUT_SECONDS * 1000)
+                .build();
+
         CloseableHttpClient httpClient = HttpClients.custom()
                 .setConnectionManager(poolingManager)
                 .setConnectionReuseStrategy(new NoConnectionReuseStrategy())
                 .setRetryHandler(retryHandler)
+                .setDefaultRequestConfig(requestConfig)
                 .build();
+
         bind(PoolingHttpClientConnectionManager.class).toInstance(poolingManager);
         bind(HttpClient.class).toInstance(httpClient);
 

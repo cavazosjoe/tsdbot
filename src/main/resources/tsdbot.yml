@@ -35,6 +35,9 @@ connection:
 # Database connection string
 database: "jdbc:h2:file:C:/Users/Joe/code/TSDBot/dist/tsdbot"
 
+# Path on filesystem to store saved filenames
+filenamesDir: "C:/Users/Joe/Filenames"
+
 archivist:
   logsDir: "dist/archive/"
 

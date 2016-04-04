@@ -19,6 +19,10 @@ public class TSDBotConfiguration {
     @NotNull
     public String database;
 
+    @NotEmpty
+    @NotNull
+    public String filenamesDir;
+
     @NotNull
     public ArchivistConfig archivist;
 

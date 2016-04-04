@@ -4,9 +4,6 @@ import org.tsd.tsdbot.util.TSDTVUtil;
 
 import java.io.File;
 
-/**
- * Created by Joe on 2/1/2015.
- */
 public class TSDTVEpisode extends Streamable implements Comparable<TSDTVEpisode> {
 
     private TSDTVShow show;

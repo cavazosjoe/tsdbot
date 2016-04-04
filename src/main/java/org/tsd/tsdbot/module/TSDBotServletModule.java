@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.servlets.PrintoutServlet;
 import org.tsd.tsdbot.servlets.RecapServlet;
 import org.tsd.tsdbot.servlets.StatusServlet;
+import org.tsd.tsdbot.servlets.filename.FilenameImageServlet;
+import org.tsd.tsdbot.servlets.filename.FilenameListingServlet;
 import org.tsd.tsdbot.servlets.hustle.HustleChartServlet;
 import org.tsd.tsdbot.servlets.hustle.HustleServlet;
 import org.tsd.tsdbot.servlets.tsdtv.*;
@@ -48,14 +50,17 @@ public class TSDBotServletModule extends ServletModule {
         serve("/tsdtv/analyzer/*").with(TSDTVAnalysisServlet.class);
 
 
-        /**
-         * Printouts and recaps
-         */
         bind(PrintoutServlet.class);
         serve("/printouts/*").with(PrintoutServlet.class);
 
         bind(RecapServlet.class);
         serve("/recaps/*").with(RecapServlet.class);
+
+        bind(FilenameListingServlet.class);
+        serve("/filenames").with(FilenameListingServlet.class);
+
+        bind(FilenameImageServlet.class);
+        serve("/filenames/*").with(FilenameImageServlet.class);
 
         /**
          * Status

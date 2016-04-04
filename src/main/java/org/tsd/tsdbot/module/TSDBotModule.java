@@ -119,8 +119,8 @@ public class TSDBotModule extends AbstractModule {
         urlBuilder.append("http://").append(hostname);
         // I have an iptables entry that directs requests on the port specified in properties to port 80
         // uncomment if you don't
-        //if(port != 80)
-        //    urlBuilder.append(":").append(port);
+//        if(port != 80)
+//            urlBuilder.append(":").append(port);
         String serverUrl = urlBuilder.toString();
         bind(String.class).annotatedWith(Names.named("serverUrl"))
                 .toInstance(serverUrl);
@@ -157,6 +157,9 @@ public class TSDBotModule extends AbstractModule {
         bind(String.class).annotatedWith(Names.named("mashapeKey"))
                 .toInstance(configuration.mashapeKey);
         log.info("Bound mashape key: {}", configuration.mashapeKey);
+
+        log.info("Binding filename library...");
+        bind(FilenameLibrary.class).asEagerSingleton();
 
         log.info("Binding printout library...");
         bind(PrintoutLibrary.class).asEagerSingleton();
@@ -214,6 +217,14 @@ public class TSDBotModule extends AbstractModule {
                 .annotatedWith(DBConnectionString.class)
                 .toInstance(configuration.database);
         log.info("Bound DBConnectionString: {}", configuration.database);
+
+        File filenameLibrary = new File(configuration.filenamesDir);
+        if(!filenameLibrary.exists())
+            filenameLibrary.mkdir();
+        bind(File.class)
+                .annotatedWith(Names.named("filenameLibrary"))
+                .toInstance(filenameLibrary);
+        log.info("Bound filename library directory to {}", filenameLibrary.getAbsolutePath());
 
         log.info("Binding JDBC connection provider...");
         bind(Connection.class).toProvider(DBConnectionProvider.class);

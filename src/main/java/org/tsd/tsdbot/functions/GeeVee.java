@@ -12,9 +12,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Created by Joe on 4/5/14.
- */
 @Singleton
 @Function(initialRegex = "^\\.gv.*")
 public class GeeVee extends MainFunctionImpl {
