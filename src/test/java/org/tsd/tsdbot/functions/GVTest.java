@@ -17,9 +17,6 @@ import java.util.Random;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Joe on 3/30/2015.
- */
 @RunWith(JukitoRunner.class)
 public class GVTest {
 

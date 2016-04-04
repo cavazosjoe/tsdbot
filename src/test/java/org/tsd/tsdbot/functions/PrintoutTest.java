@@ -36,6 +36,8 @@ public class PrintoutTest {
         String lastMessage = bot.getLastMessage(channel);
         assertTrue(lastMessage.startsWith(server));
         String id = lastMessage.substring(lastMessage.lastIndexOf("/") + 1);
+        assertTrue(id.endsWith(".jpg"));
+        id = id.substring(0, id.indexOf(".jpg"));
         byte[] printout = library.getPrintout(id);
         assertNotNull(printout);
         assertTrue(printout.length > 0);
@@ -58,7 +60,7 @@ public class PrintoutTest {
         bot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", "BIG. FUZZY. BEAR.");
         lastMessage = bot.getLastMessage(channel);
         assertTrue(lastMessage.startsWith(server));
-        String id = lastMessage.substring(lastMessage.lastIndexOf("/") + 1);
+        String id = lastMessage.substring(lastMessage.lastIndexOf("/") + 1, lastMessage.indexOf(".jpg"));
         byte[] printout = library.getPrintout(id);
         assertNotNull(printout);
         assertTrue(printout.length > 0);
@@ -94,7 +96,7 @@ public class PrintoutTest {
         bot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", "TSDBot I need a printout of a big ol' fuzzy bear");
         lastMessage = bot.getLastMessage(channel);
         assertTrue(lastMessage.startsWith(server));
-        String id = lastMessage.substring(lastMessage.lastIndexOf("/") + 1);
+        String id = lastMessage.substring(lastMessage.lastIndexOf("/") + 1, lastMessage.indexOf(".jpg"));
         byte[] printout = library.getPrintout(id);
         assertNotNull(printout);
         assertTrue(printout.length > 0);

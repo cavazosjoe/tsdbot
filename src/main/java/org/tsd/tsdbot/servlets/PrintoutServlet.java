@@ -29,6 +29,7 @@ public class PrintoutServlet extends HttpServlet {
         String printoutId = null;
         try{
             printoutId = req.getPathInfo().split("/")[1];
+            printoutId = printoutId.substring(0, printoutId.indexOf(".jpg"));
             logger.info("Parsed printout id {}", printoutId);
             byte[] data = printoutLibrary.getPrintout(printoutId);
             IOUtils.copy(new ByteArrayInputStream(data), resp.getOutputStream());

@@ -3,14 +3,10 @@ package org.tsd.tsdbot;
 import com.google.inject.Inject;
 import org.jibble.pircbot.User;
 import org.tsd.tsdbot.functions.MainFunction;
-import org.tsd.tsdbot.functions.MainFunctionImpl;
 import org.tsd.tsdbot.history.HistoryBuff;
 
 import java.util.*;
 
-/**
- * Created by Joe on 3/27/2015.
- */
 public class TestBot implements Bot {
 
     @Inject

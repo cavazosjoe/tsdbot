@@ -28,7 +28,7 @@ public class FilenameLibrary implements Serializable {
     private static final int MAX_TOTAL_SUBMISSIONS = 20;
 
     private static final long MAX_FILESIZE = 1024 * 1024 * 5; // 5 megabytes
-    private static final String[] VALID_FILE_TYPES = {"jpg", "jpeg", "bmp", "webm", "flv", "png", ".mp3"};
+    private static final String[] VALID_FILE_TYPES = {"jpg", "jpeg", "bmp", "webm", "flv", "png", ".mp3", "gif", "gifv"};
 
     private final LinkedList<FilenameSubmission> submissionQueue = new LinkedList<>();
     private final File filenameDirectory;
@@ -48,6 +48,7 @@ public class FilenameLibrary implements Serializable {
     }
 
     public String addFilename(String name, String path) throws IOException, FilenameValidationException {
+        name = correctNameIfNecessary(name, path);
         byte[] bytes = validateAndDownload(name, path);
         writeToFile(name, bytes);
         return serverUrl + "/filenames/" + name;
@@ -65,11 +66,12 @@ public class FilenameLibrary implements Serializable {
                 pendingForThisUser++;
         }
 
-        if(pendingForThisUser > MAX_SUBMISSIONS_PER_PERSON) {
+        if(pendingForThisUser >= MAX_SUBMISSIONS_PER_PERSON) {
             throw new FilenameValidationException(String.format(
                     "you currently have %s submissions pending. Ask an op to review them", pendingForThisUser));
         }
 
+        name = correctNameIfNecessary(name, path);
         byte[] bytes = validateAndDownload(name, path);
         FilenameSubmission submission = new FilenameSubmission(
                 name, path, bytes, submitterNick, submitterIdent
@@ -79,10 +81,14 @@ public class FilenameLibrary implements Serializable {
     }
 
     public String approve(String id) throws IOException {
-        for (FilenameSubmission submission : submissionQueue) {
-            if (submission.getId().equals(id)) {
+        Iterator<FilenameSubmission> iterator = submissionQueue.iterator();
+        while(iterator.hasNext()) {
+            FilenameSubmission submission = iterator.next();
+            if (submission.getId().equals(id)) try {
                 File f = writeToFile(submission.getName(), submission.getBytes());
                 return serverUrl + "/filenames/" + f.getName();
+            } finally {
+                iterator.remove();
             }
         }
         throw new RuntimeException("Could not find submission with ID " + id);
@@ -162,18 +168,7 @@ public class FilenameLibrary implements Serializable {
         return targetFile;
     }
 
-    byte[] validateAndDownload(String name, String path) throws FilenameValidationException {
-
-        log.info("Validating filename submission: name={} path={}", name, path);
-
-        if(StringUtils.isBlank(name))
-            throw new FilenameValidationException("name cannot be null");
-        if(StringUtils.isBlank(path))
-            throw new FilenameValidationException("URL cannot be null");
-
-        if(!UrlValidator.getInstance().isValid(path))
-            throw new FilenameValidationException("not a valid URL");
-
+    String correctNameIfNecessary(String name, String path) throws FilenameValidationException {
         String extension = parseExtensionFromName(name);
         if(extension == null) {
             // the submitter didn't include an extension in their filename, help them out
@@ -193,7 +188,26 @@ public class FilenameLibrary implements Serializable {
                 throw new FilenameValidationException("URL must match filetype of name: " + extension);
             }
         }
+        if(!name.endsWith("."+extension)) {
+            name += ("."+extension);
+        }
+        return name;
+    }
 
+    byte[] validateAndDownload(String name, String path) throws FilenameValidationException {
+
+        log.info("Validating filename submission: name={} path={}", name, path);
+
+        if(StringUtils.isBlank(name))
+            throw new FilenameValidationException("name cannot be null");
+        if(StringUtils.isBlank(path))
+            throw new FilenameValidationException("URL cannot be null");
+
+        if(!UrlValidator.getInstance().isValid(path))
+            throw new FilenameValidationException("not a valid URL");
+
+
+        String extension = parseExtensionFromName(name);
         if(!Arrays.asList(VALID_FILE_TYPES).contains(extension.toLowerCase())) {
             throw new FilenameValidationException("invalid file type. Must be one of " + Arrays.toString(VALID_FILE_TYPES));
         }

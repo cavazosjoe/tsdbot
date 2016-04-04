@@ -168,7 +168,7 @@ public class Printout extends MainFunctionImpl {
                         String id = MiscUtils.getRandomString();
                         ImageIO.write(overlayedImage, outputFileType, baos);
                         printoutLibrary.addPrintout(id, baos.toByteArray());
-                        bot.sendMessage(channel, serverUrl + "/printouts/" + id);
+                        bot.sendMessage(channel, serverUrl + "/printouts/" + id + ".jpg");
                     }
                 } else {
                     throw new Exception("Could not generate image for an unknown reason");

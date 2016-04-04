@@ -23,10 +23,8 @@ import java.util.Date;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.tsd.tsdbot.IntegTestUtils.sendMessageGetResponse;
 
-/**
- * Created by Joe on 3/29/2015.
- */
 @RunWith(JukitoRunner.class)
 public class DBOFireteamFunctionTest {
 
@@ -58,38 +56,33 @@ public class DBOFireteamFunctionTest {
         TestBot testBot = (TestBot)bot;
         Dao<Fireteam, Integer> dao = DaoManager.createDao(connectionSource, Fireteam.class);
 
-        String lastMessage = sendMessageGetResponse(testBot, "Schooly_D", ".dboft subscribe someteam");
+        String lastMessage = sendMessageGetResponse(testBot, "Schooly_D", "schoolyd", channel, ".dboft subscribe someteam");
         assertTrue(lastMessage.toLowerCase().contains("must be an integer"));
 
-        lastMessage = sendMessageGetResponse(testBot, "Schooly_D", ".dboft subscribe 2");
+        lastMessage = sendMessageGetResponse(testBot, "Schooly_D", "schoolyd", channel, ".dboft subscribe 2");
         assertTrue(lastMessage.toLowerCase().contains("could not find fireteam"));
 
-        lastMessage = sendMessageGetResponse(testBot, "Schooly_D", ".dboft subscribe 1");
+        lastMessage = sendMessageGetResponse(testBot, "Schooly_D", "schoolyd", channel, ".dboft subscribe 1");
         assertTrue(lastMessage.toLowerCase().contains("now subscribed to"));
         assertTrue(dao.queryForId(1).isSubscribed());
 
-        lastMessage = sendMessageGetResponse(testBot, "Schooly_D", ".dboft subscribe 1");
+        lastMessage = sendMessageGetResponse(testBot, "Schooly_D", "schoolyd", channel, ".dboft subscribe 1");
         assertTrue(lastMessage.toLowerCase().contains("already subscribed"));
 
-        lastMessage = sendMessageGetResponse(testBot, "Schooly_D", ".dboft unsubscribe 2");
+        lastMessage = sendMessageGetResponse(testBot, "Schooly_D", "schoolyd", channel, ".dboft unsubscribe 2");
         assertTrue(lastMessage.toLowerCase().contains("could not find fireteam"));
 
-        lastMessage = sendMessageGetResponse(testBot, "Schooly_D", ".dboft unsubscribe 1");
+        lastMessage = sendMessageGetResponse(testBot, "Schooly_D", "schoolyd", channel, ".dboft unsubscribe 1");
         assertTrue(lastMessage.toLowerCase().contains("only an op can"));
 
-        lastMessage = sendMessageGetResponse(testBot, "OpUser", ".dboft unsubscribe 1");
+        lastMessage = sendMessageGetResponse(testBot, "OpUser", "op", channel, ".dboft unsubscribe 1");
         assertTrue(lastMessage.toLowerCase().contains("no longer subscribed to"));
         assertFalse(dao.queryForId(1).isSubscribed());
 
-        lastMessage = sendMessageGetResponse(testBot, "OpUser", ".dboft unsubscribe 1");
+        lastMessage = sendMessageGetResponse(testBot, "OpUser", "op", channel, ".dboft unsubscribe 1");
         assertTrue(lastMessage.toLowerCase().contains("not currently subscribed"));
         assertFalse(dao.queryForId(1).isSubscribed());
 
-    }
-
-    private String sendMessageGetResponse(TestBot testBot, String user, String msg) {
-        testBot.onMessage(channel, user, "ident", "hostname", msg);
-        return testBot.getLastMessage(channel);
     }
 
     public static class Module extends JukitoModule {

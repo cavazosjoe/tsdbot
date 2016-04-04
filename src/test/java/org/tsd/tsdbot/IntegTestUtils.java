@@ -25,4 +25,9 @@ public class IntegTestUtils {
             throw new RuntimeException("Failed to load properties file");
         }
     }
+
+    public static String sendMessageGetResponse(TestBot testBot, String user, String ident, String channel, String msg) {
+        testBot.onMessage(channel, user, ident, "hostname", msg);
+        return testBot.getLastMessage(channel);
+    }
 }

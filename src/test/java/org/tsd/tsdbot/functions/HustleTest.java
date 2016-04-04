@@ -13,9 +13,6 @@ import org.tsd.tsdbot.stats.HustleStats;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Joe on 4/1/2015.
- */
 @RunWith(JukitoRunner.class)
 public class HustleTest {
 

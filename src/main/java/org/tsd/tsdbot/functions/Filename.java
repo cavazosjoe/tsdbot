@@ -42,6 +42,7 @@ public class Filename extends MainFunctionImpl {
             } catch (FilenameLibrary.FilenameRetrievalException e) {
                 bot.sendMessage(channel, "Error: " + e.getMessage());
             }
+            return;
         }
 
         switch(cmdParts[1]) {
