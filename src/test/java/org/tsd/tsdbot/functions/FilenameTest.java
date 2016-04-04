@@ -158,10 +158,9 @@ public class FilenameTest {
         TestBot testBot = (TestBot) bot;
 
         String[] badUrls = {
-                "fffffff",
-                "hx",
-                ".....http:////.....",
-                "something.jpg"
+                "..::something.gifv",
+                "::something.gifv",
+                "//something.gifv"
         };
 
         for(String url : badUrls) {
@@ -198,7 +197,8 @@ public class FilenameTest {
     }
 
     @After
-    public void cleanup() {
+    public void cleanup(FilenameLibrary filenameLibrary) {
+        filenameLibrary.clearSubmissions();
         for(File f : library.listFiles()) {
             f.delete();
         }

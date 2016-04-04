@@ -250,6 +250,10 @@ public class FilenameLibrary implements Serializable {
         }
     }
 
+    public void clearSubmissions() {
+        submissionQueue.clear();
+    }
+
     public class FilenameValidationException extends Exception {
         public FilenameValidationException(String message) {
             super(message);
