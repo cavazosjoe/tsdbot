@@ -1,5 +1,10 @@
 package org.tsd.tsdbot.tsdfm;
 
+import com.google.common.base.Predicate;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.Collections2;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
@@ -19,7 +24,16 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Singleton
@@ -30,12 +44,15 @@ public class TSDFMLibrary implements Persistable {
     private final DBConnectionProvider connectionProvider;
     private final File libraryDirectory;
     private final TreeSet<TSDFMArtist> artists = new TreeSet<>();
+    private final Random random;
 
     @Inject
     public TSDFMLibrary(DBConnectionProvider connectionProvider,
-                        @Named("tsdtvLibrary") File libraryDirectory) {
+                        Random random,
+                        @Named("tsdfmLibrary") File libraryDirectory) {
         this.libraryDirectory = libraryDirectory;
         this.connectionProvider = connectionProvider;
+        this.random = random;
         load();
     }
 
@@ -45,16 +62,8 @@ public class TSDFMLibrary implements Persistable {
         Connection connection = connectionProvider.get();
 
         // create song tag table if it doesn't exist
-        String tagsTable = "TSDFM_TAGS";
-        String createTagsTable = String.format(
-                "create table if not exists %s " +
-                "(" +
-                    "path varchar," +
-                    "tag varchar," +
-                    "constraint unique(path, tag)" +
-                ")", tagsTable);
-        try(PreparedStatement ps = connection.prepareStatement(createTagsTable)) {
-            log.info("TSDFM_TAGS: {}", createTagsTable);
+        try(PreparedStatement ps = connection.prepareStatement(CREATE_TAGS_TABLE)) {
+            log.info("{}: {}", TAGS_TABLE, CREATE_TAGS_TABLE);
             ps.executeUpdate();
         }
     }
@@ -73,22 +82,19 @@ public class TSDFMLibrary implements Persistable {
     }
 
     public void tagSong(TSDFMSong song, String... tags) throws SQLException {
-        String queryTagFormat = "select count(*) from TSDFM_TAGS where path = '%s' and tag = '%s'";
-        String insertTagFormat = "insert into TSDFM_TAGS (path, tag) values ('%s', '%s')";
-
         String songPath = song.getMusicFile().getAbsolutePath();
         String countQuery;
         String insertStatement;
         Connection connection = connectionProvider.get();
         for(String tag : tags) {
             tag = sanitizeTag(tag);
-            countQuery = String.format(queryTagFormat, songPath, tag);
+            countQuery = String.format(QUERY_EXISTING_TAG, songPath, tag);
             try(PreparedStatement ps = connection.prepareStatement(countQuery) ; ResultSet result = ps.executeQuery()) {
                 result.next();
                 if(result.getInt(1) == 0) {
                     log.info("Could not find tag '{}' for song {}, adding...", tag, songPath);
                     insertStatement = String.format(
-                            insertTagFormat,
+                            INSERT_TAG,
                             songPath,
                             tag);
                     try(PreparedStatement ps1 = connection.prepareCall(insertStatement)) {
@@ -129,6 +135,9 @@ public class TSDFMLibrary implements Persistable {
     }
 
     List<TSDFMArtist> queryArtists(String query) {
+        if(StringUtils.isBlank(query))
+            return new LinkedList<>(artists);
+
         return FuzzyLogic.fuzzySubset(query, artists, new FuzzyVisitor<TSDFMArtist>() {
             @Override
             public String visit(TSDFMArtist o1) {
@@ -157,10 +166,22 @@ public class TSDFMLibrary implements Persistable {
     }
 
     List<TSDFMAlbum> queryAlbums(String query, Collection<TSDFMArtist> artistsToSearch) {
+
+        // query is blank, return all albums for the selected artists
+        if(StringUtils.isBlank(query)) {
+            Set<TSDFMAlbum> allAlbums = new HashSet<>();
+            for(TSDFMArtist artist : artistsToSearch) {
+                allAlbums.addAll(artist.getAlbums());
+            }
+            return new LinkedList<>(allAlbums);
+        }
+
+        // query is not blank, perform a fuzzy search
         Set<TSDFMAlbum> albumsToSearch = new HashSet<>();
         for(TSDFMArtist artist : artistsToSearch) {
             albumsToSearch.addAll(artist.getAlbums());
         }
+
         return FuzzyLogic.fuzzySubset(query, albumsToSearch, new FuzzyVisitor<TSDFMAlbum>() {
             @Override
             public String visit(TSDFMAlbum o1) {
@@ -206,28 +227,108 @@ public class TSDFMLibrary implements Persistable {
         }
     }
 
-    public Set<TSDFMSong> getAllSongsForTags(String... tags) throws SQLException {
+    Set<TSDFMSong> getAllSongs() {
+        Set<TSDFMSong> allSongs = new HashSet<>();
+        for(TSDFMArtist artist : queryArtists(null)) {
+            allSongs.addAll(artist.getSongsNoAlbum());
+            for(TSDFMAlbum album : artist.getAlbums()) {
+                allSongs.addAll(album.getSongs());
+            }
+        }
+        return allSongs;
+    }
+
+    public TSDFMSong getSongFromPath(String pathString) throws TSDFMQueryException {
+        try {
+            Collection<TSDFMSong> matchingSongs = Collections2.filter(allSongsCache.get(allSongsCacheKey), new Predicate<TSDFMSong>() {
+                @Override
+                public boolean apply(TSDFMSong tsdfmSong) {
+                    return tsdfmSong.getMusicFile().getAbsolutePath().equals(pathString);
+                }
+            });
+
+            if (matchingSongs.size() == 0) {
+                throw new TSDFMQueryException("Could not find any songs matching path " + pathString);
+            }
+            else if (matchingSongs.size() > 1) {
+                log.error("Found multiple songs matching path {}: {}", pathString, StringUtils.join(matchingSongs, "||"));
+                throw new TSDFMQueryException("Found multiple songs matching path " + pathString);
+            }
+            else {
+                return matchingSongs.iterator().next();
+            }
+        } catch (ExecutionException ee) {
+            throw new TSDFMQueryException("Error accessing song cache");
+        }
+    }
+
+    public Set<TSDFMSong> getAllSongsForTags(Collection<String> tags) throws SQLException {
         Connection dbConn = connectionProvider.get();
 
         StringBuilder innerQueryBuilder = new StringBuilder();
         for(String tag : tags) {
             if(innerQueryBuilder.length() > 0) {
                 innerQueryBuilder.append(",");
-            } else {
-                innerQueryBuilder.append("select ");
             }
             innerQueryBuilder.append("'").append(tag).append("'");
         }
 
         String query = "select path from TSDFM_TAGS where tag in (" + innerQueryBuilder.toString() + ")";
-        Set<String> matchingSongs = new HashSet<>();
+        Set<TSDFMSong> matchingSongs = new HashSet<>();
         try(PreparedStatement ps = dbConn.prepareStatement(query) ; ResultSet result = ps.executeQuery()) {
-            while(result.next()) {
-                matchingSongs.add(result.getString(1));
+            while(result.next()) try {
+                matchingSongs.add(getSongFromPath(result.getString(1)));
+            } catch (TSDFMQueryException qe) {
+                log.info("Query error while getting tagged songs: " + qe.getMessage());
             }
         }
 
-
+        return matchingSongs;
     }
+
+    public TSDFMSong getRandomSong() throws TSDFMQueryException {
+        try {
+            Set<TSDFMSong> allSongs = allSongsCache.get(allSongsCacheKey);
+            int i = 0;
+            int randIdx = random.nextInt(allSongs.size());
+            for(TSDFMSong song : allSongs) {
+                if(randIdx == i) {
+                    return song;
+                }
+                i++;
+            }
+            return null;
+        } catch (ExecutionException ee) {
+            log.error("Error getting random song", ee);
+            throw new TSDFMQueryException("Error getting random song");
+        }
+    }
+
+    private static final String TAGS_TABLE = "TSDFM_TAGS";
+
+    private static final String QUERY_EXISTING_TAG =
+        "select count(*) from "+TAGS_TABLE+" where path = '%s' and tag = '%s'";
+
+    private static final String INSERT_TAG =
+        "insert into "+TAGS_TABLE+" (path, tag) values ('%s', '%s')";
+
+    private static final String CREATE_TAGS_TABLE = String.format(
+        "create table if not exists %s (" +
+            "path varchar," +
+            "tag varchar," +
+            "constraint unique(path, tag)" +
+        ")",
+        TAGS_TABLE
+    );
+
+    private static final String allSongsCacheKey = "ALLSONGS";
+    private final LoadingCache<String, Set<TSDFMSong>> allSongsCache = CacheBuilder.newBuilder()
+        .expireAfterWrite(10, TimeUnit.MINUTES)
+        .build(new CacheLoader<String, Set<TSDFMSong>>() {
+            @Override
+            public Set<TSDFMSong> load(String s) throws Exception {
+                return getAllSongs();
+            }
+        });
 
 }

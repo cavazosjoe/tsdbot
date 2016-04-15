@@ -3,19 +3,33 @@ package org.tsd.tsdbot.tsdfm;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
-import org.quartz.*;
+import org.quartz.CronTrigger;
+import org.quartz.JobDetail;
+import org.quartz.JobKey;
+import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
 import org.quartz.impl.matchers.GroupMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.config.TSDFMConfig;
 import org.tsd.tsdbot.scheduled.SchedulerConstants;
+import org.tsd.tsdbot.tsdfm.model.TSDFMSong;
+import org.tsd.tsdbot.util.FfmpegUtils;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Collections;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 
 import static org.quartz.CronScheduleBuilder.cronSchedule;
 import static org.quartz.JobBuilder.newJob;
@@ -26,6 +40,9 @@ public class TSDFM {
 
     private static final Logger log = LoggerFactory.getLogger(TSDFM.class);
 
+    // minimum number of songs to keep in the queue
+    private static final int SONGS_IN_QUEUE = 3;
+
     private TSDFMQueueItem nowPlaying;
     private final Queue<TSDFMQueueItem> queue = new ConcurrentLinkedQueue<>();
 
@@ -33,22 +50,84 @@ public class TSDFM {
     private final TSDFMLibrary library;
     private final Scheduler scheduler;
     private final String scheduleFile;
+    private final TSDFMFileProcessor fileProcessor;
+    private final FfmpegUtils ffmpegUtils;
 
     @Inject
     public TSDFM(Bot bot,
                  TSDFMLibrary library,
+                 TSDFMFileProcessor fileProcessor,
                  Scheduler scheduler,
-                 TSDFMConfig config,
-                 ) {
+                 FfmpegUtils ffmpegUtils,
+                 TSDFMConfig config) {
         this.bot = bot;
         this.library = library;
         this.scheduler = scheduler;
         this.scheduleFile = config.scheduleFile;
+        this.fileProcessor = fileProcessor;
+        this.ffmpegUtils = ffmpegUtils;
     }
 
     public synchronized void playScheduledBlock(TSDFMBlock block) {
-        queue.clear();
+        try {
 
+            LinkedList<TSDFMSong> songsWithTags = new LinkedList<>(library.getAllSongsForTags(block.getTagsToPlay()));
+            Collections.shuffle(songsWithTags);
+
+            List<TSDFMQueueItem> filesToPlay = new LinkedList<>();
+            long blockTimeMillis = TimeUnit.MINUTES.toMillis(block.getDuration());
+            long accumulatedBlockMillis = 0;
+            TSDFMSong song;
+            File processedSong;
+            while(accumulatedBlockMillis < blockTimeMillis && songsWithTags.size() > 0) {
+                song = songsWithTags.pop();
+                if(accumulatedBlockMillis == 0) {
+                    processedSong = fileProcessor.addIntroToSong(block.getIntro(), song);
+                } else {
+                    processedSong = fileProcessor.addIntroToSong(
+                        SongTransitions.get(song.getArtist().getName(), song.getTitle()),
+                        song
+                    );
+                }
+
+                long songDuration = ffmpegUtils.getDuration(processedSong);
+                filesToPlay.add(new TSDFMQueueItem(processedSong, song, block));
+                accumulatedBlockMillis += songDuration;
+            }
+
+            queue.addAll(filesToPlay);
+
+        } catch (Exception e) {
+            log.error("Error playing scheduled block", e);
+            bot.sendMessage();
+        }
+
+    }
+
+    synchronized void play(TSDFMQueueItem queueItem) {
+
+    }
+
+    public synchronized void playNext() {
+
+        if(nowPlaying != null) {
+            nowPlaying.getFile().delete();
+            nowPlaying = null;
+        }
+
+        while(queue.size() <= SONGS_IN_QUEUE) try {
+            TSDFMSong song = library.getRandomSong();
+            File processedSong = fileProcessor.addIntroToSong(
+                SongTransitions.get(song.getArtist().getName(), song.getTitle()),
+                song
+            );
+            TSDFMQueueItem queueItem = new TSDFMQueueItem(processedSong, song);
+            queue.add(queueItem);
+        } catch (Exception e) {
+            log.error("Error loading item into queue", e);
+        }
+
+        play(queue.poll());
     }
 
     public void readSchedule() throws TSDFMScheduleException {
@@ -183,7 +262,5 @@ public class TSDFM {
             throw new TSDFMScheduleException("Error building schedule: " + se.getMessage());
         }
     }
-
-    File addIntroToSong(String intro text)
 
 }

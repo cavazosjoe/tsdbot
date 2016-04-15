@@ -7,7 +7,7 @@ public class TSDFMConfig {
 
     @NotNull
     @NotEmpty
-    public String catalog;
+    public String library;
 
     @NotNull
     @NotEmpty
@@ -16,4 +16,9 @@ public class TSDFMConfig {
     @NotNull
     @NotEmpty
     public String scheduleFile;
+
+    @NotEmpty
+    @NotNull
+    public String logFile;
+
 }

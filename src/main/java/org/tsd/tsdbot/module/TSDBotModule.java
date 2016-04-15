@@ -21,7 +21,12 @@ import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.spi.JobFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.*;
+import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.FilenameLibrary;
+import org.tsd.tsdbot.PrintoutLibrary;
+import org.tsd.tsdbot.RecapLibrary;
+import org.tsd.tsdbot.Stage;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.config.GoogleConfig;
 import org.tsd.tsdbot.config.TSDBotConfiguration;
 import org.tsd.tsdbot.database.DBConnectionProvider;
@@ -34,13 +39,14 @@ import org.tsd.tsdbot.runnable.InjectableIRCThreadFactory;
 import org.tsd.tsdbot.runnable.ThreadManager;
 import org.tsd.tsdbot.scheduled.InjectableJobFactory;
 import org.tsd.tsdbot.tsdtv.InjectableStreamFactory;
-import org.tsd.tsdbot.tsdtv.TSDTV;
-import org.tsd.tsdbot.tsdtv.TSDTVFileProcessor;
-import org.tsd.tsdbot.tsdtv.TSDTVLibrary;
 import twitter4j.Twitter;
 import twitter4j.TwitterFactory;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
@@ -158,6 +164,9 @@ public class TSDBotModule extends AbstractModule {
                 .toInstance(configuration.mashapeKey);
         log.info("Bound mashape key: {}", configuration.mashapeKey);
 
+        bind(String.class).annotatedWith(Names.named("voiceRssApiKey")).toInstance(configuration.voiceRssApiKey);
+        log.info("Bound VoiceRSS key: {}", configuration.voiceRssApiKey);
+
         log.info("Binding filename library...");
         bind(FilenameLibrary.class).asEagerSingleton();
 
@@ -239,48 +248,6 @@ public class TSDBotModule extends AbstractModule {
                 .toInstance(configuration.ffmpegExec);
         log.info("Bound ffmpeg executable to {}", configuration.ffmpegExec);
 
-        // arguments to ffmpeg commands
-        bind(String.class)
-                .annotatedWith(Names.named("ffmpegArgs"))
-                .toInstance(configuration.tsdtv.ffmpegArgs);
-        log.info("Bound ffmpeg arguments to {}", configuration.tsdtv.ffmpegArgs);
-
-        // output of ffmpeg commands
-        bind(String.class)
-                .annotatedWith(Names.named("ffmpegOut"))
-                .toInstance(configuration.tsdtv.ffmpegOut);
-        log.info("Bound ffmpeg output to {}", configuration.tsdtv.ffmpegOut);
-
-        // direct link to TSDTV stream (to be opened in video players)
-        bind(String.class)
-                .annotatedWith(Names.named("tsdtvDirect"))
-                .toInstance(configuration.tsdtv.directLink);
-        log.info("Bound TSDTV direct link to {}", configuration.tsdtv.directLink);
-
-        // video format used by web player
-        bind(String.class)
-                .annotatedWith(Names.named("videoFmt"))
-                .toInstance(configuration.tsdtv.videoFmt);
-        log.info("Bound ffmpeg video format to {}", configuration.tsdtv.videoFmt);
-
-        File tsdtvLibrary = new File(configuration.tsdtv.catalog);
-        bind(File.class)
-                .annotatedWith(Names.named("tsdtvLibrary"))
-                .toInstance(tsdtvLibrary);
-        log.info("Bound TSDTV library directory to {}", tsdtvLibrary.getAbsolutePath());
-
-        File tsdtvRaws = new File(configuration.tsdtv.raws);
-        bind(File.class)
-                .annotatedWith(Names.named("tsdtvRaws"))
-                .toInstance(tsdtvRaws);
-        log.info("Bound TSDTV raws directory to {}", tsdtvRaws.getAbsolutePath());
-
-        log.info("Binding TSDTV library...");
-        bind(TSDTVLibrary.class).asEagerSingleton();
-
-        log.info("Binding TSDTV file processor...");
-        bind(TSDTVFileProcessor.class).asEagerSingleton();
-
         log.info("Binding google credentials...");
         bind(GoogleConfig.class).toInstance(configuration.google);
         GoogleCredential googleCredential = new GoogleCredential.Builder()
@@ -299,8 +266,8 @@ public class TSDBotModule extends AbstractModule {
 
         bind(YouTube.class).toInstance(youTube);
 
-        log.info("Binding TSDTV client...");
-        bind(TSDTV.class).asEagerSingleton();
+        install(new TSDTVModule(configuration.tsdtv));
+        install(new TSDFMModule(configuration.tsdfm));
 
         log.info("TSDBotModule.configure() successful");
 

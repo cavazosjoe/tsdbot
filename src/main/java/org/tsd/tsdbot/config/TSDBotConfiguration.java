@@ -56,4 +56,8 @@ public class TSDBotConfiguration {
     @NotNull
     public String haloApiKey;
 
+    @NotEmpty
+    @NotNull
+    public String voiceRssApiKey;
+
 }

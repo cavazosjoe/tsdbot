@@ -23,4 +23,15 @@ public class TSDFMQueueItem {
         this.block = block;
     }
 
+    public File getFile() {
+        return file;
+    }
+
+    public TSDFMSong getSong() {
+        return song;
+    }
+
+    public TSDFMBlock getBlock() {
+        return block;
+    }
 }
