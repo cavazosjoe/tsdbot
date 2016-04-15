@@ -12,9 +12,6 @@ import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Created by Joe on 1/12/2015.
- */
 public class TSDTVUtil {
 
     private static final Logger log = LoggerFactory.getLogger(TSDTVUtil.class);

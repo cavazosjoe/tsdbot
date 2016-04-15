@@ -9,27 +9,15 @@ import org.tsd.tsdbot.config.TSDBotConfiguration;
 import java.io.File;
 import java.io.IOException;
 
-/**
- * Created by Joe on 3/9/14.
- */
 public class TSDTVStream extends Thread {
 
     private static Logger logger = LoggerFactory.getLogger(TSDTVStream.class);
 
-    @Inject
-    protected TSDTV tsdtv;
-
-    @Inject
-    protected TSDBotConfiguration config;
-
-    @Inject @Named(value = "ffmpegExec")
-    private String ffmpegExec;
-
-    @Inject @Named(value = "ffmpegArgs")
-    private String ffmpegArgs;
-
-    @Inject @Named(value = "ffmpegOut")
-    private String ffmpegOut;
+    private final TSDTV tsdtv;
+    private final TSDBotConfiguration config;
+    private final String ffmpegExec;
+    private final String ffmpegArgs;
+    private final String ffmpegOut;
 
     private String ffmpegCommand;
     private TSDTVQueueItem movie = null;
@@ -41,8 +29,18 @@ public class TSDTVStream extends Thread {
     private long lastPaused = 0;
     private boolean hasBeenPaused;
 
-    @Deprecated
-    public TSDTVStream() {}
+    @Inject
+    public TSDTVStream(TSDTV tsdtv,
+                       TSDBotConfiguration config,
+                       @Named(value = "ffmpegExec") String ffmpegExec,
+                       @Named(value = "ffmpegArgs") String ffmpegArgs,
+                       @Named(value = "ffmpegOut") String ffmpegOut) {
+        this.tsdtv = tsdtv;
+        this.config = config;
+        this.ffmpegExec = ffmpegExec;
+        this.ffmpegArgs = ffmpegArgs;
+        this.ffmpegOut = ffmpegOut;
+    }
 
     public void init(String videoFilter, TSDTVQueueItem program) {
         this.movie = program;

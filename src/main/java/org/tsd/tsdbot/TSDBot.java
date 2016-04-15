@@ -17,8 +17,8 @@ import org.tsd.tsdbot.runnable.IRCListenerThread;
 import org.tsd.tsdbot.runnable.ThreadManager;
 import org.tsd.tsdbot.stats.Stats;
 import org.tsd.tsdbot.util.ArchivistUtil;
-import org.tsd.tsdbot.util.FuzzyLogic;
 import org.tsd.tsdbot.util.IRCUtil;
+import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
 
 import java.io.IOException;
 import java.util.LinkedList;

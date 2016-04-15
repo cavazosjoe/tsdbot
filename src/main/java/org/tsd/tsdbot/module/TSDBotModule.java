@@ -236,8 +236,8 @@ public class TSDBotModule extends AbstractModule {
         // path to ffmpeg executable
         bind(String.class)
                 .annotatedWith(Names.named("ffmpegExec"))
-                .toInstance(configuration.tsdtv.ffmpegExec);
-        log.info("Bound ffmpeg executable to {}", configuration.tsdtv.ffmpegExec);
+                .toInstance(configuration.ffmpegExec);
+        log.info("Bound ffmpeg executable to {}", configuration.ffmpegExec);
 
         // arguments to ffmpeg commands
         bind(String.class)

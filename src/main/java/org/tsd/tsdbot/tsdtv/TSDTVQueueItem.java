@@ -4,9 +4,6 @@ import org.tsd.tsdbot.tsdtv.model.Streamable;
 
 import java.util.Date;
 
-/**
- * Created by Joe on 3/17/14.
- */
 public class TSDTVQueueItem {
 
     public Streamable video;

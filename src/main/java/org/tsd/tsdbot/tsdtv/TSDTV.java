@@ -3,7 +3,6 @@ package org.tsd.tsdbot.tsdtv;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import org.apache.commons.lang3.StringUtils;
 import org.jibble.pircbot.User;
 import org.quartz.*;
@@ -21,7 +20,8 @@ import org.tsd.tsdbot.tsdtv.model.TSDTVFiller;
 import org.tsd.tsdbot.tsdtv.model.TSDTVShow;
 import org.tsd.tsdbot.tsdtv.processor.FileAnalysis;
 import org.tsd.tsdbot.tsdtv.processor.StreamType;
-import org.tsd.tsdbot.util.FuzzyLogic;
+import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
+import org.tsd.tsdbot.util.fuzzy.FuzzyVisitor;
 
 import javax.naming.AuthenticationException;
 import java.io.*;
@@ -129,11 +129,6 @@ public class TSDTV implements Persistable {
                 }
             }
         }
-    }
-
-    @Override
-    public void initDB2(JdbcConnectionSource connectionSource) {
-
     }
 
     public void updateCurrentEpisode(TSDTVShow show, TSDTVEpisode episode) throws SQLException {
@@ -541,7 +536,7 @@ public class TSDTV implements Persistable {
 
         try {
             Set<JobKey> keys = scheduler.getJobKeys(GroupMatcher.<JobKey>groupEquals(SchedulerConstants.TSDTV_GROUP_ID));
-            LinkedList<JobKey> matchedJobs = FuzzyLogic.fuzzySubset(blockQuery, new LinkedList<>(keys), new FuzzyLogic.FuzzyVisitor<JobKey>() {
+            LinkedList<JobKey> matchedJobs = FuzzyLogic.fuzzySubset(blockQuery, new LinkedList<>(keys), new FuzzyVisitor<JobKey>() {
                 @Override
                 public String visit(JobKey o1) {
                     try {

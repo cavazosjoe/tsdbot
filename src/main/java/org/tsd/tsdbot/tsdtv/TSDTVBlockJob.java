@@ -9,9 +9,6 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 
-/**
- * Created by Joe on 3/16/14.
- */
 public class TSDTVBlockJob implements Job {
 
     private static final Logger logger = LoggerFactory.getLogger(TSDTVBlockJob.class);

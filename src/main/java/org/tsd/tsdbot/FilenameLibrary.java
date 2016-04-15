@@ -14,7 +14,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.util.FuzzyLogic;
+import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
+import org.tsd.tsdbot.util.fuzzy.FuzzyVisitor;
 
 import java.io.*;
 import java.util.*;
@@ -127,7 +128,7 @@ public class FilenameLibrary implements Serializable {
             }
             throw new FilenameRetrievalException("no filenames available");
         } else {
-            LinkedList<File> matchedFiles = FuzzyLogic.fuzzySubset(contains, filenames, new FuzzyLogic.FuzzyVisitor<File>() {
+            LinkedList<File> matchedFiles = FuzzyLogic.fuzzySubset(contains, filenames, new FuzzyVisitor<File>() {
                 @Override
                 public String visit(File o1) {
                     return o1.getName();

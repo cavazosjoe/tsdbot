@@ -4,9 +4,6 @@ import net.sf.oval.constraint.NotEmpty;
 import net.sf.oval.constraint.NotNull;
 
 public class TSDTVConfig {
-    @NotEmpty
-    @NotNull
-    public String ffmpegExec;
 
     @NotEmpty
     @NotNull

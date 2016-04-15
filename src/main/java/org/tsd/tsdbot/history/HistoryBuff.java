@@ -4,8 +4,8 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.apache.commons.collections.buffer.CircularFifoBuffer;
 import org.tsd.tsdbot.Bot;
-import org.tsd.tsdbot.TSDBot;
-import org.tsd.tsdbot.util.FuzzyLogic;
+import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
+import org.tsd.tsdbot.util.fuzzy.FuzzyVisitor;
 
 import java.util.*;
 
@@ -62,7 +62,7 @@ public class HistoryBuff {
             }
         } else {
             // fuzzy match on user handle
-            possibilities = FuzzyLogic.fuzzySubset(targetUser, buffer, new FuzzyLogic.FuzzyVisitor<Message>() {
+            possibilities = FuzzyLogic.fuzzySubset(targetUser, buffer, new FuzzyVisitor<Message>() {
                 @Override
                 public String visit(Message o1) {
                     return o1.sender;

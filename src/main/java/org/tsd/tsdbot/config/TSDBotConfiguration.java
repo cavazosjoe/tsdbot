@@ -32,6 +32,13 @@ public class TSDBotConfiguration {
     @NotNull
     public TwitterConfig twitter;
 
+    @NotEmpty
+    @NotNull
+    public String ffmpegExec;
+
+    @NotNull
+    public TSDFMConfig tsdfm;
+
     @NotNull
     public TSDTVConfig tsdtv;
 

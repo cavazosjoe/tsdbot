@@ -51,19 +51,26 @@ twitter:
   accessToken: 2349834990-ckfRDk81l1tOdaSBc15A7MVThOCauNFL1D12hSD
   accessTokenSecret: EW2vPIdwHZhbGIKPgieyoACqucSfS1lnF2tHfEIiMLwmS
 
-tsdtv:
-  # This is the ffmpeg executable
-  # If you don't know where yours is, run "which ffmpeg" on the command line
-  ffmpegExec: "/home/joe/bin/ffmpeg"
+voiceRssKey: 71adbe92a6b740f188579d852cee39ef
 
+# This is the ffmpeg executable
+# If you don't know where yours is, run "which ffmpeg" on the command line
+ffmpegExec: "C:/Users/Joe/Desktop/ffmpeg/bin/ffmpeg.exe"
+
+tsdfm:
+  catalog: "C:/Users/Joe/TSDFM"
+  target: "http://192.168.1.100:8090/feed2.ffm"
+  scheduleFile: "C:/Users/Joe/TSDFM/tsdfmSchedule.txt"
+
+tsdtv:
   # These arguments will be formatted at play time
   # (1) %s -> path to video file, e.g. "/path/to/movie.mkv"
   # (2) %s -> video filter, e.g. "yadif"
   ffmpegArgs: "-re -y -i %s -c:v libx264 -r 20 -b:v 1200k -maxrate 1700k -bufsize 2560k -preset superfast -profile:v baseline -pix_fmt yuv420p -flags:v +global_header -vf %s -c:a aac -b:a 128k -ar 44100 -strict experimental -flags:a +global_header"
 
   # Begin nginx-rtmp config
-  ffmpegOut: "-f flv rtmp://localhost/tsdtv/tsdtv"
-  directLink: "rtmp://irc.teamschoolyd.org/tsdtv/tsdtv"
+  ffmpegOut: "-f flv rtmp://192.168.1.100/tsdtv/tsdtv"
+  directLink: "rtmp://192.168.1.100/tsdtv/tsdtv"
   videoFmt: "rtmp/mp4"
 
   # Location of proper TSDTV files are located, ready to be played
@@ -79,10 +86,10 @@ tsdtv:
   # Separate log file for TSDTV streams so they don't clutter the main TSDBot log file
   logFile: "C:/Users/Joe/TSDTV/tsdtv.log"
 
-# ffserver config
-#   ffmpegOut: "http://localhost:8090/feed1.ffm"
-#   directLink: "http://irc.teamschoolyd.org:8090/tsdtv.flv"
-#   videoFmt: "video/flv"
+  # ffserver config
+  #ffmpegOut: "http://localhost:8090/feed1.ffm"
+  #directLink: "http://irc.teamschoolyd.org:8090/tsdtv.flv"
+  #videoFmt: "video/flv"
 
 # nginx-hls config
 #   ffmpegOut: "rtmp://localhost/hls/tsdtv"

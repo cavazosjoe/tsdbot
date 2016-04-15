@@ -1,4 +1,4 @@
-package org.tsd.tsdbot.util;
+package org.tsd.tsdbot.util.fuzzy;
 
 import java.util.LinkedList;
 
@@ -17,10 +17,6 @@ public class FuzzyLogic {
                 ret.addFirst(choice);
         }
         return ret;
-    }
-
-    public interface FuzzyVisitor<T> {
-        String visit(T o1);
     }
 
 }
