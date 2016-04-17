@@ -3,7 +3,7 @@ package org.tsd.tsdbot.functions;
 import com.google.inject.Inject;
 import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.history.HistoryBuff;
-import org.tsd.tsdbot.util.FuzzyLogic;
+import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
 
 import java.util.List;
 import java.util.regex.Matcher;

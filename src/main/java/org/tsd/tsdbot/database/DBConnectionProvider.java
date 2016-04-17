@@ -8,13 +8,10 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 
-/**
- * Created by Joe on 9/20/2014.
- */
 @Singleton
 public class DBConnectionProvider implements Provider<Connection> {
 
-    private static Logger logger = LoggerFactory.getLogger(DBConnectionProvider.class);
+    private static final Logger log = LoggerFactory.getLogger(DBConnectionProvider.class);
 
     private static String testQuery = "select 1";
 
@@ -23,7 +20,7 @@ public class DBConnectionProvider implements Provider<Connection> {
 
     @Inject
     public DBConnectionProvider(@DBConnectionString String connectionString) {
-        logger.info("Initializing ConnectionProvider with connectionString={}", connectionString);
+        log.info("Initializing ConnectionProvider with connectionString={}", connectionString);
         this.connectionString = connectionString;
     }
 
@@ -31,13 +28,13 @@ public class DBConnectionProvider implements Provider<Connection> {
     public Connection get() {
         try {
             if(connection == null || connection.isClosed()) {
-                logger.info("Connection is null or closed, retrying with connectionString={}", connectionString);
+                log.info("Connection is null or closed, retrying with connectionString={}", connectionString);
                 connection = DriverManager.getConnection(connectionString);
-                logger.info("Connection created, properties: {}", connection.getClientInfo().toString());
+                log.info("Connection created, properties: {}", connection.getClientInfo().toString());
             }
             try(PreparedStatement ps = connection.prepareStatement(testQuery);ResultSet result = ps.executeQuery()) {}
         } catch (SQLException sqle) {
-            logger.error("DB TEST QUERY FAILED: " + sqle.getMessage(), sqle);
+            log.error("DB TEST QUERY FAILED: " + sqle.getMessage(), sqle);
             return null;
         }
 

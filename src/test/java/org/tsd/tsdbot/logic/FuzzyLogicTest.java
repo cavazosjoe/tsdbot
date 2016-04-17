@@ -1,9 +1,10 @@
 package org.tsd.tsdbot.logic;
 
 import org.junit.Test;
-import org.tsd.tsdbot.util.FuzzyLogic;
+import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by Joe on 3/25/2015.

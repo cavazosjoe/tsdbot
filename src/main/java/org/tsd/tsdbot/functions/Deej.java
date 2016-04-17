@@ -11,9 +11,6 @@ import org.tsd.tsdbot.module.Function;
 
 import java.util.Random;
 
-/**
- * Created by Joe on 5/24/14.
- */
 @Singleton
 @Function(initialRegex = "^\\.deej$")
 public class Deej extends MainFunctionImpl {

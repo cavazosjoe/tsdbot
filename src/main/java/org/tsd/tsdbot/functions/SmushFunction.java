@@ -19,6 +19,7 @@ import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.tsdtv.TSDTVLibrary;
 import org.tsd.tsdbot.tsdtv.model.TSDTVEpisode;
 import org.tsd.tsdbot.tsdtv.model.TSDTVShow;
+import org.tsd.tsdbot.util.FfmpegUtils;
 import org.tsd.tsdbot.util.TSDTVUtil;
 
 import java.io.*;
@@ -42,13 +43,14 @@ public class SmushFunction extends MainFunctionImpl {
 
     private MessageFilter messageFilter = null;
 
-    private YouTube youTube;
-    private HistoryBuff historyBuff;
-    private TSDTVLibrary library;
-    private Random random;
-    private String ffmpegExec;
-    private ExecutorService executorService;
-    private InjectableMsgFilterStrategyFactory msgFilterFact;
+    private final YouTube youTube;
+    private final HistoryBuff historyBuff;
+    private final TSDTVLibrary library;
+    private final Random random;
+    private final String ffmpegExec;
+    private final ExecutorService executorService;
+    private final InjectableMsgFilterStrategyFactory msgFilterFact;
+    private final FfmpegUtils ffmpegUtils;
 
     @Inject
     public SmushFunction(
@@ -59,8 +61,10 @@ public class SmushFunction extends MainFunctionImpl {
             Random random,
             TSDTVLibrary library,
             YouTube youTube,
+            FfmpegUtils ffmpegUtils,
             @Named("ffmpegExec") String ffmpegExec) {
         super(bot);
+        this.ffmpegUtils = ffmpegUtils;
         this.msgFilterFact = msgFilterFact;
         this.random = random;
         this.library = library;
@@ -94,7 +98,7 @@ public class SmushFunction extends MainFunctionImpl {
                         TSDTVEpisode randomEpisode = randomShow.getRandomEpisode(random);
                         log.info("selected random episode: {}", randomEpisode.getFile().getAbsolutePath());
 
-                        long durationInMillis = randomEpisode.getDuration(ffmpegExec);
+                        long durationInMillis = ffmpegUtils.getDuration(randomEpisode.getFile());
                         int durationInSeconds = (int) (durationInMillis / 1000);
                         int opEdBufferInSeconds = 200; // so we pull openings and endings less often
                         int clipStartSeconds = opEdBufferInSeconds + random.nextInt(durationInSeconds - (opEdBufferInSeconds+videoLength));

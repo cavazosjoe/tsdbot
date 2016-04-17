@@ -32,6 +32,7 @@ import org.tsd.tsdbot.module.TSDBotServletModule;
 import org.tsd.tsdbot.scheduled.InjectableJobFactory;
 import org.tsd.tsdbot.scheduled.LogCleanerJob;
 import org.tsd.tsdbot.scheduled.SchedulerConstants;
+import org.tsd.tsdbot.tsdfm.TSDFM;
 
 import javax.servlet.DispatcherType;
 import java.io.File;
@@ -112,6 +113,7 @@ public class TSDBotLauncher {
             log.info("Joined aux channel {}", channel);
         }
 
+        injector.getInstance(TSDFM.class).start();
     }
 
     private static void initializeJettyServer(Injector injector) throws Exception {

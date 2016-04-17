@@ -11,9 +11,6 @@ import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.module.Function;
 
-/**
- * Created by Joe on 5/24/14.
- */
 @Singleton
 @Function(initialRegex = "^\\.sanic$")
 public class Sanic extends MainFunctionImpl {

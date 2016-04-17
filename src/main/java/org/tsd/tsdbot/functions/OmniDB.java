@@ -2,7 +2,6 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,11 +77,6 @@ public class OmniDB extends MainFunctionImpl implements Persistable {
         }
 
         connection.commit();
-    }
-
-    @Override
-    public void initDB2(JdbcConnectionSource connectionSource) {
-
     }
 
     @Override

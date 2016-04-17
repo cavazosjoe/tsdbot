@@ -3,7 +3,6 @@ package org.tsd.tsdbot.tsdtv;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import org.apache.commons.lang3.StringUtils;
 import org.jibble.pircbot.User;
 import org.quartz.*;
@@ -14,6 +13,7 @@ import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.config.TSDBotConfiguration;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.Persistable;
+import org.tsd.tsdbot.module.TSDTVChannels;
 import org.tsd.tsdbot.scheduled.SchedulerConstants;
 import org.tsd.tsdbot.tsdtv.model.FillerType;
 import org.tsd.tsdbot.tsdtv.model.TSDTVEpisode;
@@ -21,7 +21,9 @@ import org.tsd.tsdbot.tsdtv.model.TSDTVFiller;
 import org.tsd.tsdbot.tsdtv.model.TSDTVShow;
 import org.tsd.tsdbot.tsdtv.processor.FileAnalysis;
 import org.tsd.tsdbot.tsdtv.processor.StreamType;
-import org.tsd.tsdbot.util.FuzzyLogic;
+import org.tsd.tsdbot.util.FfmpegUtils;
+import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
+import org.tsd.tsdbot.util.fuzzy.FuzzyVisitor;
 
 import javax.naming.AuthenticationException;
 import java.io.*;
@@ -43,28 +45,30 @@ import static org.tsd.tsdbot.util.IRCUtil.color;
 @Singleton
 public class TSDTV implements Persistable {
 
-    private static Logger logger = LoggerFactory.getLogger(TSDTV.class);
+    private static Logger log = LoggerFactory.getLogger(TSDTV.class);
 
     private static final int dayBoundaryHour = 4; // 4:00 AM
     private static final TimeZone timeZone = TimeZone.getTimeZone("America/New_York");
 
-    private Bot bot;
+    private final Bot bot;
 
-    private TSDTVLibrary library;
-    private TSDTVFileProcessor processor;
+    private final TSDTVLibrary library;
+    private final TSDTVFileProcessor processor;
 
-    private DBConnectionProvider connectionProvider;
-    private InjectableStreamFactory streamFactory;
-    private Scheduler scheduler;
-    private String scheduleLoc;
-    private String serverUrl;
-    private String ffmpegExec;
-    private String tsdtvDirect;
+    private final DBConnectionProvider connectionProvider;
+    private final InjectableStreamFactory streamFactory;
+    private final Scheduler scheduler;
+    private final String scheduleLoc;
+    private final String serverUrl;
+    private final String tsdtvDirect;
+    private final FfmpegUtils ffmpegUtils;
+    private final List<String> tsdtvChannels;
 
     private LockdownMode lockdownMode = LockdownMode.open;
 
     private LinkedList<TSDTVQueueItem> queue = new LinkedList<>(); // file paths
     private TSDTVStream runningStream;
+    
 
     @Inject
     public TSDTV(Bot bot,
@@ -74,10 +78,11 @@ public class TSDTV implements Persistable {
                  Scheduler scheduler,
                  DBConnectionProvider connectionProvider,
                  InjectableStreamFactory streamFactory,
+                 FfmpegUtils ffmpegUtils,
                  @Named("serverUrl") String serverUrl,
-                 @Named("ffmpegExec") String ffmpegExec,
-                 @Named("tsdtvDirect") String tsdtvDirect) throws SQLException {
-        logger.info("Constructing TSDTV... numShows = {}", library.getAllShows().size());
+                 @Named("tsdtvDirect") String tsdtvDirect,
+                 @TSDTVChannels List tsdtvChannels) throws SQLException {
+        log.info("Constructing TSDTV... numShows = {}", library.getAllShows().size());
         this.bot = bot;
         this.processor = fileProcessor;
         this.library = library;
@@ -86,15 +91,16 @@ public class TSDTV implements Persistable {
         this.connectionProvider = connectionProvider;
         this.streamFactory = streamFactory;
         this.serverUrl = serverUrl;
-        this.ffmpegExec = ffmpegExec;
         this.tsdtvDirect = tsdtvDirect;
+        this.ffmpegUtils = ffmpegUtils;
+        this.tsdtvChannels = tsdtvChannels;
         initDB();
         buildSchedule();
     }
 
     @Override
     public void initDB() throws SQLException {
-        logger.info("Initializing TSDTV database");
+        log.info("Initializing TSDTV database");
 
         Connection connection = connectionProvider.get();
 
@@ -106,17 +112,17 @@ public class TSDTV implements Persistable {
                 "currentEpisode int," +
                 "primary key (id))", showsTable);
         try(PreparedStatement ps = connection.prepareStatement(createShows)) {
-            logger.info("TSDTV_SHOW: {}", createShows);
+            log.info("TSDTV_SHOW: {}", createShows);
             ps.executeUpdate();
         }
 
-        logger.info("Building TSDTV_SHOW table...");
+        log.info("Building TSDTV_SHOW table...");
         for(TSDTVShow show : library.getAllShows()) {
             String q = String.format("select count(*) from %s where name = '%s'", showsTable, show.getRawName());
             try(PreparedStatement ps = connection.prepareStatement(q) ; ResultSet result = ps.executeQuery()) {
                 result.next();
                 if(result.getInt(1) == 0) { // show does not exist in db, add it
-                    logger.info("Could not find show {} in DB, adding...", show.getRawName());
+                    log.info("Could not find show {} in DB, adding...", show.getRawName());
                     String insertShow = String.format(
                             "insert into %s (name, currentEpisode) values ('%s',1)",
                             showsTable,
@@ -125,15 +131,10 @@ public class TSDTV implements Persistable {
                         ps1.executeUpdate();
                     }
                 } else {
-                    logger.info("Show {} already exists in DB, skipping...", show.getRawName());
+                    log.info("Show {} already exists in DB, skipping...", show.getRawName());
                 }
             }
         }
-    }
-
-    @Override
-    public void initDB2(JdbcConnectionSource connectionSource) {
-
     }
 
     public void updateCurrentEpisode(TSDTVShow show, TSDTVEpisode episode) throws SQLException {
@@ -144,7 +145,7 @@ public class TSDTV implements Persistable {
         // try some hot-swapping in the queue
         if(!queue.isEmpty()) {
 
-            logger.info("Hotswapping episodes in queue...");
+            log.info("Hotswapping episodes in queue...");
 
             int updatingToEpisodeNum = episode.getEpisodeNumber();
             long timeOffset = 0; // running number of milliseconds to push downstream start/end times
@@ -155,7 +156,7 @@ public class TSDTV implements Persistable {
             while(queueIterator.hasNext()) {
 
                 queueItem = queueIterator.next();
-                logger.info("Evaluating file {}...", queueItem.video.getFile());
+                log.info("Evaluating file {}...", queueItem.video.getFile());
 
                 if(queueItem.scheduled && queueItem.video.getEpisodeNumber() > 0) {
                     // this is a scheduled episode. check if it's our show, update if so
@@ -165,39 +166,40 @@ public class TSDTV implements Persistable {
 
                         if(show.equals(queueShow)) { // this is an episode of the show we're updating
 
-                            logger.info("Queue item matches show {}, updating...", show.getRawName());
+                            log.info("Queue item matches show {}, updating...", show.getRawName());
 
                             TSDTVEpisode replacingWithEpisode = show.getEpisode(updatingToEpisodeNum);
-                            logger.info("Replacing with file {}...", replacingWithEpisode.getRawName());
+                            log.info("Replacing with file {}...", replacingWithEpisode.getRawName());
 
                             TSDTVBlock block = queueItem.block;
 
                             Date startTime = new Date(queueItem.startTime.getTime() + timeOffset);
-                            logger.info("{} + {}ms = {}", new Object[]{queueItem.startTime, timeOffset, startTime});
+                            log.info("{} + {}ms = {}", new Object[] {queueItem.startTime, timeOffset, startTime});
 
+                            long duration = ffmpegUtils.getDuration(replacingWithEpisode.getFile());
                             TSDTVQueueItem replacementQueueItem = new TSDTVQueueItem(
                                     replacingWithEpisode,
                                     block,
                                     true,
                                     startTime,
-                                    ffmpegExec,
+                                    duration,
                                     null
                             );
 
                             queueIterator.set(replacementQueueItem);
-                            logger.info("Replaced item in queue");
+                            log.info("Replaced item in queue");
 
                             String broadcastFmt = "[TSDTV] Replaced episode in queue: %s, %s -> %s";
-                            bot.broadcast(String.format(
+                            broadcast(String.format(
                                     broadcastFmt,
                                     show.getPrettyName(),
                                     ((TSDTVEpisode) queueItem.video).getPrettyName(),
                                     replacingWithEpisode.getPrettyName()));
 
                             // calculate time difference between old item and new, add to the offset
-                            long timeDiff = replacingWithEpisode.getDuration(ffmpegExec) - queueItem.video.getDuration(ffmpegExec);
+                            long timeDiff = ffmpegUtils.getDuration(replacingWithEpisode.getFile()) - ffmpegUtils.getDuration(queueItem.video.getFile());
                             timeOffset += timeDiff;
-                            logger.info("timeOffset + {} = {}", timeDiff + timeOffset);
+                            log.info("timeOffset + {} = {}", timeDiff + timeOffset);
 
                             // loop to episode 1 if we're at the end
                             if(updatingToEpisodeNum >= show.getAllEpisodes().size()) {
@@ -206,23 +208,23 @@ public class TSDTV implements Persistable {
                                 updatingToEpisodeNum++;
                             }
 
-                            logger.info("updatingToEpisodeNumber = {}", updatingToEpisodeNum);
+                            log.info("updatingToEpisodeNumber = {}", updatingToEpisodeNum);
 
                         } else {
                             // we're not replacing this episode, but its start time should be adjusted
-                            logger.info("Adjusting non-matched video's start time by " + timeOffset);
+                            log.info("Adjusting non-matched video's start time by " + timeOffset);
                             queueItem.startTime = new Date(queueItem.startTime.getTime() + timeOffset);
                         }
 
                     } catch (EpisodeNotFoundException e) {
-                        logger.error("Error updating downstream queue", e);
-                        bot.broadcast("Error updating downstream queue, please check logs");
+                        log.error("Error updating downstream queue", e);
+                        broadcast("Error updating downstream queue, please check logs");
                         return;
                     }
 
                 } else {
                     // we're not replacing this episode, but its start time should be adjusted
-                    logger.info("Adjusting non-matched video's start time by " + timeOffset);
+                    log.info("Adjusting non-matched video's start time by " + timeOffset);
                     queueItem.startTime = new Date(queueItem.startTime.getTime() + timeOffset);
                 }
             }
@@ -284,8 +286,9 @@ public class TSDTV implements Persistable {
         // determine if we have subtitles for this
         StringBuilder videoFilter = new StringBuilder();
         videoFilter.append("yadif");
-        if(hasSubtitles(program.video.getFile()))
+        if(hasSubtitles(program.video.getFile())) {
             videoFilter.append(",subtitles=").append(program.video.getFile().getAbsolutePath());
+        }
 
         runningStream = streamFactory.newStream(videoFilter.toString(), program);
         runningStream.start();
@@ -297,13 +300,13 @@ public class TSDTV implements Persistable {
                 int newEpNumber = (show.getAllEpisodes().size() <= program.video.getEpisodeNumber()) ? 1 : program.video.getEpisodeNumber()+1;
                 setEpisodeNumber(show, newEpNumber);
             } catch (Exception e) {
-                bot.broadcast("Error updating show episode number. Please check logs");
-                logger.error("Error updating show episode number", e);
+                broadcast("Error updating show episode number. Please check logs");
+                log.error("Error updating show episode number", e);
             }
         }
 
         if(program.video.isBroadcastable()) {
-            HashMap<String,String> metadata = program.video.getMetadata(ffmpegExec);
+            HashMap<String,String> metadata = ffmpegUtils.getMetadata(program.video.getFile());
             String artist = metadata.get(TSDTVConstants.METADATA_ARTIST_FIELD);
             String title = metadata.get(TSDTVConstants.METADATA_TITLE_FIELD);
 
@@ -315,7 +318,7 @@ public class TSDTV implements Persistable {
                 sb.append(artist).append(": ").append(title);
             sb.append(" -- ").append(getLinks(false));
 
-            bot.broadcast(sb.toString());
+            broadcast(sb.toString());
         }
     }
 
@@ -325,7 +328,8 @@ public class TSDTV implements Persistable {
     public boolean playFromChat(TSDTVEpisode episode, User user) throws StreamLockedException {
         if(user.hasPriv(User.Priv.OP) || !lockdownMode.equals(LockdownMode.locked)) {
             TSDTVUser tsdtvUser = new TSDTVChatUser(user);
-            TSDTVQueueItem program = new TSDTVQueueItem(episode, null, false, getStartDateForQueueItem(), ffmpegExec, tsdtvUser);
+            long duration = ffmpegUtils.getDuration(episode.getFile());
+            TSDTVQueueItem program = new TSDTVQueueItem(episode, null, false, getStartDateForQueueItem(), duration, tsdtvUser);
             if (isRunning()) {
                 queue.addLast(program);
                 return false;
@@ -344,10 +348,11 @@ public class TSDTV implements Persistable {
     public void playFromWeb(TSDTVEpisode episode, InetAddress inetAddress) throws StreamLockedException {
         if(lockdownMode.equals(LockdownMode.open)) {
             TSDTVUser tsdtvUser = new TSDTVWebUser(inetAddress);
-            TSDTVQueueItem program = new TSDTVQueueItem(episode, null, false, getStartDateForQueueItem(), ffmpegExec, tsdtvUser);
+            long duration = ffmpegUtils.getDuration(episode.getFile());
+            TSDTVQueueItem program = new TSDTVQueueItem(episode, null, false, getStartDateForQueueItem(), duration, tsdtvUser);
             if (isRunning()) {
                 queue.addLast(program);
-                bot.broadcast(color("[TSDTV]", IRCColor.blue)
+                broadcast(color("[TSDTV]", IRCColor.blue)
                         + " A show has been enqueued via web: " + episode.getShow().getPrettyName() + " - " + episode.getPrettyName());
             } else {
                 play(program);
@@ -411,11 +416,11 @@ public class TSDTV implements Persistable {
 
     public void prepareScheduledBlock(TSDTVBlock blockInfo, int offset) throws SQLException {
 
-        logger.info("Preparing TSDTV block: {} with offset {}", blockInfo.name, offset);
+        log.info("Preparing TSDTV block: {} with offset {}", blockInfo.name, offset);
 
         if(runningStream != null) {
             runningStream.interrupt(); // end running stream
-            logger.info("Ended currently running stream");
+            log.info("Ended currently running stream");
         }
 
         queue.clear();
@@ -425,7 +430,8 @@ public class TSDTV implements Persistable {
         // prepare the block intro if it exists
         TSDTVFiller blockIntro = library.getFiller(FillerType.block_intro, blockInfo.id);
         if(blockIntro != null) {
-            queue.addLast(new TSDTVQueueItem(blockIntro, blockInfo, scheduled, getStartDateForQueueItem(), ffmpegExec, null));
+            long duration = ffmpegUtils.getDuration(blockIntro.getFile());
+            queue.addLast(new TSDTVQueueItem(blockIntro, blockInfo, scheduled, getStartDateForQueueItem(), duration, null));
         }
 
         // use dynamic map to get correct episode numbers for repeating shows
@@ -438,10 +444,11 @@ public class TSDTV implements Persistable {
                 // this is filler, e.g. bump or commercial
                 TSDTVFiller filler = library.getFiller(fillerType, null);
                 if(filler != null) {
-                    queue.addLast(new TSDTVQueueItem(filler, blockInfo, scheduled, getStartDateForQueueItem(), ffmpegExec, null));
-                    logger.info("Added {} to queue", filler.getFile().getAbsolutePath());
+                    long duration = ffmpegUtils.getDuration(filler.getFile());
+                    queue.addLast(new TSDTVQueueItem(filler, blockInfo, scheduled, getStartDateForQueueItem(), duration, null));
+                    log.info("Added {} to queue", filler.getFile().getAbsolutePath());
                 } else {
-                    logger.error("Could not find any filler of type {}", fillerType);
+                    log.error("Could not find any filler of type {}", fillerType);
                 }
             } else {
 
@@ -450,14 +457,15 @@ public class TSDTV implements Persistable {
                 try {
                     show = library.getShow(showName);
                 } catch (ShowNotFoundException e) {
-                    logger.error("Could not find show", e);
+                    log.error("Could not find show", e);
                     continue;
                 }
 
                 // add the intro for this show, if it exists
                 TSDTVFiller intro = library.getFiller(FillerType.show_intro, showName);
                 if(intro != null) {
-                    queue.addLast(new TSDTVQueueItem(intro, blockInfo, scheduled, getStartDateForQueueItem(), ffmpegExec, null));
+                    long duration = ffmpegUtils.getDuration(intro.getFile());
+                    queue.addLast(new TSDTVQueueItem(intro, blockInfo, scheduled, getStartDateForQueueItem(), duration, null));
                 }
 
                 int occurrences = Collections.frequency(Arrays.asList(blockInfo.scheduleParts), showName);
@@ -468,7 +476,7 @@ public class TSDTV implements Persistable {
                     if(episodeNum > 0)
                         episodeNums.put(show, episodeNum);
                     else
-                        logger.error("Could not find current episode for {}", show);
+                        log.error("Could not find current episode for {}", show);
                 } else {
                     // this show has appeared in the block -- increment episode num
                     if(episodeNums.get(show)+1 > show.getAllEpisodes().size())
@@ -478,18 +486,19 @@ public class TSDTV implements Persistable {
                     episodeNums.put(show, episodeNum);
                 }
 
-                logger.info("Looking for episode {} of {}", episodeNum, show.getRawName());
+                log.info("Looking for episode {} of {}", episodeNum, show.getRawName());
                 TSDTVEpisode episode;
                 try {
                     episode = show.getEpisode(episodeNum);
                 } catch (EpisodeNotFoundException e) {
-                    logger.error("Could not find episode", e);
+                    log.error("Could not find episode", e);
                     continue;
                 }
 
-                queue.addLast(new TSDTVQueueItem(episode, blockInfo, scheduled, getStartDateForQueueItem(), ffmpegExec, null));
+                long duration = ffmpegUtils.getDuration(episode.getFile());
+                queue.addLast(new TSDTVQueueItem(episode, blockInfo, scheduled, getStartDateForQueueItem(), duration, null));
 
-                logger.info("Added {} to queue", episode.getRawName());
+                log.info("Added {} to queue", episode.getRawName());
 
             }
         }
@@ -497,7 +506,8 @@ public class TSDTV implements Persistable {
         // prepare the block outro if it exists
         TSDTVFiller blockOutro = library.getFiller(FillerType.block_outro, blockInfo.id);
         if(blockOutro != null) {
-            queue.addLast(new TSDTVQueueItem(blockOutro, blockInfo, scheduled, getStartDateForQueueItem(), ffmpegExec, null));
+            long duration = ffmpegUtils.getDuration(blockOutro.getFile());
+            queue.addLast(new TSDTVQueueItem(blockOutro, blockInfo, scheduled, getStartDateForQueueItem(), duration, null));
         }
 
         StringBuilder broadcastBuilder = new StringBuilder();
@@ -516,22 +526,22 @@ public class TSDTV implements Persistable {
             }
         }
 
-        bot.broadcast(broadcastBuilder.toString());
+        broadcast(broadcastBuilder.toString());
 
         if(blockIntro != null) {
             // there's a block intro playing, link people to the stream while it plays
-            bot.broadcast(getLinks(false));
+            broadcast(getLinks(false));
         }
 
         if(!queue.isEmpty())
             play(queue.pop());
         else
-            logger.error("Could not find any shows for block...");
+            log.error("Could not find any shows for block...");
     }
 
     public void prepareBlockReplay(String channel, String blockQuery) {
 
-        logger.info("Preparing TSDTV block rerun: {}", blockQuery);
+        log.info("Preparing TSDTV block rerun: {}", blockQuery);
 
         if(runningStream != null) {
             bot.sendMessage(channel, "There is already a stream running, please wait for it to" +
@@ -541,14 +551,14 @@ public class TSDTV implements Persistable {
 
         try {
             Set<JobKey> keys = scheduler.getJobKeys(GroupMatcher.<JobKey>groupEquals(SchedulerConstants.TSDTV_GROUP_ID));
-            LinkedList<JobKey> matchedJobs = FuzzyLogic.fuzzySubset(blockQuery, new LinkedList<>(keys), new FuzzyLogic.FuzzyVisitor<JobKey>() {
+            LinkedList<JobKey> matchedJobs = FuzzyLogic.fuzzySubset(blockQuery, new LinkedList<>(keys), new FuzzyVisitor<JobKey>() {
                 @Override
                 public String visit(JobKey o1) {
                     try {
                         JobDetail job = scheduler.getJobDetail(o1);
                         return job.getJobDataMap().getString(SchedulerConstants.TSDTV_BLOCK_NAME_FIELD);
                     } catch (SchedulerException e) {
-                        logger.error("Error getting job for key {}", o1.getName());
+                        log.error("Error getting job for key {}", o1.getName());
                     }
                     return null;
                 }
@@ -573,13 +583,13 @@ public class TSDTV implements Persistable {
                 try {
                     prepareScheduledBlock(blockInfo, -1);
                 } catch (SQLException e) {
-                    logger.error("Error preparing scheduled block", e);
+                    log.error("Error preparing scheduled block", e);
                 }
             }
 
         } catch (SchedulerException e) {
             bot.sendMessage(channel, "(Error retrieving scheduled info)");
-            logger.error("Error getting scheduled info", e);
+            log.error("Error getting scheduled info", e);
         }
     }
 
@@ -654,13 +664,13 @@ public class TSDTV implements Persistable {
 
         } catch (SchedulerException e) {
             bot.sendMessage(channel, "(Error retrieving scheduled info)");
-            logger.error("Error getting scheduled info", e);
+            log.error("Error getting scheduled info", e);
         }
     }
 
     public void buildSchedule() {
         try {
-            logger.info("Building TSDTV schedule...");
+            log.info("Building TSDTV schedule...");
             scheduler.pauseAll();
             Set<JobKey> keys = scheduler.getJobKeys(GroupMatcher.<JobKey>groupEquals(SchedulerConstants.TSDTV_GROUP_ID));
             scheduler.deleteJobs(new LinkedList<>(keys));
@@ -703,13 +713,13 @@ public class TSDTV implements Persistable {
                     }
                 }
             } catch (Exception e) {
-                logger.error("Error reading TSDTV schedule", e);
+                log.error("Error reading TSDTV schedule", e);
             }
 
             scheduler.resumeAll();
 
         } catch (Exception e) {
-            logger.error("Error building TSDTV schedule", e);
+            log.error("Error building TSDTV schedule", e);
         }
     }
 
@@ -788,7 +798,7 @@ public class TSDTV implements Persistable {
             FileAnalysis analysis = processor.analyzeFile(file);
             return analysis.getStreamsByType().containsKey(StreamType.SUBTITLE);
         } catch (Exception e) {
-            logger.error("Error finding subtitles for {}", file, e);
+            log.error("Error finding subtitles for {}", file, e);
         }
         return false;
     }
@@ -816,8 +826,14 @@ public class TSDTV implements Persistable {
             ps.setString(2, show.getRawName());
             ps.executeUpdate();
         } catch (SQLException sqle) {
-            logger.error("Error setting episode number", sqle);
+            log.error("Error setting episode number", sqle);
             throw sqle;
+        }
+    }
+    
+    void broadcast(String message) {
+        for(String channel : tsdtvChannels) {
+            bot.sendMessage(channel, message);
         }
     }
 

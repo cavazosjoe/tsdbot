@@ -13,8 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.config.TSDBotConfiguration;
-import org.tsd.tsdbot.util.FuzzyLogic;
 import org.tsd.tsdbot.util.RelativeDate;
+import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
+import org.tsd.tsdbot.util.fuzzy.FuzzyVisitor;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -155,7 +156,7 @@ public class XboxLive extends MainFunctionImpl {
 
                 String gt = cmdParts[1];
 
-                List<Player> matchedPlayers = FuzzyLogic.fuzzySubset(gt, friendsList, new FuzzyLogic.FuzzyVisitor<Player>() {
+                List<Player> matchedPlayers = FuzzyLogic.fuzzySubset(gt, friendsList, new FuzzyVisitor<Player>() {
                     @Override
                     public String visit(Player o1) {
                         return o1.gamertag;

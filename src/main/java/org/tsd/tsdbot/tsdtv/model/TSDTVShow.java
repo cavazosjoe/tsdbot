@@ -6,7 +6,8 @@ import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.tsdtv.EpisodeNotFoundException;
 import org.tsd.tsdbot.tsdtv.ShowNotFoundException;
 import org.tsd.tsdbot.tsdtv.TSDTVConstants;
-import org.tsd.tsdbot.util.FuzzyLogic;
+import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
+import org.tsd.tsdbot.util.fuzzy.FuzzyVisitor;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -60,7 +61,7 @@ public class TSDTVShow implements Comparable<TSDTVShow> {
         List<TSDTVEpisode> matchingFiles = FuzzyLogic.fuzzySubset(
                 query,
                 getAllEpisodes(),
-                new FuzzyLogic.FuzzyVisitor<TSDTVEpisode>() {
+                new FuzzyVisitor<TSDTVEpisode>() {
                     @Override
                     public String visit(TSDTVEpisode o1) {
                         return o1.getRawName();

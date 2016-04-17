@@ -91,6 +91,11 @@ public class TestBot implements Bot {
     }
 
     @Override
+    public boolean userIsOwner(String nick) {
+        return false;
+    }
+
+    @Override
     public boolean userHasGlobalPriv(String nick, User.Priv priv) {
         for(MockUser user : channelUsers.get(mainChannel)) {
             if(user.handle.equals(nick))

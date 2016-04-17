@@ -32,6 +32,17 @@ public class TSDBotConfiguration {
     @NotNull
     public TwitterConfig twitter;
 
+    @NotEmpty
+    @NotNull
+    public String ffmpegExec;
+
+    @NotEmpty
+    @NotNull
+    public String ffprobeExec;
+
+    @NotNull
+    public TSDFMConfig tsdfm;
+
     @NotNull
     public TSDTVConfig tsdtv;
 
@@ -48,5 +59,9 @@ public class TSDBotConfiguration {
     @NotEmpty
     @NotNull
     public String haloApiKey;
+
+    @NotEmpty
+    @NotNull
+    public String voiceRssApiKey;
 
 }

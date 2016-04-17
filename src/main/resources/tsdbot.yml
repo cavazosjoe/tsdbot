@@ -1,10 +1,10 @@
-owner: Schooly_D
+owner: "Schooly_D"
 
 connection:
-  ident: tsdbot
-  nick: TSDBot
+  ident: "tsdbot"
+  nick: "TSDBot"
   #nickservPass: cashmoneyrecords
-  server: 192.168.1.100
+  server: "192.168.1.100"
   port: 6667
 
   # !! NOTE: all channels must start with a hash. And since YAML understands hashes as comments, it's
@@ -13,10 +13,14 @@ connection:
   # This is TSDBot's "main" channel. Certain functions are protected based on a user's privileges
   # Functions that have impact across multiple channels should use this channel to check a user's privileges
   #   when deciding whether to permit the action
-  mainChannel: "#bloop"
+  mainChannel: "#tsdbot"
 
   # These are other channels for the bot to join
   auxChannels: ["#tsdbot3", "#tsdbot4"]
+
+  tsdtvChannels: ["#tsdbot3"]
+
+  tsdfmChannels: ["#tsdbot3"]
 
   # TSDBot sweeps notifications from different sources, and displays them in the chat
   # This setting determines which channels the different notifications go to
@@ -30,7 +34,7 @@ connection:
     dboft: ["#tsdbot3"]             # DBO Fireteam
   }
 
-  stage: dev
+  stage: "dev"
 
 # Database connection string
 database: "jdbc:h2:file:C:/Users/Joe/code/TSDBot/dist/tsdbot"
@@ -42,28 +46,39 @@ archivist:
   logsDir: "dist/archive/"
 
 xbl:
-  apiKey: 6d0f995f0d45afd5375a872947b226ed740093d0
-  xuid: 2535415442359417
+  apiKey: "6d0f995f0d45afd5375a872947b226ed740093d0"
+  xuid: "2535415442359417"
 
 twitter:
-  consumerKey: f8H6BJg8J6ddnE5IwFROZA
-  consumerKeySecret: CwKXxwsyAlMJYyT1XZCpRZ0OjbwuxTBmQfJwvhcU8
-  accessToken: 2349834990-ckfRDk81l1tOdaSBc15A7MVThOCauNFL1D12hSD
-  accessTokenSecret: EW2vPIdwHZhbGIKPgieyoACqucSfS1lnF2tHfEIiMLwmS
+  consumerKey: "f8H6BJg8J6ddnE5IwFROZA"
+  consumerKeySecret: "CwKXxwsyAlMJYyT1XZCpRZ0OjbwuxTBmQfJwvhcU8"
+  accessToken: "2349834990-ckfRDk81l1tOdaSBc15A7MVThOCauNFL1D12hSD"
+  accessTokenSecret: "EW2vPIdwHZhbGIKPgieyoACqucSfS1lnF2tHfEIiMLwmS"
+
+voiceRssApiKey: "71adbe92a6b740f188579d852cee39ef"
+
+# This is the ffmpeg executable
+# If you don't know where yours is, run "which ffmpeg" on the command line
+ffmpegExec: "C:/Users/Joe/Desktop/ffmpeg/bin/ffmpeg.exe"
+
+ffprobeExec: "C:/Users/Joe/Desktop/ffmpeg/bin/ffprobe.exe"
+
+tsdfm:
+  library: "C:/Users/Joe/TSDFM"
+  target: "http://192.168.1.100:8090/feed2.ffm"
+  scheduleFile: "C:/Users/Joe/TSDFM/tsdfmSchedule.txt"
+  logFile: "C:/Users/Joe/tsdfm.log"
+  streamUrl: "http://192.168.1.100:8090/tsdfm.mp3"
 
 tsdtv:
-  # This is the ffmpeg executable
-  # If you don't know where yours is, run "which ffmpeg" on the command line
-  ffmpegExec: "/home/joe/bin/ffmpeg"
-
   # These arguments will be formatted at play time
   # (1) %s -> path to video file, e.g. "/path/to/movie.mkv"
   # (2) %s -> video filter, e.g. "yadif"
   ffmpegArgs: "-re -y -i %s -c:v libx264 -r 20 -b:v 1200k -maxrate 1700k -bufsize 2560k -preset superfast -profile:v baseline -pix_fmt yuv420p -flags:v +global_header -vf %s -c:a aac -b:a 128k -ar 44100 -strict experimental -flags:a +global_header"
 
   # Begin nginx-rtmp config
-  ffmpegOut: "-f flv rtmp://localhost/tsdtv/tsdtv"
-  directLink: "rtmp://irc.teamschoolyd.org/tsdtv/tsdtv"
+  ffmpegOut: "-f flv rtmp://192.168.1.100/tsdtv/tsdtv"
+  directLink: "rtmp://192.168.1.100/tsdtv/tsdtv"
   videoFmt: "rtmp/mp4"
 
   # Location of proper TSDTV files are located, ready to be played
@@ -79,17 +94,17 @@ tsdtv:
   # Separate log file for TSDTV streams so they don't clutter the main TSDBot log file
   logFile: "C:/Users/Joe/TSDTV/tsdtv.log"
 
-# ffserver config
-#   ffmpegOut: "http://localhost:8090/feed1.ffm"
-#   directLink: "http://irc.teamschoolyd.org:8090/tsdtv.flv"
-#   videoFmt: "video/flv"
+  # ffserver config
+  #ffmpegOut: "http://localhost:8090/feed1.ffm"
+  #directLink: "http://irc.teamschoolyd.org:8090/tsdtv.flv"
+  #videoFmt: "video/flv"
 
 # nginx-hls config
 #   ffmpegOut: "rtmp://localhost/hls/tsdtv"
 #   directLink: "http://irc.teamschoolyd.org/hls/tsdtv.m3u8"
 #   videoFmt: "application/x-mpegURL"
 
-mashapeKey: BW1iD3A3ddmsh6QS7fvulnjO2VaVp1iXOFBjsnDgBgmBV3WPpq
+mashapeKey: "BW1iD3A3ddmsh6QS7fvulnjO2VaVp1iXOFBjsnDgBgmBV3WPpq"
 
 google:
   clientSecret: "r4V-A6fKw_-9qzMpD0X6Qx96"
@@ -100,7 +115,7 @@ google:
   gisCx: "013709194438609022554:3uhvjfl5hbo" # identifier of Custom Search Engine used for image searches
 
 jetty:
-  hostname: localhost
+  hostname: "localhost"
   port: 7777
 
-haloApiKey: 3e93fc8f1bd9425aa9847cb833713cff
+haloApiKey: "3e93fc8f1bd9425aa9847cb833713cff"

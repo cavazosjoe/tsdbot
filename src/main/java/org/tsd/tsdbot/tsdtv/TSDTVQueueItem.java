@@ -4,9 +4,6 @@ import org.tsd.tsdbot.tsdtv.model.Streamable;
 
 import java.util.Date;
 
-/**
- * Created by Joe on 3/17/14.
- */
 public class TSDTVQueueItem {
 
     public Streamable video;
@@ -18,12 +15,11 @@ public class TSDTVQueueItem {
                                     // web page -> InetAddress ;; chat -> nick
 
     public TSDTVQueueItem(Streamable video, TSDTV.TSDTVBlock block,
-                          boolean scheduled, Date startTime, String ffmpegExec, TSDTVUser owner) {
+                          boolean scheduled, Date startTime, long duration, TSDTVUser owner) {
         this.video = video;
         this.block = block;
         this.scheduled = scheduled;
         this.startTime = startTime;
-        long duration = video.getDuration(ffmpegExec);
         this.endTime = new Date(startTime.getTime() + duration);
         this.owner = owner;
     }

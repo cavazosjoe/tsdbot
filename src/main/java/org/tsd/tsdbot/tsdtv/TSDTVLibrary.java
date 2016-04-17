@@ -8,8 +8,9 @@ import org.tsd.tsdbot.tsdtv.model.FillerType;
 import org.tsd.tsdbot.tsdtv.model.TSDTVEpisode;
 import org.tsd.tsdbot.tsdtv.model.TSDTVFiller;
 import org.tsd.tsdbot.tsdtv.model.TSDTVShow;
-import org.tsd.tsdbot.util.FuzzyLogic;
 import org.tsd.tsdbot.util.TSDTVUtil;
+import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
+import org.tsd.tsdbot.util.fuzzy.FuzzyVisitor;
 
 import javax.inject.Named;
 import java.io.File;
@@ -62,7 +63,7 @@ public class TSDTVLibrary {
         List<TSDTVShow> matchingDirs = FuzzyLogic.fuzzySubset(
                 query,
                 getAllShows(),
-                new FuzzyLogic.FuzzyVisitor<TSDTVShow>() {
+                new FuzzyVisitor<TSDTVShow>() {
                     @Override
                     public String visit(TSDTVShow o1) {
                         return o1.getRawName();

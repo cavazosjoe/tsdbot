@@ -6,9 +6,6 @@ import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Created by Joe on 9/21/2014.
- */
 @Singleton
 public class InjectableStreamFactory {
 
