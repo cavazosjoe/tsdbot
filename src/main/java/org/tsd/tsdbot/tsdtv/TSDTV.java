@@ -5,13 +5,7 @@ import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import org.apache.commons.lang3.StringUtils;
 import org.jibble.pircbot.User;
-import org.quartz.CronTrigger;
-import org.quartz.JobDataMap;
-import org.quartz.JobDetail;
-import org.quartz.JobKey;
-import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
-import org.quartz.Trigger;
+import org.quartz.*;
 import org.quartz.impl.matchers.GroupMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +13,7 @@ import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.config.TSDBotConfiguration;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.Persistable;
+import org.tsd.tsdbot.module.TSDTVChannels;
 import org.tsd.tsdbot.scheduled.SchedulerConstants;
 import org.tsd.tsdbot.tsdtv.model.FillerType;
 import org.tsd.tsdbot.tsdtv.model.TSDTVEpisode;
@@ -31,30 +26,15 @@ import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
 import org.tsd.tsdbot.util.fuzzy.FuzzyVisitor;
 
 import javax.naming.AuthenticationException;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.InetAddress;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
+import java.util.*;
 import java.util.Calendar;
-import java.util.Collections;
-import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.TreeMap;
 
 import static org.quartz.CronScheduleBuilder.cronSchedule;
 import static org.quartz.JobBuilder.newJob;
@@ -70,23 +50,25 @@ public class TSDTV implements Persistable {
     private static final int dayBoundaryHour = 4; // 4:00 AM
     private static final TimeZone timeZone = TimeZone.getTimeZone("America/New_York");
 
-    private Bot bot;
+    private final Bot bot;
 
-    private TSDTVLibrary library;
-    private TSDTVFileProcessor processor;
+    private final TSDTVLibrary library;
+    private final TSDTVFileProcessor processor;
 
-    private DBConnectionProvider connectionProvider;
-    private InjectableStreamFactory streamFactory;
-    private Scheduler scheduler;
-    private String scheduleLoc;
-    private String serverUrl;
-    private String tsdtvDirect;
+    private final DBConnectionProvider connectionProvider;
+    private final InjectableStreamFactory streamFactory;
+    private final Scheduler scheduler;
+    private final String scheduleLoc;
+    private final String serverUrl;
+    private final String tsdtvDirect;
     private final FfmpegUtils ffmpegUtils;
+    private final List<String> tsdtvChannels;
 
     private LockdownMode lockdownMode = LockdownMode.open;
 
     private LinkedList<TSDTVQueueItem> queue = new LinkedList<>(); // file paths
     private TSDTVStream runningStream;
+    
 
     @Inject
     public TSDTV(Bot bot,
@@ -98,7 +80,8 @@ public class TSDTV implements Persistable {
                  InjectableStreamFactory streamFactory,
                  FfmpegUtils ffmpegUtils,
                  @Named("serverUrl") String serverUrl,
-                 @Named("tsdtvDirect") String tsdtvDirect) throws SQLException {
+                 @Named("tsdtvDirect") String tsdtvDirect,
+                 @TSDTVChannels List tsdtvChannels) throws SQLException {
         log.info("Constructing TSDTV... numShows = {}", library.getAllShows().size());
         this.bot = bot;
         this.processor = fileProcessor;
@@ -110,6 +93,7 @@ public class TSDTV implements Persistable {
         this.serverUrl = serverUrl;
         this.tsdtvDirect = tsdtvDirect;
         this.ffmpegUtils = ffmpegUtils;
+        this.tsdtvChannels = tsdtvChannels;
         initDB();
         buildSchedule();
     }
@@ -206,7 +190,7 @@ public class TSDTV implements Persistable {
                             log.info("Replaced item in queue");
 
                             String broadcastFmt = "[TSDTV] Replaced episode in queue: %s, %s -> %s";
-                            bot.broadcast(String.format(
+                            broadcast(String.format(
                                     broadcastFmt,
                                     show.getPrettyName(),
                                     ((TSDTVEpisode) queueItem.video).getPrettyName(),
@@ -234,7 +218,7 @@ public class TSDTV implements Persistable {
 
                     } catch (EpisodeNotFoundException e) {
                         log.error("Error updating downstream queue", e);
-                        bot.broadcast("Error updating downstream queue, please check logs");
+                        broadcast("Error updating downstream queue, please check logs");
                         return;
                     }
 
@@ -302,8 +286,9 @@ public class TSDTV implements Persistable {
         // determine if we have subtitles for this
         StringBuilder videoFilter = new StringBuilder();
         videoFilter.append("yadif");
-        if(hasSubtitles(program.video.getFile()))
+        if(hasSubtitles(program.video.getFile())) {
             videoFilter.append(",subtitles=").append(program.video.getFile().getAbsolutePath());
+        }
 
         runningStream = streamFactory.newStream(videoFilter.toString(), program);
         runningStream.start();
@@ -315,7 +300,7 @@ public class TSDTV implements Persistable {
                 int newEpNumber = (show.getAllEpisodes().size() <= program.video.getEpisodeNumber()) ? 1 : program.video.getEpisodeNumber()+1;
                 setEpisodeNumber(show, newEpNumber);
             } catch (Exception e) {
-                bot.broadcast("Error updating show episode number. Please check logs");
+                broadcast("Error updating show episode number. Please check logs");
                 log.error("Error updating show episode number", e);
             }
         }
@@ -333,7 +318,7 @@ public class TSDTV implements Persistable {
                 sb.append(artist).append(": ").append(title);
             sb.append(" -- ").append(getLinks(false));
 
-            bot.broadcast(sb.toString());
+            broadcast(sb.toString());
         }
     }
 
@@ -367,7 +352,7 @@ public class TSDTV implements Persistable {
             TSDTVQueueItem program = new TSDTVQueueItem(episode, null, false, getStartDateForQueueItem(), duration, tsdtvUser);
             if (isRunning()) {
                 queue.addLast(program);
-                bot.broadcast(color("[TSDTV]", IRCColor.blue)
+                broadcast(color("[TSDTV]", IRCColor.blue)
                         + " A show has been enqueued via web: " + episode.getShow().getPrettyName() + " - " + episode.getPrettyName());
             } else {
                 play(program);
@@ -541,11 +526,11 @@ public class TSDTV implements Persistable {
             }
         }
 
-        bot.broadcast(broadcastBuilder.toString());
+        broadcast(broadcastBuilder.toString());
 
         if(blockIntro != null) {
             // there's a block intro playing, link people to the stream while it plays
-            bot.broadcast(getLinks(false));
+            broadcast(getLinks(false));
         }
 
         if(!queue.isEmpty())
@@ -843,6 +828,12 @@ public class TSDTV implements Persistable {
         } catch (SQLException sqle) {
             log.error("Error setting episode number", sqle);
             throw sqle;
+        }
+    }
+    
+    void broadcast(String message) {
+        for(String channel : tsdtvChannels) {
+            bot.sendMessage(channel, message);
         }
     }
 

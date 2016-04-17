@@ -39,22 +39,30 @@ public class TSDFMFileProcessor {
         Path introFilePath = null;
         try {
             byte[] introSpeechBytes = voiceRssClient.getSpeech(introText);
+            if(introSpeechBytes.length < 1000) {
+                // probably an error
+                log.error("PROBABLE ERROR getting voiceRss data: {}", new String(introSpeechBytes));
+            } else {
+                log.info("Retrieved intro speech file, size = {} kB", introSpeechBytes.length/1000);
+            }
             introFilePath = Files.createTempFile("introFile", ".mp3");
             introFilePath = Files.write(introFilePath, introSpeechBytes);
 
             String complexFilter =
                     String.format(
-                            "\"[0:a] afade=t=in:ss=0:d=%s [o1];[o1][1:a] amix [o2]\"",
-                            ffmpegUtils.getDuration(introFilePath.toFile())
+                            "\"[0:a] afade=t=in:ss=0:d=%s [music];[1:a] volume=6 [speech];[music][speech] amix [out]\"",
+                            (ffmpegUtils.getDuration(introFilePath.toFile())/1000)+2
                     );
 
             Path tempFilePath = Files.createTempFile("outputFile", ".mp3");
 
             ProcessBuilder pb = new ProcessBuilder(
                     ffmpegExec,
+                    "-y",
                     "-i", String.format("\"%s\"", song.getMusicFile().getAbsolutePath()),
                     "-i", String.format("\"%s\"", introFilePath.toAbsolutePath().toString()),
                     "-filter_complex", complexFilter,
+                    "-map", "\"[out]\"",
                     tempFilePath.toAbsolutePath().toString()
             );
 
@@ -65,7 +73,7 @@ public class TSDFMFileProcessor {
                 try {
                     p.waitFor();
                 } catch (InterruptedException e) {
-                    log.debug("TSDFM intro processor interrupted", e);
+                    log.info("TSDFM intro processor interrupted", e);
                 } finally {
                     p.destroy();
                 }

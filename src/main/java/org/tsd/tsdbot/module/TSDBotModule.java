@@ -21,12 +21,7 @@ import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.spi.JobFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
-import org.tsd.tsdbot.FilenameLibrary;
-import org.tsd.tsdbot.PrintoutLibrary;
-import org.tsd.tsdbot.RecapLibrary;
-import org.tsd.tsdbot.Stage;
-import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.*;
 import org.tsd.tsdbot.config.GoogleConfig;
 import org.tsd.tsdbot.config.TSDBotConfiguration;
 import org.tsd.tsdbot.database.DBConnectionProvider;
@@ -42,11 +37,7 @@ import org.tsd.tsdbot.tsdtv.InjectableStreamFactory;
 import twitter4j.Twitter;
 import twitter4j.TwitterFactory;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.*;
 import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
@@ -160,6 +151,14 @@ public class TSDBotModule extends AbstractModule {
                 .toInstance(configuration.connection.notifiers);
         log.info("Bound notifier channels: {}", configuration.connection.notifiers.toString());
 
+        bind(List.class).annotatedWith(TSDTVChannels.class)
+                .toInstance(configuration.connection.tsdtvChannels);
+        log.info("Bound TSDTV channels: {}", StringUtils.join(configuration.connection.tsdtvChannels, ","));
+
+        bind(List.class).annotatedWith(TSDFMChannels.class)
+                .toInstance(configuration.connection.tsdfmChannels);
+        log.info("Bound TSDFM channels: {}", StringUtils.join(configuration.connection.tsdfmChannels, ","));
+
         bind(String.class).annotatedWith(Names.named("mashapeKey"))
                 .toInstance(configuration.mashapeKey);
         log.info("Bound mashape key: {}", configuration.mashapeKey);
@@ -247,6 +246,10 @@ public class TSDBotModule extends AbstractModule {
                 .annotatedWith(Names.named("ffmpegExec"))
                 .toInstance(configuration.ffmpegExec);
         log.info("Bound ffmpeg executable to {}", configuration.ffmpegExec);
+
+        bind(String.class).annotatedWith(Names.named("ffprobeExec"))
+                .toInstance(configuration.ffprobeExec);
+        log.info("Bound ffprobe executable to {}", configuration.ffprobeExec);
 
         log.info("Binding google credentials...");
         bind(GoogleConfig.class).toInstance(configuration.google);

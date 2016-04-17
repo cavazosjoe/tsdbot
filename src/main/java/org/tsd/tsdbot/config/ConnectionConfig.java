@@ -32,7 +32,14 @@ public class ConnectionConfig {
     @NotNull
     public String mainChannel;
 
+    @NotNull
     public List<String> auxChannels;
+
+    @NotNull
+    public List<String> tsdtvChannels;
+
+    @NotNull
+    public List<String> tsdfmChannels;
 
     public Map<String, List<String>> notifiers;
 

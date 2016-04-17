@@ -9,8 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.scheduled.SchedulerConstants;
 
-import java.sql.SQLException;
-
 public class TSDFMBlockJob implements Job {
 
     private static final Logger log = LoggerFactory.getLogger(TSDFMBlockJob.class);
@@ -32,10 +30,6 @@ public class TSDFMBlockJob implements Job {
                 tags
         );
 
-        try {
-            tsdfm.prepareScheduledBlock(block);
-        } catch (SQLException e) {
-            log.error("Error preparing scheduled block", e);
-        }
+        tsdfm.playScheduledBlock(block);
     }
 }

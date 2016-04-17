@@ -34,15 +34,24 @@ public class TSDFMStream extends Thread {
 
     public void init(TSDFMQueueItem musicItem) {
         this.musicItem = musicItem;
-        this.ffmpegCommand = String.format("%s -i \"%s\" %s", ffmpegExec, musicItem.getFile().getAbsolutePath(), tsdfmOut);
+        this.ffmpegCommand = String.format("%s -re -i \"%s\" %s",
+                ffmpegExec, musicItem.getFile().getAbsolutePath(), tsdfmOut);
+    }
+
+    public TSDFMQueueItem getMusicItem() {
+        return musicItem;
     }
 
     @Override
     public void run() {
         log.info("[TSDFM] preparing music {} using command {}", musicItem, ffmpegCommand);
-        ProcessBuilder pb = new ProcessBuilder(ffmpegCommand);
+//        ProcessBuilder pb = new ProcessBuilder(ffmpegCommand);
+        ProcessBuilder pb = new ProcessBuilder(
+                ffmpegExec, "-re", "-i", "\""+musicItem.getFile().getAbsolutePath()+"\"", tsdfmOut
+        );
         pb.redirectErrorStream(true);
         pb.redirectOutput(logFile);
+        boolean error = false;
         try {
             Process p = pb.start();
             try {
@@ -57,8 +66,9 @@ public class TSDFMStream extends Thread {
             }
         } catch (IOException e) {
             log.error("IOException", e);
+            error = true;
         }
 
-        tsdfm.playNext();
+        tsdfm.handleStreamEnd(error);
     }
 }

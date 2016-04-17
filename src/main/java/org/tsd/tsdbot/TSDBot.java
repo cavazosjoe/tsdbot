@@ -209,13 +209,17 @@ public class TSDBot extends PircBot implements Bot {
         return ret;
     }
 
+    public boolean userIsOwner(String nick) {
+        return nick.equals(owner);
+    }
+
     public boolean userHasGlobalPriv(String nick, User.Priv priv) {
         return userHasPrivInChannel(nick, mainChannel, priv);
     }
 
     public boolean userHasPrivInChannel(String nick, String channel, User.Priv priv) {
         User u = getUserFromNick(channel, nick);
-        return u != null && (nick.equals(owner) || u.hasPriv(priv));
+        return u != null && (userIsOwner(nick) || u.hasPriv(priv));
     }
 
     public User getUserFromNick(String channel, String nick) {

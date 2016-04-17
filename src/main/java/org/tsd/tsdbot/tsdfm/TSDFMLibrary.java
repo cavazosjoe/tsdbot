@@ -24,14 +24,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -40,6 +33,8 @@ import java.util.stream.Collectors;
 public class TSDFMLibrary implements Persistable {
 
     private static final Logger log = LoggerFactory.getLogger(TSDFMLibrary.class);
+
+    public static final Set<String> allowedFileTypes = new HashSet<>(Arrays.asList("mp3", "ogg", "wav"));
 
     private final DBConnectionProvider connectionProvider;
     private final File libraryDirectory;
@@ -75,13 +70,18 @@ public class TSDFMLibrary implements Persistable {
                 artists.add(new TSDFMArtist(artist));
             }
         }
+        try {
+            initDB();
+        } catch (Exception e) {
+            log.error("Error loading tsdfm database", e);
+        }
     }
 
     String sanitizeTag(String tag) {
         return tag.trim();
     }
 
-    public void tagSong(TSDFMSong song, String... tags) throws SQLException {
+    public void tagSong(TSDFMSong song, Collection<String> tags) throws SQLException {
         String songPath = song.getMusicFile().getAbsolutePath();
         String countQuery;
         String insertStatement;
@@ -107,13 +107,13 @@ public class TSDFMLibrary implements Persistable {
         }
     }
 
-    public void tagAlbum(TSDFMAlbum album, String... tags) throws SQLException {
+    public void tagAlbum(TSDFMAlbum album, Collection<String> tags) throws SQLException {
         for(TSDFMSong song : album.getSongs()) {
             tagSong(song, tags);
         }
     }
 
-    public void tagArtist(TSDFMArtist artist, String... tags) throws SQLException {
+    public void tagArtist(TSDFMArtist artist, Collection<String> tags) throws SQLException {
         for(TSDFMAlbum album : artist.getAlbums()) {
             tagAlbum(album, tags);
         }
@@ -240,10 +240,14 @@ public class TSDFMLibrary implements Persistable {
 
     public TSDFMSong getSongFromPath(String pathString) throws TSDFMQueryException {
         try {
+            File pathAsFile = new File(pathString);
+            if(!pathAsFile.exists()) {
+                throw new TSDFMQueryException("File " + pathString + " does not exist");
+            }
             Collection<TSDFMSong> matchingSongs = Collections2.filter(allSongsCache.get(allSongsCacheKey), new Predicate<TSDFMSong>() {
                 @Override
                 public boolean apply(TSDFMSong tsdfmSong) {
-                    return tsdfmSong.getMusicFile().getAbsolutePath().equals(pathString);
+                    return pathAsFile.equals(tsdfmSong.getMusicFile());
                 }
             });
 
@@ -288,20 +292,46 @@ public class TSDFMLibrary implements Persistable {
 
     public TSDFMSong getRandomSong() throws TSDFMQueryException {
         try {
-            Set<TSDFMSong> allSongs = allSongsCache.get(allSongsCacheKey);
-            int i = 0;
-            int randIdx = random.nextInt(allSongs.size());
-            for(TSDFMSong song : allSongs) {
-                if(randIdx == i) {
-                    return song;
-                }
-                i++;
+            TSDFMSong song = getRandomItemFromSet(allSongsCache.get(allSongsCacheKey));
+            if(song == null) {
+                throw new TSDFMQueryException("Found no songs");
+            } else {
+                return song;
             }
-            return null;
         } catch (ExecutionException ee) {
             log.error("Error getting random song", ee);
             throw new TSDFMQueryException("Error getting random song");
         }
+    }
+
+    public TSDFMSong getRandomSongFromAlbum(TSDFMAlbum album) throws TSDFMQueryException {
+        TSDFMSong song = getRandomItemFromSet(album.getSongs());
+        if(song == null) {
+            throw new TSDFMQueryException("Found no songs in album " + album.getName());
+        } else {
+            return song;
+        }
+    }
+
+    public TSDFMSong getRandomSongFromArtist(TSDFMArtist artist) throws TSDFMQueryException {
+        TSDFMSong song = getRandomItemFromSet(artist.getAllSongs());
+        if(song == null) {
+            throw new TSDFMQueryException("Found no songs for artist " + artist.getName());
+        } else {
+            return song;
+        }
+    }
+
+    <T> T getRandomItemFromSet(Set<T> set) {
+        int i = 0;
+        int randIdx = random.nextInt(set.size());
+        for(T item : set) {
+            if(randIdx == i) {
+                return item;
+            }
+            i++;
+        }
+        return null;
     }
 
     private static final String TAGS_TABLE = "TSDFM_TAGS";
@@ -313,11 +343,7 @@ public class TSDFMLibrary implements Persistable {
         "insert into "+TAGS_TABLE+" (path, tag) values ('%s', '%s')";
 
     private static final String CREATE_TAGS_TABLE = String.format(
-        "create table if not exists %s (" +
-            "path varchar," +
-            "tag varchar," +
-            "constraint unique(path, tag)" +
-        ")",
+        "create table if not exists %s (path varchar, tag varchar)",
         TAGS_TABLE
     );
 

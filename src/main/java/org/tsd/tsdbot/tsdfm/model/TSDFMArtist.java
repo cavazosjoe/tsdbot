@@ -1,5 +1,7 @@
 package org.tsd.tsdbot.tsdfm.model;
 
+import org.tsd.tsdbot.tsdfm.TSDFMLibrary;
+
 import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
@@ -24,7 +26,11 @@ public class TSDFMArtist implements Comparable<TSDFMArtist> {
             if(file.isDirectory()) {
                 albums.add(new TSDFMAlbum(file, this));
             } else {
-                songsNoAlbum.add(new TSDFMSong(file, null, this));
+                String filename = file.getName();
+                int idx = filename.lastIndexOf(".");
+                if(idx > 0 && TSDFMLibrary.allowedFileTypes.contains(filename.substring(idx+1).toLowerCase())) {
+                    songsNoAlbum.add(new TSDFMSong(file, null, this));
+                }
             }
         }
     }

@@ -21,4 +21,8 @@ public class TSDFMConfig {
     @NotNull
     public String logFile;
 
+    @NotEmpty
+    @NotNull
+    public String streamUrl;
+
 }

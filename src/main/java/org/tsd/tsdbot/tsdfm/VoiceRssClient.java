@@ -27,10 +27,11 @@ public class VoiceRssClient {
     }
 
     public byte[] getSpeech(String text) throws Exception {
+        log.info("Retrieving text to speech for: {}", text);
         URIBuilder uriBuilder = new URIBuilder(apiTarget);
         uriBuilder.addParameter("key", apiKey);
         uriBuilder.addParameter("src", text);
-        uriBuilder.addParameter("hl", ENG_GB);
+        uriBuilder.addParameter("hl", EN_GB);
         uriBuilder.addParameter("f", AUDIO);
 
         HttpEntity entity = null;
@@ -46,7 +47,7 @@ public class VoiceRssClient {
         }
     }
 
-    private static final String ENG_GB = "eng-gb";
+    private static final String EN_GB = "en-gb";
     private static final String AUDIO = "44khz_8bit_mono";
 
 }

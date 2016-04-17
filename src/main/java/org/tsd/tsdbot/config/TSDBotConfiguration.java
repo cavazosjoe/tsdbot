@@ -36,6 +36,10 @@ public class TSDBotConfiguration {
     @NotNull
     public String ffmpegExec;
 
+    @NotEmpty
+    @NotNull
+    public String ffprobeExec;
+
     @NotNull
     public TSDFMConfig tsdfm;
 
