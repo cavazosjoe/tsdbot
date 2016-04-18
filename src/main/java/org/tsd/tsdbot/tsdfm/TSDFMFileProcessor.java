@@ -50,7 +50,7 @@ public class TSDFMFileProcessor {
 
             String complexFilter =
                     String.format(
-                            "\"[0:a] afade=t=in:ss=0:d=%s [music];[1:a] volume=6 [speech];[music][speech] amix [out]\"",
+                            "[0:a] afade=t=in:ss=0:d=%s [music];[1:a] volume=6 [speech];[music][speech] amix [out]",
                             (ffmpegUtils.getDuration(introFilePath.toFile())/1000)+2
                     );
 
@@ -59,10 +59,10 @@ public class TSDFMFileProcessor {
             ProcessBuilder pb = new ProcessBuilder(
                     ffmpegExec,
                     "-y",
-                    "-i", String.format("\"%s\"", song.getMusicFile().getAbsolutePath()),
-                    "-i", String.format("\"%s\"", introFilePath.toAbsolutePath().toString()),
+                    "-i", song.getMusicFile().getAbsolutePath(),
+                    "-i", introFilePath.toAbsolutePath().toString(),
                     "-filter_complex", complexFilter,
-                    "-map", "\"[out]\"",
+                    "-map", "[out]",
                     tempFilePath.toAbsolutePath().toString()
             );
 
@@ -71,7 +71,13 @@ public class TSDFMFileProcessor {
             try {
                 Process p = pb.start();
                 try {
-                    p.waitFor();
+                    int exit = p.waitFor();
+                    if(exit == 0) {
+                        log.info("TSDFM file processing ended normally");
+                    } else {
+                        log.error("TSDFM file processing ended in ERROR, code " + exit);
+                        throw new Exception("Error processing file");
+                    }
                 } catch (InterruptedException e) {
                     log.info("TSDFM intro processor interrupted", e);
                 } finally {

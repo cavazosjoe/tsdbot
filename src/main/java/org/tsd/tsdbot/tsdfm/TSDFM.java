@@ -149,7 +149,7 @@ public class TSDFM {
         play(new TSDFMQueueItem(f, song));
     }
 
-    public synchronized void handleStreamEnd(boolean error) {
+    public synchronized void handleStreamEnd(boolean error) throws Exception {
 
         if(nowPlaying != null) {
             nowPlaying.getMusicItem().getFile().delete();
@@ -167,6 +167,7 @@ public class TSDFM {
                 queue.add(queueItem);
             } catch (Exception e) {
                 log.error("Error loading item into queue", e);
+                throw e;
             }
 
             play(queue.poll());

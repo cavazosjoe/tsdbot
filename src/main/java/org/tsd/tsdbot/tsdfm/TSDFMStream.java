@@ -47,7 +47,7 @@ public class TSDFMStream extends Thread {
         log.info("[TSDFM] preparing music {} using command {}", musicItem, ffmpegCommand);
 //        ProcessBuilder pb = new ProcessBuilder(ffmpegCommand);
         ProcessBuilder pb = new ProcessBuilder(
-                ffmpegExec, "-re", "-i", "\""+musicItem.getFile().getAbsolutePath()+"\"", tsdfmOut
+                ffmpegExec, "-re", "-i", musicItem.getFile().getAbsolutePath(), tsdfmOut
         );
         pb.redirectErrorStream(true);
         pb.redirectOutput(logFile);
@@ -56,8 +56,13 @@ public class TSDFMStream extends Thread {
             Process p = pb.start();
             try {
                 log.info("TSDFM stream started, playing...");
-                p.waitFor();
-                log.info("TSDFM stream ended normally");
+                int exit = p.waitFor();
+                if(exit == 0) {
+                    log.info("TSDFM stream ended normally");
+                } else {
+                    log.error("TSDFM stream ended with ERROR, code " + exit);
+                    error = true;
+                }
             } catch (InterruptedException e) {
                 log.debug("TSDFM stream interrupted");
             } finally {
@@ -69,6 +74,10 @@ public class TSDFMStream extends Thread {
             error = true;
         }
 
-        tsdfm.handleStreamEnd(error);
+        try {
+            tsdfm.handleStreamEnd(error);
+        } catch (Exception e) {
+            log.error("Error playing next item");
+        }
     }
 }
