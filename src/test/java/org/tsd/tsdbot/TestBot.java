@@ -46,8 +46,9 @@ public class TestBot implements Bot {
 
     @Override
     public void sendMessage(String target, String text) {
-        if(!linesSent.containsKey(target))
-            linesSent.put(target, new LinkedList<String>());
+        if(!linesSent.containsKey(target)) {
+            linesSent.put(target, new LinkedList<>());
+        }
         linesSent.get(target).addFirst(text);
     }
 
@@ -129,8 +130,9 @@ public class TestBot implements Bot {
     }
 
     public List<String> getLastMessages(String target, int count) {
-        if(count < 1)
+        if(count < 1) {
             throw new RuntimeException("number must be larger than 0");
+        }
         return linesSent.get(target).subList(0, count);
     }
 
@@ -153,6 +155,11 @@ public class TestBot implements Bot {
         for(LinkedList<String> lines : linesSent.values())
             lines.clear();
         historyBuff.reset();
+    }
+
+    @Override
+    public void shutdownNow() {
+
     }
 
     public class MockUser {

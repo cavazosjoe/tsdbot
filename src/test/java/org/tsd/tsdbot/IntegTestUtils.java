@@ -12,8 +12,9 @@ public class IntegTestUtils {
     @SafeVarargs
     public static void loadFunctions(Binder binder, Class<? extends MainFunction>... functions) {
         Multibinder<MainFunction> functionBinder = Multibinder.newSetBinder(binder, MainFunction.class);
-        for(Class<? extends MainFunction> function : functions)
+        for(Class<? extends MainFunction> function : functions) {
             functionBinder.addBinding().to(function);
+        }
     }
 
     public static String loadProperty(String key) {

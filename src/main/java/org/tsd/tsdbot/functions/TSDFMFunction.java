@@ -108,8 +108,6 @@ public class TSDFMFunction extends MainFunctionImpl {
                     bot.sendMessage(channel, "Only my owner can do that");
                     return;
                 }
-
-
             }
             default: {
                 bot.sendMessage(channel, usage);

@@ -2,7 +2,11 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import org.tsd.tsdbot.Bot;
-import org.tsd.tsdbot.history.*;
+import org.tsd.tsdbot.history.HistoryBuff;
+import org.tsd.tsdbot.history.filter.InjectableMsgFilterStrategyFactory;
+import org.tsd.tsdbot.history.filter.LengthStrategy;
+import org.tsd.tsdbot.history.filter.MessageFilter;
+import org.tsd.tsdbot.history.filter.NoCommandsStrategy;
 import org.tsd.tsdbot.util.IRCUtil;
 
 import java.util.HashMap;

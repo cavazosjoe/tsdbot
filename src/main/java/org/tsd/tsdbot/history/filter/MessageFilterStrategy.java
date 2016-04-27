@@ -1,4 +1,6 @@
-package org.tsd.tsdbot.history;
+package org.tsd.tsdbot.history.filter;
+
+import org.tsd.tsdbot.history.HistoryBuff;
 
 /**
  * Created by Joe on 9/4/2014.

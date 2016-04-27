@@ -4,9 +4,9 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.history.HistoryBuff;
-import org.tsd.tsdbot.history.InjectableMsgFilterStrategyFactory;
-import org.tsd.tsdbot.history.MessageFilter;
-import org.tsd.tsdbot.history.NoCommandsStrategy;
+import org.tsd.tsdbot.history.filter.InjectableMsgFilterStrategyFactory;
+import org.tsd.tsdbot.history.filter.MessageFilter;
+import org.tsd.tsdbot.history.filter.NoCommandsStrategy;
 import org.tsd.tsdbot.module.Function;
 
 import java.util.Random;

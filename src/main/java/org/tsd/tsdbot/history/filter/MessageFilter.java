@@ -1,10 +1,9 @@
-package org.tsd.tsdbot.history;
+package org.tsd.tsdbot.history.filter;
+
+import org.tsd.tsdbot.history.HistoryBuff;
 
 import java.util.HashSet;
 
-/**
- * Created by Joe on 9/4/2014.
- */
 public class MessageFilter {
 
     private HashSet<MessageFilterStrategy> filters = new HashSet<>();

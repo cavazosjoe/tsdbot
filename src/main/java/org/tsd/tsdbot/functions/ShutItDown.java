@@ -2,13 +2,9 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.jibble.pircbot.User;
 import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.module.Function;
 
-/**
- * Created by Joe on 5/24/14.
- */
 @Singleton
 @Function(initialRegex = "^\\.SHUT_IT_DOWN$")
 public class ShutItDown extends MainFunctionImpl {
@@ -22,11 +18,11 @@ public class ShutItDown extends MainFunctionImpl {
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
-        if(!bot.userHasGlobalPriv(sender, User.Priv.SUPEROP)) {
-            bot.kick(channel, sender, "Stop that.");
-        } else {
-            //TODO: change this to actually shut down
+        if(bot.userIsOwner(sender)) {
             bot.partChannel(channel, "ABORT ABORT ABORT");
+            bot.shutdownNow();
+        } else {
+            bot.sendMessage(channel, ":^)");
         }
     }
 

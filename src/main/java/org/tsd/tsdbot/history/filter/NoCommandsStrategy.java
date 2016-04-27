@@ -1,14 +1,11 @@
-package org.tsd.tsdbot.history;
+package org.tsd.tsdbot.history.filter;
 
 import com.google.inject.Inject;
 import org.tsd.tsdbot.functions.MainFunction;
-import org.tsd.tsdbot.functions.MainFunctionImpl;
+import org.tsd.tsdbot.history.HistoryBuff;
 
 import java.util.Set;
 
-/**
- * Created by Joe on 1/14/2015.
- */
 public class NoCommandsStrategy implements MessageFilterStrategy {
 
     @Inject
@@ -17,8 +14,9 @@ public class NoCommandsStrategy implements MessageFilterStrategy {
     @Override
     public boolean apply(HistoryBuff.Message m) {
         for(MainFunction func : functions) {
-            if(m.text.matches(func.getListeningRegex()))
+            if(m.text.matches(func.getListeningRegex())) {
                 return false;
+            }
         }
         return true;
     }

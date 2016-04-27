@@ -4,14 +4,12 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.apache.commons.collections.buffer.CircularFifoBuffer;
 import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.history.filter.MessageFilter;
 import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
 import org.tsd.tsdbot.util.fuzzy.FuzzyVisitor;
 
 import java.util.*;
 
-/**
- * Created by Joe on 2/26/14.
- */
 @Singleton
 public class HistoryBuff {
 
@@ -75,10 +73,11 @@ public class HistoryBuff {
 
     public Message getRandomFilteredMessage(String channel, String targetUser, MessageFilter filter) {
         List<Message> found = getRandomFilteredMessages(channel, targetUser, 1, filter);
-        if(!found.isEmpty())
+        if(!found.isEmpty()) {
             return found.get(0);
-        else
+        } else {
             return null;
+        }
     }
 
     public LinkedList<Message> getRandomFilteredMessages(String channel, String targetUser, Integer num, MessageFilter filter) {
@@ -88,16 +87,18 @@ public class HistoryBuff {
         Message msg;
         while(!history.isEmpty() && filteredHistory.size() < num) {
             msg = history.get(random.nextInt(history.size()));
-            if(filter == null || filter.validateMessage(msg))
+            if(filter == null || filter.validateMessage(msg)) {
                 filteredHistory.add(msg);
+            }
             history.remove(msg);
         }
         return filteredHistory;
     }
 
     public void reset() {
-        for(CircularFifoBuffer buffer : channelHistory.values())
+        for(CircularFifoBuffer buffer : channelHistory.values()) {
             buffer.clear();
+        }
     }
 
     public class Message {

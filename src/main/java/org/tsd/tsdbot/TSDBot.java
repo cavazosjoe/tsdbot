@@ -264,4 +264,9 @@ public class TSDBot extends PircBot implements Bot {
             logger.error("Error initializing logging", e);
         }
     }
+
+    public void shutdownNow() {
+        logger.warn("SHUTTING DOWN");
+        disconnect();
+    }
 }

@@ -1,8 +1,7 @@
-package org.tsd.tsdbot.history;
+package org.tsd.tsdbot.history.filter;
 
-/**
- * Created by Joe on 1/14/2015.
- */
+import org.tsd.tsdbot.history.HistoryBuff;
+
 public class LengthStrategy implements MessageFilterStrategy {
 
     private int minLen = Integer.MIN_VALUE;

@@ -2,6 +2,7 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import org.apache.commons.lang3.ArrayUtils;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,10 +28,16 @@ public class OmniDB extends MainFunctionImpl implements Persistable {
     private static final String OMNIDB_TABLE_NAME = "OMNIDB";
     private static final String OMNIDB_TAG_TABLE_NAME = "OMNIDB_TAG";
 
+    private static final String INCLUDE_ID = "-includeid";
+
+    private static final Set<String> modifiers = new HashSet<>(
+            Arrays.asList(INCLUDE_ID)
+    );
+
     private DBConnectionProvider connectionProvider;
 
     @Inject
-    public OmniDB(Bot bot, DBConnectionProvider connectionProvider, Random random) throws SQLException {
+    public OmniDB(Bot bot, DBConnectionProvider connectionProvider) throws SQLException {
         super(bot);
         this.description = "Use the patented TSD Omni Database";
         this.usage = "USAGE: .odb [ add #tag1 #tag2 <item> | get tag1 tag2 ]";
@@ -84,8 +91,15 @@ public class OmniDB extends MainFunctionImpl implements Persistable {
 
         String[] cmdParts = text.split("\\s+");
 
-        if(cmdParts.length == 1) {
-            bot.sendMessage(channel, usage);
+        if(cmdParts.length == 1 || (cmdParts.length == 2 && cmdParts[1].equals("get")) ) {
+            try {
+                Item item = getAnyItem();
+                printItem(item, true, channel);
+            } catch (Exception e) {
+                String msg = "Error retrieving from Omni DB";
+                logger.error(msg, e);
+                bot.sendMessage(channel, msg);
+            }
             return;
         }
 
@@ -135,72 +149,8 @@ public class OmniDB extends MainFunctionImpl implements Persistable {
 
                 break;
             }
-            case "get": {
 
-                Item item = null;
-                boolean includeTags = false;
-
-                if (cmdParts.length == 2) {
-
-                    try {
-                        item = getAnyItem();
-                        includeTags = true;
-                    } catch (Exception e) {
-                        String msg = "Error retrieving from Omni DB";
-                        logger.error(msg, e);
-                        bot.sendMessage(channel, msg);
-                    }
-
-                } else {
-
-                    List<String> tags = new LinkedList<>();
-                    String word;
-                    // add all words as tags, but help them out if they prefix with hashtags by stripping them
-                    for (int i = 2; i < cmdParts.length; i++) {
-                        word = cmdParts[i];
-                        if (word.startsWith("#") && word.length() > 1) {
-                            tags.add(word.substring(1));
-                        } else if (!word.startsWith("#")) {
-                            tags.add(word);
-                        }
-                    }
-
-                    if (tags.isEmpty()) {
-                        bot.sendMessage(channel, "Must provide some tags to fetch");
-                        return;
-                    }
-
-                    try {
-                        item = getTaggedItem(tags);
-                    } catch (Exception e) {
-                        String msg = "Error retrieving from Omni DB";
-                        logger.error(msg, e);
-                        bot.sendMessage(channel, msg);
-                    }
-
-                }
-
-                if (item != null) try {
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("ODB: ").append(item.item);
-                    if (includeTags) {
-                        for (String tag : getTagsForItem(item.itemId)) {
-                            sb.append(" #").append(tag);
-                        }
-                    }
-                    bot.sendMessage(channel, sb.toString());
-                } catch (Exception e) {
-                    String msg = "Error getting tags for item";
-                    logger.error(msg, e);
-                    bot.sendMessage(channel, msg);
-                }
-                else {
-                    bot.sendMessage(channel, "Couldn't find anything in Omni DB matching those tags");
-                }
-
-                break;
-            }
-            case "del":
+            case "del": {
 
                 if (!bot.userHasGlobalPriv(sender, User.Priv.HALFOP)) {
                     bot.sendMessage(channel, "Only ops can use that");
@@ -216,16 +166,88 @@ public class OmniDB extends MainFunctionImpl implements Persistable {
                 deleteItem(channel, itemId);
 
                 break;
-            case "size":
+            }
+
+            case "size": {
                 printSize(channel);
                 break;
-            default:
+            }
+
+            case "use":
+            case "usage": {
                 bot.sendMessage(channel, usage);
                 break;
+            }
+
+            case "get":
+            default: {
+
+                boolean includeId = ArrayUtils.contains(cmdParts, INCLUDE_ID);
+
+                Item item = null;
+                List<String> tags = buildTagList(cmdParts);
+                if (tags.isEmpty()) {
+                    bot.sendMessage(channel, "Must provide some tags to fetch");
+                    return;
+                }
+
+                try {
+                    item = getTaggedItem(tags);
+                } catch (Exception e) {
+                    String msg = "Error retrieving from Omni DB";
+                    logger.error(msg, e);
+                    bot.sendMessage(channel, msg);
+                }
+
+                if (item != null) {
+                    printItem(item, includeId, channel);
+                } else {
+                    bot.sendMessage(channel, "Couldn't find anything in Omni DB matching those tags");
+                }
+
+                break;
+            }
         }
     }
 
-    private String addItem(String item, List<String> tags) throws SQLException {
+    List<String> buildTagList(String[] cmdParts) {
+        List<String> tags = new LinkedList<>();
+        String word;
+
+        // .odb UH OH --> start compiling tags at index [1]
+        // .odb get UH OH --> start compiling tags at index [2]
+        int startIdx = cmdParts[1].equals("get") ? 2 : 1;
+
+        // add all words as tags, but help them out if they prefix with hashtags by stripping them
+        for (int i = startIdx; i < cmdParts.length; i++) {
+            word = cmdParts[i];
+            if (word.startsWith("#") && word.length() > 1) {
+                tags.add(word.substring(1));
+            } else if ( (!modifiers.contains(word)) && !word.startsWith("#")) {
+                tags.add(word);
+            }
+        }
+        return tags;
+    }
+
+    void printItem(Item item, boolean includeTags, String channel) {
+        try {
+            StringBuilder sb = new StringBuilder();
+            sb.append("ODB: ").append(item.item);
+            if (includeTags) {
+                for (String tag : getTagsForItem(item.itemId)) {
+                    sb.append(" #").append(tag);
+                }
+            }
+            bot.sendMessage(channel, sb.toString());
+        } catch (Exception e) {
+            String msg = "Error getting tags for item";
+            logger.error(msg, e);
+            bot.sendMessage(channel, msg);
+        }
+    }
+
+    String addItem(String item, List<String> tags) throws SQLException {
         Connection connection = connectionProvider.get();
 
         String itemId = MiscUtils.getRandomString();
@@ -254,7 +276,7 @@ public class OmniDB extends MainFunctionImpl implements Persistable {
         return itemId;
     }
 
-    private Item getAnyItem() throws SQLException {
+    Item getAnyItem() throws SQLException {
         Connection connection = connectionProvider.get();
         // empty get query, just return random data
         String q = String.format("select id, data from %s order by rand() limit 1", OMNIDB_TABLE_NAME);
@@ -268,7 +290,7 @@ public class OmniDB extends MainFunctionImpl implements Persistable {
         return null;
     }
 
-    private Item getTaggedItem(List<String> tags) throws SQLException {
+    Item getTaggedItem(List<String> tags) throws SQLException {
         Connection connection = connectionProvider.get();
         String tagQueryPart = String.format("? in (select tag from %s where itemId = odb.id)", OMNIDB_TAG_TABLE_NAME);
         StringBuilder queryBuilder = new StringBuilder();
@@ -293,7 +315,7 @@ public class OmniDB extends MainFunctionImpl implements Persistable {
         return null;
     }
 
-    private void deleteItem(String channel, String itemId) {
+    void deleteItem(String channel, String itemId) {
         Connection connection = connectionProvider.get();
         String deleteTags = String.format("delete from %s where itemId = ?", OMNIDB_TAG_TABLE_NAME);
         try(PreparedStatement ps = connection.prepareStatement(deleteTags)) {
@@ -325,7 +347,7 @@ public class OmniDB extends MainFunctionImpl implements Persistable {
         }
     }
 
-    private Set<String> getTagsForItem(String itemId) throws SQLException {
+    Set<String> getTagsForItem(String itemId) throws SQLException {
         String getTags = String.format("select tag from %s where itemId = ?", OMNIDB_TAG_TABLE_NAME);
         Set<String> tags = new HashSet<>();
         try(PreparedStatement ps = connectionProvider.get().prepareStatement(getTags)) {
@@ -339,7 +361,7 @@ public class OmniDB extends MainFunctionImpl implements Persistable {
         return tags;
     }
 
-    private void printSize(String channel) {
+    void printSize(String channel) {
         Connection connection = connectionProvider.get();
 
         int numItems = 0;

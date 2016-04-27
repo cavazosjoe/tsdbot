@@ -6,6 +6,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.history.HistoryBuff;
+import org.tsd.tsdbot.history.filter.InjectableMsgFilterStrategyFactory;
+import org.tsd.tsdbot.history.filter.MessageFilter;
+import org.tsd.tsdbot.history.filter.NoBotsStrategy;
+import org.tsd.tsdbot.history.filter.NoCommandsStrategy;
 import org.tsd.tsdbot.module.Function;
 
 import java.util.LinkedList;
@@ -18,11 +22,12 @@ public class GeeVee extends MainFunctionImpl {
 
     private static Logger logger = LoggerFactory.getLogger(GeeVee.class);
 
-    private HistoryBuff historyBuff;
-    private Random random;
+    private final HistoryBuff historyBuff;
+    private final Random random;
+    private final InjectableMsgFilterStrategyFactory strategyFactory;
 
     @Inject
-    public GeeVee(Bot bot, HistoryBuff historyBuff, Random random) {
+    public GeeVee(Bot bot, HistoryBuff historyBuff, Random random, InjectableMsgFilterStrategyFactory strategyFactory) {
         super(bot);
         this.description = "The Generally Vague Utility, I guess, but I don't know why you would want to use it, unless " +
                 "you had a good reason, but I guess that goes without saying, even though I never really had to," +
@@ -30,6 +35,7 @@ public class GeeVee extends MainFunctionImpl {
         this.usage = "USAGE: .gv [pls]";
         this.historyBuff = historyBuff;
         this.random = random;
+        this.strategyFactory = strategyFactory;
     }
 
     @Override
@@ -37,8 +43,13 @@ public class GeeVee extends MainFunctionImpl {
         String[] cmdParts = text.split("\\s+");
 
         if(cmdParts.length == 1) {
+            NoCommandsStrategy noCommandsStrategy = new NoCommandsStrategy();
+            strategyFactory.injectStrategy(noCommandsStrategy);
+            MessageFilter filter = MessageFilter.create()
+                    .addFilter(noCommandsStrategy)
+                    .addFilter(new NoBotsStrategy());
 
-            HistoryBuff.Message randomMsg = historyBuff.getRandomFilteredMessage(channel, null, null);
+            HistoryBuff.Message randomMsg = historyBuff.getRandomFilteredMessage(channel, null, filter);
             if(randomMsg != null) {
                 bot.sendMessage(channel, "<" + randomMsg.sender + "> " + randomMsg.text);
                 bot.sendMessage(channel, getRandomGvResponse());
@@ -95,8 +106,7 @@ public class GeeVee extends MainFunctionImpl {
                 return sb.toString();
             }
         } catch (Exception e) {
-            logger.error(e.getMessage());
-            e.printStackTrace();
+            logger.error("Error breaking up sentence", e);
         }
         return null;
     }

@@ -1,5 +1,6 @@
-package org.tsd.tsdbot.history;
+package org.tsd.tsdbot.history.filter;
 
+import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.util.MiscUtils;
 
 /**

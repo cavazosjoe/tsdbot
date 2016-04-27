@@ -37,4 +37,5 @@ public interface Bot {
     User getUserFromNick(String channel, String nick);
     void sendMessages(String target, String[] messages);
     void broadcast(String message);
+    void shutdownNow();
 }

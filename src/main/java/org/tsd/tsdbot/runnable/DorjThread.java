@@ -5,13 +5,10 @@ import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.Bot;
-import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.ThreadType;
 import org.tsd.tsdbot.functions.Dorj;
 import org.tsd.tsdbot.history.HistoryBuff;
-import org.tsd.tsdbot.history.InjectableMsgFilterStrategyFactory;
-import org.tsd.tsdbot.history.MessageFilter;
-import org.tsd.tsdbot.history.NoCommandsStrategy;
+import org.tsd.tsdbot.history.filter.*;
 import org.tsd.tsdbot.notifications.TwitterManager;
 import org.tsd.tsdbot.util.IRCUtil;
 import twitter4j.Status;
@@ -23,9 +20,6 @@ import java.util.Random;
 
 import static org.tsd.tsdbot.util.IRCUtil.*;
 
-/**
- * Created by Joe on 1/15/2015.
- */
 public class DorjThread extends IRCListenerThread {
 
     private static final Logger logger = LoggerFactory.getLogger(DorjThread.class);
@@ -126,9 +120,14 @@ public class DorjThread extends IRCListenerThread {
     protected void handleEnd() {
         if(summoners.size() == 4) try {
             // successful dorj
-            NoCommandsStrategy strat = new NoCommandsStrategy();
-            msgFilterFact.injectStrategy(strat);
-            HistoryBuff.Message m = historyBuff.getRandomFilteredMessage(channel, null, MessageFilter.create().addFilter(strat));
+            NoCommandsStrategy noCommandsStrategy = new NoCommandsStrategy();
+            msgFilterFact.injectStrategy(noCommandsStrategy);
+            MessageFilter filter = MessageFilter.create()
+                    .addFilter(noCommandsStrategy)
+                    .addFilter(new NoBotsStrategy())
+                    .addFilter(new LengthStrategy(1, 140));
+
+            HistoryBuff.Message m = historyBuff.getRandomFilteredMessage(channel, null, filter);
             Status tweet = twitterManager.postTweet(deejHandle + " " + m.text);
             bot.sendMessage(channel, "https://twitter.com/TSD_IRC/status/" + tweet.getId());
             dorjFunction.setSuccessfulDorj(tweet.getId());
