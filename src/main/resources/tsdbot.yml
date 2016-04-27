@@ -36,6 +36,8 @@ connection:
 
   stage: "dev"
 
+loggingProperties: "src/main/resources/logging.properties"
+
 # Database connection string
 database: "jdbc:h2:file:C:/Users/Joe/code/TSDBot/dist/tsdbot"
 

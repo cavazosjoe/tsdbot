@@ -1,8 +1,5 @@
 package org.tsd.tsdbot.functions;
 
-/**
- * Created by Joe on 3/28/2015.
- */
 public interface MainFunction {
     String getDescription();
     String getUsage();

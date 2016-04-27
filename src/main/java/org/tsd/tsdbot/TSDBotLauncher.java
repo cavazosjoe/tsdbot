@@ -102,6 +102,7 @@ public class TSDBotLauncher {
         log.info("Scheduler configured successfully");
         injector.injectMembers(Bot.class);
         log.info("Bot injected successfully");
+        bot.initLogging();
 
         log.info("TSDBot loaded successfully. Starting server...");
         initializeJettyServer(injector);
@@ -129,8 +130,9 @@ public class TSDBotLauncher {
 
         File tempDir = new File(System.getProperty("java.io.tmpdir"));
         File scratchDir = new File(tempDir.toString(), "embedded-jetty-jsp");
-        if(!scratchDir.exists())
+        if(!scratchDir.exists()) {
             scratchDir.mkdirs();
+        }
 
         JettyJasperInitializer sci = new JettyJasperInitializer();
         ContainerInitializer initializer = new ContainerInitializer(sci, null);

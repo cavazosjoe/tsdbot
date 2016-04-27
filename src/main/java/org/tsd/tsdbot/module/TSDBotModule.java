@@ -221,6 +221,11 @@ public class TSDBotModule extends AbstractModule {
             bot.broadcast("Error while building scheduler: " + e.getMessage());
         }
 
+        bind(File.class)
+                .annotatedWith(Names.named("loggingProperties"))
+                .toInstance(new File(configuration.loggingProperties));
+        log.info("Bound loggingProperties to file {}", configuration.loggingProperties);
+
         bind(String.class)
                 .annotatedWith(DBConnectionString.class)
                 .toInstance(configuration.database);
@@ -275,7 +280,4 @@ public class TSDBotModule extends AbstractModule {
         log.info("TSDBotModule.configure() successful");
 
     }
-
-
-
 }

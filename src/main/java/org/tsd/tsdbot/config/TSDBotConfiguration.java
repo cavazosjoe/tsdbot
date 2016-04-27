@@ -13,6 +13,10 @@ public class TSDBotConfiguration {
 
     @NotEmpty
     @NotNull
+    public String loggingProperties;
+
+    @NotEmpty
+    @NotNull
     public String owner;
 
     @NotEmpty

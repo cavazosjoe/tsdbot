@@ -47,6 +47,7 @@ public class TSDTV implements Persistable {
 
     private static Logger log = LoggerFactory.getLogger(TSDTV.class);
 
+    private static final String showsTable = "TSDTV_SHOW";
     private static final int dayBoundaryHour = 4; // 4:00 AM
     private static final TimeZone timeZone = TimeZone.getTimeZone("America/New_York");
 
@@ -68,7 +69,6 @@ public class TSDTV implements Persistable {
 
     private LinkedList<TSDTVQueueItem> queue = new LinkedList<>(); // file paths
     private TSDTVStream runningStream;
-    
 
     @Inject
     public TSDTV(Bot bot,
@@ -105,33 +105,35 @@ public class TSDTV implements Persistable {
         Connection connection = connectionProvider.get();
 
         // load new shows
-        String showsTable = "TSDTV_SHOW";
         String createShows = String.format("create table if not exists %s (" +
                 "id int auto_increment," +
                 "name varchar," +
                 "currentEpisode int," +
                 "primary key (id))", showsTable);
         try(PreparedStatement ps = connection.prepareStatement(createShows)) {
-            log.info("TSDTV_SHOW: {}", createShows);
+            log.info("{}: {}", showsTable, createShows);
             ps.executeUpdate();
         }
 
-        log.info("Building TSDTV_SHOW table...");
+        log.info("Building {} table...", showsTable);
         for(TSDTVShow show : library.getAllShows()) {
-            String q = String.format("select count(*) from %s where name = '%s'", showsTable, show.getRawName());
-            try(PreparedStatement ps = connection.prepareStatement(q) ; ResultSet result = ps.executeQuery()) {
-                result.next();
-                if(result.getInt(1) == 0) { // show does not exist in db, add it
-                    log.info("Could not find show {} in DB, adding...", show.getRawName());
-                    String insertShow = String.format(
-                            "insert into %s (name, currentEpisode) values ('%s',1)",
-                            showsTable,
-                            show.getRawName());
-                    try(PreparedStatement ps1 = connection.prepareCall(insertShow)) {
-                        ps1.executeUpdate();
+            String q = String.format("select count(*) from %s where name = ?", showsTable);
+            try(PreparedStatement ps = connection.prepareStatement(q)) {
+                ps.setString(1, show.getRawName());
+                try(ResultSet result = ps.executeQuery()) {
+                    result.next();
+                    if (result.getInt(1) == 0) { // show does not exist in db, add it
+                        log.info("Could not find show {} in DB, adding...", show.getRawName());
+                        String insertShow = String.format(
+                                "insert into %s (name, currentEpisode) values (?,1)",
+                                showsTable);
+                        try (PreparedStatement ps1 = connection.prepareCall(insertShow)) {
+                            ps1.setString(1, show.getRawName());
+                            ps1.executeUpdate();
+                        }
+                    } else {
+                        log.info("Show {} already exists in DB, skipping...", show.getRawName());
                     }
-                } else {
-                    log.info("Show {} already exists in DB, skipping...", show.getRawName());
                 }
             }
         }
@@ -526,17 +528,14 @@ public class TSDTV implements Persistable {
             }
         }
 
-        broadcast(broadcastBuilder.toString());
+        bot.broadcast(broadcastBuilder.toString());
+        bot.broadcast(getLinks(false));
 
-        if(blockIntro != null) {
-            // there's a block intro playing, link people to the stream while it plays
-            broadcast(getLinks(false));
-        }
-
-        if(!queue.isEmpty())
+        if(!queue.isEmpty()) {
             play(queue.pop());
-        else
+        } else {
             log.error("Could not find any shows for block...");
+        }
     }
 
     public void prepareBlockReplay(String channel, String blockQuery) {
@@ -637,7 +636,7 @@ public class TSDTV implements Persistable {
             }
 
             if(!jobMap.isEmpty()) {
-                StringBuilder sb = null;
+                StringBuilder sb;
                 SimpleDateFormat sdf;
                 if(todayOnly)
                     sdf = new SimpleDateFormat("HH:mm a z");
@@ -733,17 +732,21 @@ public class TSDTV implements Persistable {
     }
 
     public StreamState getState() throws NoStreamRunningException {
-        if(runningStream == null)
+        if(runningStream == null) {
             throw new NoStreamRunningException();
+        }
         return runningStream.getStreamState();
     }
 
     private int getCurrentEpisode(TSDTVShow show) throws SQLException {
         Connection dbConn = connectionProvider.get();
-        String q = String.format("select currentEpisode from TSDTV_SHOW where name = '%s'", show.getRawName());
-        try(PreparedStatement ps = dbConn.prepareStatement(q) ; ResultSet result = ps.executeQuery()) {
-            if(result.next()) {
-                return result.getInt("currentEpisode");
+        String q = String.format("select currentEpisode from %s where name = ?", showsTable);
+        try(PreparedStatement ps = dbConn.prepareStatement(q)) {
+            ps.setString(1, show.getRawName());
+            try (ResultSet result = ps.executeQuery()) {
+                if (result.next()) {
+                    return result.getInt("currentEpisode");
+                }
             }
         }
         return -1;
@@ -765,8 +768,9 @@ public class TSDTV implements Persistable {
             BufferedReader br = new BufferedReader(reader);
             String line;
             while( (line = br.readLine()) != null ) {
-                if(line.trim().matches(matchString))
+                if(line.trim().matches(matchString)) {
                     viewerCount++;
+                }
             }
         } catch (IOException | InterruptedException e) {
             return -1;
@@ -783,8 +787,10 @@ public class TSDTV implements Persistable {
     public String getLinks(boolean includeDirect) {
         StringBuilder sb = new StringBuilder();
         sb.append(serverUrl).append("/tsdtv");
-        if(includeDirect)
+        if(includeDirect) {
             sb.append(" -- DIRECT: ").append(tsdtvDirect);
+        }
+        sb.append(" -- CHANNEL: ").append(StringUtils.join(tsdtvChannels.toArray(), ", "));
         return sb.toString();
     }
 
@@ -820,7 +826,7 @@ public class TSDTV implements Persistable {
 
     private void setEpisodeNumber(TSDTVShow show, int num) throws SQLException {
         Connection dbConn = connectionProvider.get();
-        String update = "update TSDTV_SHOW set currentEpisode = ? where name = ?";
+        String update = String.format("update %s set currentEpisode = ? where name = ?", showsTable);
         try(PreparedStatement ps = dbConn.prepareStatement(update)) {
             ps.setInt(1, num);
             ps.setString(2, show.getRawName());

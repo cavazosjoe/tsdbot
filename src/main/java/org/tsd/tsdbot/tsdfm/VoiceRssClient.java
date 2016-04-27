@@ -27,7 +27,7 @@ public class VoiceRssClient {
     }
 
     public byte[] getSpeech(String text) throws Exception {
-        log.info("Retrieving text to speech for: {}", text);
+        log.debug("Retrieving text to speech for: {}", text);
         URIBuilder uriBuilder = new URIBuilder(apiTarget);
         uriBuilder.addParameter("key", apiKey);
         uriBuilder.addParameter("src", text);

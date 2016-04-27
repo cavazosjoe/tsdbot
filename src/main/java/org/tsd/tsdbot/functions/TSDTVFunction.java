@@ -182,6 +182,10 @@ public class TSDTVFunction extends MainFunctionImpl {
                 try {
                     if (!tsdtv.playFromChat(episode, user)) {
                         bot.sendMessage(channel, "There is already a stream running. Your show has been enqueued");
+                    } else {
+                        String msg = String.format("You got it, chief. Now playing: \"%s - %s\"",
+                                episode.getShow().getPrettyName(), episode.getPrettyName());
+                        bot.sendMessage(channel, msg);
                     }
                 } catch (StreamLockedException sle) {
                     bot.sendMessage(channel, "The stream is currently locked down");

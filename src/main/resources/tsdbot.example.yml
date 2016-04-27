@@ -36,6 +36,9 @@ connection:
   # one of {dev|production}
   stage: dev
 
+# Properties file for logger
+loggingProperties: "/path/to/my/logging.properties"
+
 # Database connection string
 database: "jdbc:h2:file:/home/me/tsdbot-db"
 

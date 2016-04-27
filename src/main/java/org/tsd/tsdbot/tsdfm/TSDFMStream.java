@@ -44,8 +44,7 @@ public class TSDFMStream extends Thread {
 
     @Override
     public void run() {
-        log.info("[TSDFM] preparing music {} using command {}", musicItem, ffmpegCommand);
-//        ProcessBuilder pb = new ProcessBuilder(ffmpegCommand);
+        log.debug("[TSDFM] preparing music {} using command {}", musicItem, ffmpegCommand);
         ProcessBuilder pb = new ProcessBuilder(
                 ffmpegExec, "-re", "-i", musicItem.getFile().getAbsolutePath(), tsdfmOut
         );
@@ -55,10 +54,10 @@ public class TSDFMStream extends Thread {
         try {
             Process p = pb.start();
             try {
-                log.info("TSDFM stream started, playing...");
+                log.debug("TSDFM stream started, playing...");
                 int exit = p.waitFor();
                 if(exit == 0) {
-                    log.info("TSDFM stream ended normally");
+                    log.debug("TSDFM stream ended normally");
                 } else {
                     log.error("TSDFM stream ended with ERROR, code " + exit);
                     error = true;

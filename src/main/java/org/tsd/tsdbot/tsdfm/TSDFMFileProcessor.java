@@ -34,7 +34,7 @@ public class TSDFMFileProcessor {
 
     public File addIntroToSong(String introText, TSDFMSong song) throws Exception {
 
-        log.info("Adding intro text to song, text=\"{}\", song={}", introText, song.getMusicFile().getAbsolutePath());
+        log.debug("Adding intro text to song, text=\"{}\", song={}", introText, song.getMusicFile().getAbsolutePath());
 
         Path introFilePath = null;
         try {
@@ -43,7 +43,7 @@ public class TSDFMFileProcessor {
                 // probably an error
                 log.error("PROBABLE ERROR getting voiceRss data: {}", new String(introSpeechBytes));
             } else {
-                log.info("Retrieved intro speech file, size = {} kB", introSpeechBytes.length/1000);
+                log.debug("Retrieved intro speech file, size = {} kB", introSpeechBytes.length/1000);
             }
             introFilePath = Files.createTempFile("introFile", ".mp3");
             introFilePath = Files.write(introFilePath, introSpeechBytes);
@@ -73,13 +73,13 @@ public class TSDFMFileProcessor {
                 try {
                     int exit = p.waitFor();
                     if(exit == 0) {
-                        log.info("TSDFM file processing ended normally");
+                        log.debug("TSDFM file processing ended normally");
                     } else {
                         log.error("TSDFM file processing ended in ERROR, code " + exit);
                         throw new Exception("Error processing file");
                     }
                 } catch (InterruptedException e) {
-                    log.info("TSDFM intro processor interrupted", e);
+                    log.debug("TSDFM intro processor interrupted", e);
                 } finally {
                     p.destroy();
                 }
@@ -95,6 +95,4 @@ public class TSDFMFileProcessor {
             }
         }
     }
-
-
 }

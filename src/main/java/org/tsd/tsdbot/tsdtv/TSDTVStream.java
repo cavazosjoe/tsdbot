@@ -114,17 +114,17 @@ public class TSDTVStream extends Thread {
             tsdtv.finishStream(false);
             return;
         }
-        logger.info("[TSDTV] preparing movie {} using command {}", movie.video.getFile().getAbsolutePath(), ffmpegCommand);
+        logger.debug("[TSDTV] preparing movie {} using command {}", movie.video.getFile().getAbsolutePath(), ffmpegCommand);
         ProcessBuilder pb = new ProcessBuilder(ffmpegCommand.split("\\s+"));
         pb.redirectErrorStream(true);
         pb.redirectOutput(logFile);
         try {
             Process p = pb.start();
             try {
-                logger.info("TSDTV stream started, playing...");
+                logger.debug("TSDTV stream started, playing...");
                 this.streamState = StreamState.running;
                 p.waitFor();
-                logger.info("TSDTV stream ended normally");
+                logger.debug("TSDTV stream ended normally");
             } catch (InterruptedException e) {
                 logger.debug("TSDTV stream interrupted");
             } finally {

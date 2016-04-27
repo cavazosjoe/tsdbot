@@ -88,20 +88,21 @@ public class TSDFMLibrary implements Persistable {
         Connection connection = connectionProvider.get();
         for(String tag : tags) {
             tag = sanitizeTag(tag);
-            countQuery = String.format(QUERY_EXISTING_TAG, songPath, tag);
-            try(PreparedStatement ps = connection.prepareStatement(countQuery) ; ResultSet result = ps.executeQuery()) {
-                result.next();
-                if(result.getInt(1) == 0) {
-                    log.info("Could not find tag '{}' for song {}, adding...", tag, songPath);
-                    insertStatement = String.format(
-                            INSERT_TAG,
-                            songPath,
-                            tag);
-                    try(PreparedStatement ps1 = connection.prepareCall(insertStatement)) {
-                        ps1.executeUpdate();
+            try(PreparedStatement ps = connection.prepareStatement(QUERY_EXISTING_TAG)) {
+                ps.setString(1, songPath);
+                ps.setString(2, tag);
+                try (ResultSet result = ps.executeQuery()) {
+                    result.next();
+                    if (result.getInt(1) == 0) {
+                        log.info("Could not find tag '{}' for song {}, adding...", tag, songPath);
+                        try (PreparedStatement ps1 = connection.prepareCall(INSERT_TAG)) {
+                            ps1.setString(1, songPath);
+                            ps1.setString(2, tag);
+                            ps1.executeUpdate();
+                        }
+                    } else {
+                        log.warn("Tag {} already exists for file {} -- skipping...", tag, songPath);
                     }
-                } else {
-                    log.warn("Tag {} already exists for file {} -- skipping...", tag, songPath);
                 }
             }
         }
@@ -337,10 +338,10 @@ public class TSDFMLibrary implements Persistable {
     private static final String TAGS_TABLE = "TSDFM_TAGS";
 
     private static final String QUERY_EXISTING_TAG =
-        "select count(*) from "+TAGS_TABLE+" where path = '%s' and tag = '%s'";
+        "select count(*) from "+TAGS_TABLE+" where path = ? and tag = ?";
 
     private static final String INSERT_TAG =
-        "insert into "+TAGS_TABLE+" (path, tag) values ('%s', '%s')";
+        "insert into "+TAGS_TABLE+" (path, tag) values (?, ?)";
 
     private static final String CREATE_TAGS_TABLE = String.format(
         "create table if not exists %s (path varchar, tag varchar)",

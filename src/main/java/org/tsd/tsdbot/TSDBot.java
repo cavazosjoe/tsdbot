@@ -1,7 +1,9 @@
 package org.tsd.tsdbot;
 
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.PropertyConfigurator;
 import org.jibble.pircbot.IrcException;
 import org.jibble.pircbot.PircBot;
 import org.jibble.pircbot.User;
@@ -20,6 +22,7 @@ import org.tsd.tsdbot.util.ArchivistUtil;
 import org.tsd.tsdbot.util.IRCUtil;
 import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Set;
@@ -54,6 +57,9 @@ public class TSDBot extends PircBot implements Bot {
     @Inject @BotOwner
     protected String owner;
 
+    @Inject @Named("loggingProperties")
+    protected File loggingPropertiesFile;
+
     @Deprecated // used for testing
     public TSDBot() {}
 
@@ -65,8 +71,9 @@ public class TSDBot extends PircBot implements Bot {
         setMessageDelay(10); //10 ms
         connect(server, port);
         logger.info("Successfully connected to " + server + ":" + port);
-        if(StringUtils.isNotBlank(nickservPass))
+        if(StringUtils.isNotBlank(nickservPass)) {
             identify(nickservPass);
+        }
     }
 
     public long getBlunderCount() {
@@ -247,5 +254,14 @@ public class TSDBot extends PircBot implements Bot {
 
     public void incrementBlunderCnt() {
         blunderCount++;
+    }
+
+    void initLogging() {
+        try {
+            PropertyConfigurator.configureAndWatch(loggingPropertiesFile.getAbsolutePath(), 15000L);
+            logger.info("Logging initialized successfully");
+        } catch (Exception e) {
+            logger.error("Error initializing logging", e);
+        }
     }
 }
