@@ -18,6 +18,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Singleton
 @Function(initialRegex = "^\\.odb.*")
@@ -28,13 +29,15 @@ public class OmniDB extends MainFunctionImpl implements Persistable {
     private static final String OMNIDB_TABLE_NAME = "OMNIDB";
     private static final String OMNIDB_TAG_TABLE_NAME = "OMNIDB_TAG";
 
+    private static final String INCLUDE_TAGS = "-includetags";
     private static final String INCLUDE_ID = "-includeid";
 
     private static final Set<String> modifiers = new HashSet<>(
-            Arrays.asList(INCLUDE_ID)
+            Arrays.asList(INCLUDE_TAGS, INCLUDE_ID)
     );
 
-    private DBConnectionProvider connectionProvider;
+    private final DBConnectionProvider connectionProvider;
+    private final Map<String, Item> lastPulledItems = new ConcurrentHashMap<>();
 
     @Inject
     public OmniDB(Bot bot, DBConnectionProvider connectionProvider) throws SQLException {
@@ -94,7 +97,8 @@ public class OmniDB extends MainFunctionImpl implements Persistable {
         if(cmdParts.length == 1 || (cmdParts.length == 2 && cmdParts[1].equals("get")) ) {
             try {
                 Item item = getAnyItem();
-                printItem(item, true, channel);
+                printItem(item, true, false, channel);
+                lastPulledItems.put(channel, item);
             } catch (Exception e) {
                 String msg = "Error retrieving from Omni DB";
                 logger.error(msg, e);
@@ -179,9 +183,20 @@ public class OmniDB extends MainFunctionImpl implements Persistable {
                 break;
             }
 
+            case "runback": {
+                Item lastPulled = lastPulledItems.get(channel);
+                if(lastPulled == null) {
+                    bot.sendMessage(channel, "No ODB pulls in this channel to run back");
+                } else {
+                    printItem(lastPulled, true, true, channel);
+                }
+                break;
+            }
+
             case "get":
             default: {
 
+                boolean includeTags = ArrayUtils.contains(cmdParts, INCLUDE_TAGS);
                 boolean includeId = ArrayUtils.contains(cmdParts, INCLUDE_ID);
 
                 Item item = null;
@@ -200,7 +215,8 @@ public class OmniDB extends MainFunctionImpl implements Persistable {
                 }
 
                 if (item != null) {
-                    printItem(item, includeId, channel);
+                    printItem(item, includeTags, includeId, channel);
+                    lastPulledItems.put(channel, item);
                 } else {
                     bot.sendMessage(channel, "Couldn't find anything in Omni DB matching those tags");
                 }
@@ -230,7 +246,7 @@ public class OmniDB extends MainFunctionImpl implements Persistable {
         return tags;
     }
 
-    void printItem(Item item, boolean includeTags, String channel) {
+    void printItem(Item item, boolean includeTags, boolean includeId, String channel) {
         try {
             StringBuilder sb = new StringBuilder();
             sb.append("ODB: ").append(item.item);
@@ -238,6 +254,9 @@ public class OmniDB extends MainFunctionImpl implements Persistable {
                 for (String tag : getTagsForItem(item.itemId)) {
                     sb.append(" #").append(tag);
                 }
+            }
+            if (includeId) {
+                sb.append(" (id = ").append(item.itemId).append(" )");
             }
             bot.sendMessage(channel, sb.toString());
         } catch (Exception e) {

@@ -159,5 +159,4 @@ public class IRCUtil {
             "kanbot",
             "schooly_b"
     };
-
 }

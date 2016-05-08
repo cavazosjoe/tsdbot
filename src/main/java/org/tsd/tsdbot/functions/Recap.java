@@ -71,8 +71,9 @@ public class Recap extends MainFunctionImpl {
     }
 
     private String getScrambledNick(String nick, HashMap<String, String> dict) {
-        if(!dict.containsKey(nick))
+        if(!dict.containsKey(nick)) {
             dict.put(nick, IRCUtil.scrambleNick(nick));
+        }
         return dict.get(nick);
     }
 

@@ -14,8 +14,6 @@ import java.util.*;
 @Function(initialRegex = "^\\.quote")
 public class ScareQuote extends MainFunctionImpl {
 
-    //TODO: put more than 5 minutes of effort into this and stop trying to "fix" it while drunk
-
     private InjectableMsgFilterStrategyFactory filterFactory;
     private HistoryBuff historyBuff;
     private Random random;
@@ -42,6 +40,7 @@ public class ScareQuote extends MainFunctionImpl {
                 MessageFilter.create()
                         .addFilter(noCmdStrat)
                         .addFilter(new LengthStrategy(null, 100))
+                        .addFilter(new NoBotsStrategy())
                         .addFilter(new MessageFilterStrategy() {
                             @Override
                             public boolean apply(HistoryBuff.Message m) {
@@ -66,7 +65,7 @@ public class ScareQuote extends MainFunctionImpl {
 
             LinkedList<String> words = new LinkedList<>(Arrays.asList(chosen.text.split("\\s+")));
 
-            // used so we can keep track of where a word is in a sentence even when it appears twice
+            // used so we can keep track of where a word is in a sentence even if it appears twice
             HashMap<Integer, String> wordMap = new HashMap<>();
 
             for(int i=0 ; i < words.size() ; i++) {
@@ -109,14 +108,16 @@ public class ScareQuote extends MainFunctionImpl {
                 i++;
             }
 
-            bot.sendMessage(channel, "<" + IRCUtil.scrambleNick(chosen.sender) + "> " + result.toString());
+            bot.sendMessage(channel,
+                    String.format("<%s> %s", IRCUtil.scrambleNick(chosen.sender), result.toString()));
         }
     }
 
     private boolean isThrowaway(String word) {
         for(String ta : throwawayWords) {
-            if(ta.equalsIgnoreCase(word))
+            if(ta.equalsIgnoreCase(word)) {
                 return true;
+            }
         }
         return false;
     }
@@ -126,7 +127,9 @@ public class ScareQuote extends MainFunctionImpl {
             "i",    "a",        "an",
             "to",   "and",      "the",
             "l'll", "can't",    "for",
-            "too"
+            "too",  "me",       "from",
+            "not",  "is",       "aren't",
+            "isn't","won't",    "will"
     };
 
 }

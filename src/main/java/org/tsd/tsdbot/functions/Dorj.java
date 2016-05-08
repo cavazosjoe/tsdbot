@@ -2,7 +2,6 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.Bot;
@@ -14,9 +13,6 @@ import org.tsd.tsdbot.runnable.InjectableIRCThreadFactory;
 import org.tsd.tsdbot.runnable.ThreadManager;
 import org.tsd.tsdbot.util.IRCUtil;
 
-/**
- * Created by Joe on 5/24/14.
- */
 @Singleton
 @Function(initialRegex = "^\\.dorj.*")
 public class Dorj extends MainFunctionImpl {
@@ -61,8 +57,8 @@ public class Dorj extends MainFunctionImpl {
 
         } else if(cmdParts[1].equals("rollback")) {
 
-            if(!bot.userHasPrivInChannel(sender, channel, User.Priv.HALFOP)) {
-                bot.sendMessage(channel, "Only ops can change the course of history");
+            if(!bot.userIsOwner(sender)) {
+                bot.sendMessage(channel, "Only my master can change the course of history");
                 return;
             }
 
