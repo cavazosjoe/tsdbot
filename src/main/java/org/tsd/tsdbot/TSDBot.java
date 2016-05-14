@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.PropertyConfigurator;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.jibble.pircbot.IrcException;
 import org.jibble.pircbot.PircBot;
 import org.jibble.pircbot.User;
@@ -32,6 +33,7 @@ public class TSDBot extends PircBot implements Bot {
     private static Logger logger = LoggerFactory.getLogger(TSDBot.class);
 
     protected static long blunderCount = 0;
+    protected static Set<User> blacklist = new ConcurrentHashSet<>();
 
     @Inject
     protected ThreadManager threadManager;
@@ -184,17 +186,19 @@ public class TSDBot extends PircBot implements Bot {
                 message
         ));
 
-        // pass message to functions that match its pattern
-        for(MainFunction function : functions) {
-            if(message.matches(function.getListeningRegex())) {
-                function.run(channel, sender, login, message);
+        if(!blacklist.contains(getUserFromNick(channel, sender))) {
+            // pass message to functions that match its pattern
+            for (MainFunction function : functions) {
+                if (message.matches(function.getListeningRegex())) {
+                    function.run(channel, sender, login, message);
+                }
             }
-        }
 
-        // propagate message to all listening threads
-        for(IRCListenerThread listenerThread : threadManager.getThreadsByChannel(channel)) {
-            if(listenerThread.matches(message)) {
-                listenerThread.onMessage(sender, login, hostname, message);
+            // propagate message to all listening threads
+            for (IRCListenerThread listenerThread : threadManager.getThreadsByChannel(channel)) {
+                if (listenerThread.matches(message)) {
+                    listenerThread.onMessage(sender, login, hostname, message);
+                }
             }
         }
 
@@ -204,31 +208,46 @@ public class TSDBot extends PircBot implements Bot {
         }
 
         historyBuff.updateHistory(channel, message, sender);
-
     }
 
+    @Override
     public LinkedList<User> getNonBotUsers(String channel) {
         LinkedList<User> ret = new LinkedList<>();
         for(User u : getUsers(channel)) {
-            if( (!FuzzyLogic.fuzzyMatches("bot", u.getNick())) && (!u.getNick().equalsIgnoreCase("tipsfedora")) )
+            if( (!FuzzyLogic.fuzzyMatches("bot", u.getNick())) && (!FuzzyLogic.fuzzyMatches("wheatley", u.getNick())) ) {
                 ret.add(u);
+            }
         }
         return ret;
     }
 
+    @Override
+    public boolean addToBlacklist(User user) {
+        return blacklist.add(user);
+    }
+
+    @Override
+    public boolean removeFromBlacklist(User user) {
+        return blacklist.remove(user);
+    }
+
+    @Override
     public boolean userIsOwner(String nick) {
         return nick.equals(owner);
     }
 
+    @Override
     public boolean userHasGlobalPriv(String nick, User.Priv priv) {
         return userHasPrivInChannel(nick, mainChannel, priv);
     }
 
+    @Override
     public boolean userHasPrivInChannel(String nick, String channel, User.Priv priv) {
         User u = getUserFromNick(channel, nick);
         return u != null && (userIsOwner(nick) || u.hasPriv(priv));
     }
 
+    @Override
     public User getUserFromNick(String channel, String nick) {
         User user = null;
         String prefixlessNick;
@@ -242,16 +261,19 @@ public class TSDBot extends PircBot implements Bot {
         return user;
     }
 
+    @Override
     public void sendMessages(String target, String[] messages) {
         for(String m : messages) sendMessage(target, m);
     }
 
+    @Override
     public void broadcast(String message) {
         for(String channel : getChannels()) {
             sendMessage(channel, message);
         }
     }
 
+    @Override
     public void incrementBlunderCnt() {
         blunderCount++;
     }
@@ -265,6 +287,7 @@ public class TSDBot extends PircBot implements Bot {
         }
     }
 
+    @Override
     public void shutdownNow() {
         logger.warn("SHUTTING DOWN");
         disconnect();

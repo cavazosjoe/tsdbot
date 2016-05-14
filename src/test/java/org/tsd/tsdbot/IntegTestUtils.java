@@ -2,6 +2,7 @@ package org.tsd.tsdbot;
 
 import com.google.inject.Binder;
 import com.google.inject.multibindings.Multibinder;
+import org.jibble.pircbot.User;
 import org.tsd.tsdbot.functions.MainFunction;
 
 import java.io.InputStream;
@@ -30,5 +31,9 @@ public class IntegTestUtils {
     public static String sendMessageGetResponse(TestBot testBot, String user, String ident, String channel, String msg) {
         testBot.onMessage(channel, user, ident, "hostname", msg);
         return testBot.getLastMessage(channel);
+    }
+
+    public static User createUserWithPriv(String handle, User.Priv priv) {
+        return new User(priv.getPrefix(), handle);
     }
 }

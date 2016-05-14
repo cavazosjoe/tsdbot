@@ -4,9 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.history.HistoryBuff;
-import org.tsd.tsdbot.history.filter.InjectableMsgFilterStrategyFactory;
-import org.tsd.tsdbot.history.filter.MessageFilter;
-import org.tsd.tsdbot.history.filter.NoCommandsStrategy;
+import org.tsd.tsdbot.history.filter.*;
 import org.tsd.tsdbot.module.Function;
 
 import java.util.Random;
@@ -39,7 +37,10 @@ public class Deej extends MainFunctionImpl {
         HistoryBuff.Message chosen = historyBuff.getRandomFilteredMessage(
                 channel,
                 null,
-                MessageFilter.create().addFilter(noCmdStrat)
+                MessageFilter.create()
+                        .addFilter(noCmdStrat)
+                        .addFilter(new NoBotsStrategy())
+                        .addFilter(new NoURLsStrategy())
         );
 
         if(chosen != null) {

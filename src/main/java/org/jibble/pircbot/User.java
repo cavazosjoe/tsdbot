@@ -35,7 +35,7 @@ public class User {
      * @param prefix The status of the user, for example, "@".
      * @param nick The nick of the user.
      */
-    User(String prefix, String nick) {
+    public User(String prefix, String nick) {
         _prefix = prefix;
         _nick = nick;
         _lowerNick = nick.toLowerCase();
@@ -166,9 +166,9 @@ public class User {
     }
     
     
-    private String _prefix;
-    private String _nick;
-    private String _lowerNick;
+    protected String _prefix;
+    protected String _nick;
+    protected String _lowerNick;
 
     /**
      * Accurate model of IRC privileges
@@ -190,6 +190,10 @@ public class User {
             this.level = level;
         }
 
+        public String getPrefix() {
+            return prefix;
+        }
+
         // SUPEROP.sufficientPrivs(HALFOP) == TRUE
         public boolean sufficientPrivs(Priv target) {
             return level >= target.level;
@@ -205,8 +209,9 @@ public class User {
         public static Priv fromPrefix(String pfx) {
             Priv maxPriv = NONE;
             for(Priv priv : values()) {
-                if(pfx.contains(priv.prefix) && priv.level > maxPriv.level)
+                if(pfx.contains(priv.prefix) && priv.level > maxPriv.level) {
                     maxPriv = priv;
+                }
             }
             return maxPriv;
         }

@@ -1,21 +1,22 @@
 package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.history.filter.InjectableMsgFilterStrategyFactory;
 import org.tsd.tsdbot.history.filter.LengthStrategy;
 import org.tsd.tsdbot.history.filter.MessageFilter;
 import org.tsd.tsdbot.history.filter.NoCommandsStrategy;
+import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.util.IRCUtil;
 
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Random;
 
-// disabled because this is in pybot
-//@Singleton
-//@Function(initialRegex = "^\\.recap")
+@Singleton
+@Function(initialRegex = "^\\.recap")
 public class Recap extends MainFunctionImpl {
 
     private static final int dramaCount = 4;

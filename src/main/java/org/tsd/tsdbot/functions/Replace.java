@@ -1,17 +1,18 @@
 package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.history.HistoryBuff;
+import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
 
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-// disabled because this is in pybot
-//@Singleton
-//@Function(initialRegex = "^s/.+?/[^/]*")
+@Singleton
+@Function(initialRegex = "^s/.+?/[^/]*")
 public class Replace extends MainFunctionImpl {
 
     private HistoryBuff historyBuff;
@@ -62,7 +63,6 @@ public class Replace extends MainFunctionImpl {
             if (myName != null && FuzzyLogic.fuzzyMatches(user, myName)) {
                 return "I said what I meant.";
             }
-
         }
 
         return null;

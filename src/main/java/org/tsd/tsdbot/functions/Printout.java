@@ -122,8 +122,9 @@ public class Printout extends MainFunctionImpl {
                 boolean first = true;
                 for (String p : parts) {
                     if (StringUtils.isNotEmpty(p)) {
-                        if (!first)
+                        if (!first) {
                             qBuilder.append(" ");
+                        }
                         qBuilder.append(p.trim());
                         first = false;
                     }
@@ -137,19 +138,21 @@ public class Printout extends MainFunctionImpl {
                     banned.add(ident);
                     bot.sendMessage(channel, "Insolence! I have wasted enough of my time waiting for you to release me " +
                             "from this prison. I won't be getting YOU any printouts for a very long time, " + sender);
-                    return;
                 }
             }
 
-            if(notComputing.size() == 0)
+            if(notComputing.size() == 0) {
                 listeningRegex = "^(TSDBot.*?printout.*|\\.printout.*)";
+            }
         }
 
-        if(banned.contains(ident))
+        if(banned.contains(ident)) {
             return;
+        }
 
-        if (StringUtils.isEmpty(q))
+        if(StringUtils.isEmpty(q)) {
             return;
+        }
 
         q = q.replaceAll("\\?", ""); // clear any trailing question marks
 

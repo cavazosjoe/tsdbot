@@ -128,7 +128,8 @@ public class MovieTitle extends MainFunctionImpl {
             "The State",        "Board of Education",
             "A.C. Slater",      "Saved by the Bell",
             "Anime",            "TSDTV",
-            "TSDBot"
+            "TSDBot",           "Roy Fokker",
+            "Mee-kun"
     };
 
     private static final String[] standardSubtitles = {
@@ -183,6 +184,8 @@ public class MovieTitle extends MainFunctionImpl {
             "Last Stand",
             "All or Nothing",
             "Borhters Under Fire",
-            "The Time is Now"
+            "The Time is Now",
+            "Overdrive",
+            "Let's Defend Happiness"
     };
 }

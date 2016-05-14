@@ -31,6 +31,8 @@ public interface Bot {
     void partChannel(String channel, String reason);
 
     LinkedList<User> getNonBotUsers(String channel);
+    boolean addToBlacklist(User user);
+    boolean removeFromBlacklist(User user);
     boolean userIsOwner(String nick);
     boolean userHasGlobalPriv(String nick, User.Priv priv);
     boolean userHasPrivInChannel(String nick, String channel, User.Priv priv);
