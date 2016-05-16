@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.ThreadType;
 import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.notifications.TwitterManager;
@@ -25,7 +25,7 @@ public class Dorj extends MainFunctionImpl {
     private long lastDorjId = -1;
 
     @Inject
-    public Dorj(Bot bot, ThreadManager threadManager,
+    public Dorj(TSDBot bot, ThreadManager threadManager,
                 InjectableIRCThreadFactory threadFactory, TwitterManager twitterManager) {
         super(bot);
         this.description = "Dorj: use teamwork to summon the legendary Double Dorj";

@@ -8,7 +8,7 @@ import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.JdbcConnectionProvider;
 import org.tsd.tsdbot.model.warzone.WarzoneRegular;
 import org.tsd.tsdbot.module.Function;
@@ -34,7 +34,7 @@ public class WarzoneWed extends MainFunctionImpl {
     private final HashSet<String> gameIds = new HashSet<>();
 
     @Inject
-    public WarzoneWed(Bot bot, JdbcConnectionProvider connectionProvider) {
+    public WarzoneWed(TSDBot bot, JdbcConnectionProvider connectionProvider) {
         super(bot);
         this.connectionProvider = connectionProvider;
         this.description = "They said it couldn't be done. They were wrong, mostly.";

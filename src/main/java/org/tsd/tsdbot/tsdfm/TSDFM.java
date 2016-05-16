@@ -7,10 +7,9 @@ import org.quartz.*;
 import org.quartz.impl.matchers.GroupMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.config.TSDFMConfig;
 import org.tsd.tsdbot.history.HistoryBuff;
-import org.tsd.tsdbot.history.filter.InjectableMsgFilterStrategyFactory;
 import org.tsd.tsdbot.history.filter.LengthStrategy;
 import org.tsd.tsdbot.history.filter.MessageFilter;
 import org.tsd.tsdbot.history.filter.NoCommandsStrategy;
@@ -39,7 +38,7 @@ public class TSDFM {
     private TSDFMStream nowPlaying;
     private final Queue<TSDFMQueueItem> queue = new ConcurrentLinkedQueue<>();
 
-    private final Bot bot;
+    private final TSDBot bot;
     private final TSDFMLibrary library;
     private final Scheduler scheduler;
     private final String scheduleFile;
@@ -47,25 +46,22 @@ public class TSDFM {
     private final FfmpegUtils ffmpegUtils;
     private final InjectableStreamFactory tsdfmStreamFactory;
     private final HistoryBuff historyBuff;
-    private final InjectableMsgFilterStrategyFactory filterFactory;
     private final List<String> tsdfmChannels;
     private final String streamUrl;
 
     @Inject
-    public TSDFM(Bot bot,
+    public TSDFM(TSDBot bot,
                  TSDFMLibrary library,
                  TSDFMFileProcessor fileProcessor,
                  Scheduler scheduler,
                  FfmpegUtils ffmpegUtils,
                  InjectableStreamFactory tsdfmStreamFactory,
                  HistoryBuff historyBuff,
-                 InjectableMsgFilterStrategyFactory filterFactory,
                  @TSDFMChannels List tsdfmChannels,
                  TSDFMConfig config) {
         this.bot = bot;
         this.streamUrl = config.streamUrl;
         this.tsdfmChannels = tsdfmChannels;
-        this.filterFactory = filterFactory;
         this.historyBuff = historyBuff;
         this.library = library;
         this.scheduler = scheduler;
@@ -133,10 +129,8 @@ public class TSDFM {
     }
 
     public synchronized void request(String requester, String channel, TSDFMSong song) throws Exception {
-        NoCommandsStrategy noCommandsStrategy = new NoCommandsStrategy();
-        filterFactory.injectStrategy(noCommandsStrategy);
         MessageFilter filter = MessageFilter.create()
-                .addFilter(noCommandsStrategy)
+                .addFilter(new NoCommandsStrategy())
                 .addFilter(new LengthStrategy(null, 100));
         HistoryBuff.Message message = historyBuff.getRandomFilteredMessage(channel, requester, filter);
 

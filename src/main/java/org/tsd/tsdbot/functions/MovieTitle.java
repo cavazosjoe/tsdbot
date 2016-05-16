@@ -3,7 +3,7 @@ package org.tsd.tsdbot.functions;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.jibble.pircbot.User;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.history.filter.*;
 import org.tsd.tsdbot.module.Function;
@@ -18,21 +18,18 @@ public class MovieTitle extends MainFunctionImpl {
 
     private static final String titleFormat = "%s vs %s: %s";
 
-    private final InjectableMsgFilterStrategyFactory filterFactory;
     private final HistoryBuff historyBuff;
     private final Random random;
 
     @Inject
-    public MovieTitle(Bot bot,
+    public MovieTitle(TSDBot bot,
                       HistoryBuff historyBuff,
-                      Random random,
-                      InjectableMsgFilterStrategyFactory filterFactory) {
+                      Random random) {
         super(bot);
         this.description = "Movie title generator";
         this.usage = "USAGE: .movie";
         this.historyBuff = historyBuff;
         this.random = random;
-        this.filterFactory = filterFactory;
     }
 
     @Override
@@ -46,14 +43,12 @@ public class MovieTitle extends MainFunctionImpl {
 
         String subtitle = null;
         if(random.nextBoolean()) {
-            NoCommandsStrategy noCmdStrat = new NoCommandsStrategy();
-            filterFactory.injectStrategy(noCmdStrat);
             HistoryBuff.Message chosen = historyBuff.getRandomFilteredMessage(
                     channel,
                     null,
                     MessageFilter
                             .create()
-                            .addFilter(noCmdStrat)
+                            .addFilter(new NoCommandsStrategy())
                             .addFilter(new NoBotsStrategy())
                             .addFilter(new LengthStrategy(5, 30))
                             .addFilter(new NoURLsStrategy())

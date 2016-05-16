@@ -12,8 +12,8 @@ import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.NotificationType;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.module.NotifierChannels;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -24,9 +24,6 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Created by Joe on 2/18/14.
- */
 @Singleton
 public class HboForumManager extends NotificationManager<HboForumManager.HboForumPost> {
 
@@ -49,7 +46,7 @@ public class HboForumManager extends NotificationManager<HboForumManager.HboForu
     private HttpClient client;
 
     @Inject
-    public HboForumManager(Bot bot, HttpClient client, @NotifierChannels Map notifierChannels) {
+    public HboForumManager(TSDBot bot, HttpClient client, @NotifierChannels Map notifierChannels) {
         super(bot, 5, true);
         hboSdf = new SimpleDateFormat("MM/dd/yy HH:mm a");
         hboSdf.setTimeZone(TimeZone.getTimeZone("America/New_York"));

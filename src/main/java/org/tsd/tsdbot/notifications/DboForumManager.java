@@ -6,8 +6,8 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.NotificationType;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.module.NotifierChannels;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -42,7 +42,7 @@ public class DboForumManager extends NotificationManager<DboForumManager.DboForu
     }
 
     @Inject
-    public DboForumManager(Bot bot, WebClient webClient, @NotifierChannels Map notifierChannels) {
+    public DboForumManager(TSDBot bot, WebClient webClient, @NotifierChannels Map notifierChannels) {
         super(bot, 5, true);
         dboSdf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z");
         dboSdf.setTimeZone(TimeZone.getTimeZone("UTC"));

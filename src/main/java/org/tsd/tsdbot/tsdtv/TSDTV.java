@@ -9,7 +9,7 @@ import org.quartz.*;
 import org.quartz.impl.matchers.GroupMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.config.TSDBotConfiguration;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.Persistable;
@@ -22,6 +22,7 @@ import org.tsd.tsdbot.tsdtv.model.TSDTVShow;
 import org.tsd.tsdbot.tsdtv.processor.FileAnalysis;
 import org.tsd.tsdbot.tsdtv.processor.StreamType;
 import org.tsd.tsdbot.util.FfmpegUtils;
+import org.tsd.tsdbot.util.SurgeProtector;
 import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
 import org.tsd.tsdbot.util.fuzzy.FuzzyVisitor;
 
@@ -51,7 +52,7 @@ public class TSDTV implements Persistable {
     private static final int dayBoundaryHour = 4; // 4:00 AM
     private static final TimeZone timeZone = TimeZone.getTimeZone("America/New_York");
 
-    private final Bot bot;
+    private final TSDBot bot;
 
     private final TSDTVLibrary library;
     private final TSDTVFileProcessor processor;
@@ -64,6 +65,7 @@ public class TSDTV implements Persistable {
     private final String tsdtvDirect;
     private final FfmpegUtils ffmpegUtils;
     private final List<String> tsdtvChannels;
+    private final SurgeProtector surgeProtector;
 
     private LockdownMode lockdownMode = LockdownMode.open;
 
@@ -71,7 +73,7 @@ public class TSDTV implements Persistable {
     private TSDTVStream runningStream;
 
     @Inject
-    public TSDTV(Bot bot,
+    public TSDTV(TSDBot bot,
                  TSDTVLibrary library,
                  TSDTVFileProcessor fileProcessor,
                  TSDBotConfiguration config,
@@ -79,11 +81,13 @@ public class TSDTV implements Persistable {
                  DBConnectionProvider connectionProvider,
                  InjectableStreamFactory streamFactory,
                  FfmpegUtils ffmpegUtils,
+                 SurgeProtector surgeProtector,
                  @Named("serverUrl") String serverUrl,
                  @Named("tsdtvDirect") String tsdtvDirect,
                  @TSDTVChannels List tsdtvChannels) throws SQLException {
         log.info("Constructing TSDTV... numShows = {}", library.getAllShows().size());
         this.bot = bot;
+        this.surgeProtector = surgeProtector;
         this.processor = fileProcessor;
         this.library = library;
         this.scheduleLoc = config.tsdtv.scheduleFile;
@@ -327,8 +331,9 @@ public class TSDTV implements Persistable {
     /**
      * method to play a movie from the chat. returns true if playing immediately, false if queued
      */
-    public boolean playFromChat(TSDTVEpisode episode, User user) throws StreamLockedException {
+    public boolean playFromChat(TSDTVEpisode episode, User user) throws StreamLockedException, SurgeProtector.FloodException {
         if(user.hasPriv(User.Priv.OP) || !lockdownMode.equals(LockdownMode.locked)) {
+            surgeProtector.logAction(SurgeProtector.ActionType.TSDTV_PLAY, user.getNick());
             TSDTVUser tsdtvUser = new TSDTVChatUser(user);
             long duration = ffmpegUtils.getDuration(episode.getFile());
             TSDTVQueueItem program = new TSDTVQueueItem(episode, null, false, getStartDateForQueueItem(), duration, tsdtvUser);
@@ -347,8 +352,16 @@ public class TSDTV implements Persistable {
     /**
      * method to play a movie from the webpage catalog
      */
-    public void playFromWeb(TSDTVEpisode episode, InetAddress inetAddress) throws StreamLockedException {
+    public void playFromWeb(TSDTVEpisode episode, InetAddress inetAddress)
+            throws StreamLockedException, EpisodeAlreadyQueuedException, SurgeProtector.FloodException {
+
         if(lockdownMode.equals(LockdownMode.open)) {
+
+            if(episodeIsQueued(episode)) {
+                throw new EpisodeAlreadyQueuedException();
+            }
+
+            surgeProtector.logAction(SurgeProtector.ActionType.TSDTV_PLAY, inetAddress.toString());
             TSDTVUser tsdtvUser = new TSDTVWebUser(inetAddress);
             long duration = ffmpegUtils.getDuration(episode.getFile());
             TSDTVQueueItem program = new TSDTVQueueItem(episode, null, false, getStartDateForQueueItem(), duration, tsdtvUser);
@@ -359,9 +372,19 @@ public class TSDTV implements Persistable {
             } else {
                 play(program);
             }
+
         } else {
             throw new StreamLockedException("The stream is locked from web access");
         }
+    }
+
+    public boolean episodeIsQueued(TSDTVEpisode episode) {
+        for(TSDTVQueueItem queueItem : queue) {
+            if(episode.getFile().equals(queueItem.video.getFile())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean authorized(TSDTVUser tsdtvUser) throws NoStreamRunningException {

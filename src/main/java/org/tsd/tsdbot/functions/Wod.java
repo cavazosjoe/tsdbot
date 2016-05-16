@@ -2,16 +2,13 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.module.Function;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Created by Joe on 7/9/2014.
- */
 @Singleton
 @Function(initialRegex = "^\\.(wod|workbot|werkbot).*")
 public class Wod extends MainFunctionImpl {
@@ -19,7 +16,7 @@ public class Wod extends MainFunctionImpl {
     private Random random;
 
     @Inject
-    public Wod(Bot bot, Random random) {
+    public Wod(TSDBot bot, Random random) {
         super(bot);
         this.description = "TSD WorkBot. Get a randomized workout for today, you lazy sack of shit";
         this.usage = "USAGE: .workbot [ options ]";

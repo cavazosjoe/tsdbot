@@ -24,7 +24,7 @@ import org.jfree.util.ShapeUtilities;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.config.TSDBotConfiguration;
 import org.tsd.tsdbot.util.CircularBuffer;
 
@@ -46,21 +46,17 @@ public class HustleStats implements Stats {
         timeFormat.setTimeZone(TimeZone.getTimeZone("America/New_York"));
     }
 
-    private Bot bot;
-
-    private HttpClient httpClient;
-    private String apiKey;
-
-    private CircularBuffer<DataPoint> hustleBuffer = new CircularBuffer<>(50);
+    private final TSDBot bot;
+    private final HttpClient httpClient;
+    private final String apiKey;
+    private final CircularBuffer<DataPoint> hustleBuffer = new CircularBuffer<>(50);
 
     private int msgCnt = 0;
-
     private JFreeChart chart = null;
-
     boolean error = false;
 
     @Inject
-    public HustleStats(Bot bot, HttpClient httpClient, TSDBotConfiguration config) {
+    public HustleStats(TSDBot bot, HttpClient httpClient, TSDBotConfiguration config) {
         this.bot = bot;
         this.httpClient = httpClient;
         this.apiKey = config.mashapeKey;

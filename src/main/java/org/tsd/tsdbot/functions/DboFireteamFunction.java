@@ -8,16 +8,13 @@ import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.JdbcConnectionProvider;
 import org.tsd.tsdbot.model.dboft.Fireteam;
 import org.tsd.tsdbot.module.Function;
 
 import java.sql.SQLException;
 
-/**
- * Created by Joe on 2/7/2015.
- */
 @Singleton
 @Function(initialRegex = "^\\.dboft.*")
 public class DboFireteamFunction extends MainFunctionImpl {
@@ -27,7 +24,7 @@ public class DboFireteamFunction extends MainFunctionImpl {
     private JdbcConnectionProvider connectionProvider;
 
     @Inject
-    public DboFireteamFunction(Bot bot, JdbcConnectionProvider connectionProvider) {
+    public DboFireteamFunction(TSDBot bot, JdbcConnectionProvider connectionProvider) {
         super(bot);
         this.description = "DBO Fireteam function. Manage subscriptions to DBO Fireteam notifications";
         this.usage = "USAGE: .dboft [ subscribe <id> | unsubscribe <id> ]";

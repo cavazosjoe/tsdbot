@@ -2,9 +2,12 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.history.HistoryBuff;
-import org.tsd.tsdbot.history.filter.*;
+import org.tsd.tsdbot.history.filter.MessageFilter;
+import org.tsd.tsdbot.history.filter.NoBotsStrategy;
+import org.tsd.tsdbot.history.filter.NoCommandsStrategy;
+import org.tsd.tsdbot.history.filter.NoURLsStrategy;
 import org.tsd.tsdbot.module.Function;
 
 import java.util.Random;
@@ -13,32 +16,27 @@ import java.util.Random;
 @Function(initialRegex = "^\\.deej$")
 public class Deej extends MainFunctionImpl {
 
-    private InjectableMsgFilterStrategyFactory filterFactory;
     private HistoryBuff historyBuff;
     private Random random;
 
     @Inject
-    public Deej(Bot bot,
+    public Deej(TSDBot bot,
                 HistoryBuff historyBuff,
-                Random random,
-                InjectableMsgFilterStrategyFactory filterFactory) {
+                Random random) {
         super(bot);
         this.description = "DeeJ utility. Picks a random line from the channel history and makes it all dramatic and shit";
         this.usage = "USAGE: .deej";
         this.historyBuff = historyBuff;
         this.random = random;
-        this.filterFactory = filterFactory;
     }
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
-        NoCommandsStrategy noCmdStrat = new NoCommandsStrategy();
-        filterFactory.injectStrategy(noCmdStrat);
         HistoryBuff.Message chosen = historyBuff.getRandomFilteredMessage(
                 channel,
                 null,
                 MessageFilter.create()
-                        .addFilter(noCmdStrat)
+                        .addFilter(new NoCommandsStrategy())
                         .addFilter(new NoBotsStrategy())
                         .addFilter(new NoURLsStrategy())
         );

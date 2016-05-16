@@ -1,24 +1,20 @@
 package org.tsd.tsdbot.runnable;
 
-import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.ThreadType;
 
 import java.util.concurrent.Callable;
 
-/**
- * Created by Joe on 2/22/14.
- */
 public abstract class IRCListenerThread implements Callable {
 
     protected ThreadManager manager;
-    protected Bot bot;
+    protected TSDBot bot;
     protected String channel;
     protected String listeningRegex;
     protected long startTime = -1;
     protected final Object mutex = new Object();
 
-    public IRCListenerThread(Bot bot, ThreadManager threadManager) {
+    public IRCListenerThread(TSDBot bot, ThreadManager threadManager) {
         this.bot = bot;
         this.manager = threadManager;
     }

@@ -2,7 +2,7 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
@@ -21,7 +21,7 @@ public class Replace extends MainFunctionImpl {
     private Pattern commandFormat = Pattern.compile("^s/([^/]+)/([^/]*)(.*)$");
 
     @Inject
-    public Replace(Bot bot, HistoryBuff historyBuff) {
+    public Replace(TSDBot bot, HistoryBuff historyBuff) {
         super(bot);
         this.historyBuff = historyBuff;
         this.description = "Replace stuff";

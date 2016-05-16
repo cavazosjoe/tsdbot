@@ -6,7 +6,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.Persistable;
 import org.tsd.tsdbot.module.Function;
@@ -40,7 +40,7 @@ public class OmniDB extends MainFunctionImpl implements Persistable {
     private final Map<String, Item> lastPulledItems = new ConcurrentHashMap<>();
 
     @Inject
-    public OmniDB(Bot bot, DBConnectionProvider connectionProvider) throws SQLException {
+    public OmniDB(TSDBot bot, DBConnectionProvider connectionProvider) throws SQLException {
         super(bot);
         this.description = "Use the patented TSD Omni Database";
         this.usage = "USAGE: .odb [ add #tag1 #tag2 <item> | get tag1 tag2 ]";

@@ -6,10 +6,10 @@ import org.jukito.JukitoRunner;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.FauxRandom;
 import org.tsd.tsdbot.IntegTestUtils;
-import org.tsd.tsdbot.TestBot;
+import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.TestBot2;
 
 import java.util.Random;
 
@@ -24,8 +24,8 @@ public class ChooserTest {
     private static FauxRandom random;
 
     @Test
-    public void testChooser(Bot bot) {
-        TestBot testBot = (TestBot)bot;
+    public void testChooser(TSDBot bot) {
+        TestBot2 testBot = (TestBot2)bot;
 
         String lastMessage;
         String[] choices = {"one", "two", "three"};
@@ -47,8 +47,8 @@ public class ChooserTest {
     }
 
     @Test
-    public void testGvSchroogle(Bot bot) {
-        TestBot testBot = (TestBot)bot;
+    public void testGvSchroogle(TSDBot bot) {
+        TestBot2 testBot = (TestBot2)bot;
 
         String okay = RandomStringUtils.randomAlphanumeric(10);
         String tooLong = RandomStringUtils.randomAlphanumeric(20);
@@ -78,8 +78,8 @@ public class ChooserTest {
             random = new FauxRandom();
             bind(Random.class).toInstance(random);
 
-            TestBot testBot = new TestBot(channel, null);
-            bind(Bot.class).toInstance(testBot);
+            TestBot2 testBot = new TestBot2();
+            bind(TSDBot.class).toInstance(testBot);
 
             IntegTestUtils.loadFunctions(binder(), Chooser.class);
 

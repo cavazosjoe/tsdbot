@@ -2897,7 +2897,7 @@ public abstract class PircBot implements ReplyConstants {
      * 
      * @see #onUserList(String,User[]) onUserList
      */
-    public final User[] getUsers(String channel) {
+    public User[] getUsers(String channel) {
         channel = channel.toLowerCase();
         User[] userArray = new User[0];
         synchronized (_channels) {

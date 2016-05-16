@@ -13,9 +13,8 @@ import com.google.inject.name.Named;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.history.HistoryBuff;
-import org.tsd.tsdbot.history.filter.InjectableMsgFilterStrategyFactory;
 import org.tsd.tsdbot.history.filter.LengthStrategy;
 import org.tsd.tsdbot.history.filter.MessageFilter;
 import org.tsd.tsdbot.history.filter.NoCommandsStrategy;
@@ -53,15 +52,13 @@ public class SmushFunction extends MainFunctionImpl {
     private final Random random;
     private final String ffmpegExec;
     private final ExecutorService executorService;
-    private final InjectableMsgFilterStrategyFactory msgFilterFact;
     private final FfmpegUtils ffmpegUtils;
 
     @Inject
     public SmushFunction(
-            Bot bot,
+            TSDBot bot,
             HistoryBuff historyBuff,
             ExecutorService executorService,
-            InjectableMsgFilterStrategyFactory msgFilterFact,
             Random random,
             TSDTVLibrary library,
             YouTube youTube,
@@ -69,7 +66,6 @@ public class SmushFunction extends MainFunctionImpl {
             @Named("ffmpegExec") String ffmpegExec) {
         super(bot);
         this.ffmpegUtils = ffmpegUtils;
-        this.msgFilterFact = msgFilterFact;
         this.random = random;
         this.library = library;
         this.ffmpegExec = ffmpegExec;
@@ -82,10 +78,9 @@ public class SmushFunction extends MainFunctionImpl {
     public void run(final String channel, String sender, String ident, String text) {
 
         if(messageFilter == null) {
-            NoCommandsStrategy noCmdStrat = new NoCommandsStrategy();
-            msgFilterFact.injectStrategy(noCmdStrat);
-            LengthStrategy lengthStrat = new LengthStrategy(null, 50);
-            messageFilter = MessageFilter.create().addFilter(noCmdStrat).addFilter(lengthStrat);
+            messageFilter = MessageFilter.create()
+                    .addFilter(new NoCommandsStrategy())
+                    .addFilter(new LengthStrategy(null, 50));
         }
 
         Runnable youtubeThread = new Runnable() {

@@ -10,7 +10,7 @@ import org.jibble.pircbot.User;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.ThreadType;
 import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.notifications.NotificationEntity;
@@ -40,7 +40,7 @@ public class Twitter extends MainFunctionImpl {
     private Random random;
 
     @Inject
-    public Twitter(Bot bot, TwitterManager mgr, ThreadManager threadManager, Random random,
+    public Twitter(TSDBot bot, TwitterManager mgr, ThreadManager threadManager, Random random,
                    InjectableIRCThreadFactory threadFactory, @Named("mashapeKey") String mashapeKey) {
         super(bot);
         this.description = "Twitter utility: send and receive tweets from our exclusive @TSD_IRC Twitter account! " +

@@ -126,7 +126,7 @@ public class TSDBotModule extends AbstractModule {
         bind(Stage.class).toInstance(configuration.connection.stage);
         log.info("Bound stage: {}", configuration.connection.stage);
 
-        bind(Bot.class).toInstance(bot);
+        bind(TSDBot.class).toInstance(bot);
         log.info("** TSDBot bound successfully **");
 
         bind(TSDBotConfiguration.class).toInstance(configuration);

@@ -3,14 +3,11 @@ package org.tsd.tsdbot.functions;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.jibble.pircbot.User;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.module.Function;
 
 import java.util.Random;
 
-/**
- * Created by Joe on 5/24/14.
- */
 @Singleton
 @Function(initialRegex = "^\\.blunder.*")
 public class BlunderCount extends MainFunctionImpl {
@@ -18,7 +15,7 @@ public class BlunderCount extends MainFunctionImpl {
     private Random random;
 
     @Inject
-    public BlunderCount(Bot bot, Random random) {
+    public BlunderCount(TSDBot bot, Random random) {
         super(bot);
         this.random = random;
         this.description = "View, manage, and update the blunder count";

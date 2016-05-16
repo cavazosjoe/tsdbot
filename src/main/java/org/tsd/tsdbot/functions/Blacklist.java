@@ -3,7 +3,7 @@ package org.tsd.tsdbot.functions;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.jibble.pircbot.User;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.util.IRCUtil;
 
@@ -12,7 +12,7 @@ import org.tsd.tsdbot.util.IRCUtil;
 public class Blacklist extends MainFunctionImpl {
 
     @Inject
-    public Blacklist(Bot bot) {
+    public Blacklist(TSDBot bot) {
         super(bot);
         this.description = "Adds or removes a user from the bot's blacklist";
         this.usage = "USAGE: .blacklist [ add <user> | remove <user> ]";

@@ -2,7 +2,7 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.history.filter.*;
 import org.tsd.tsdbot.module.Function;
@@ -14,31 +14,26 @@ import java.util.*;
 @Function(initialRegex = "^\\.quote")
 public class ScareQuote extends MainFunctionImpl {
 
-    private InjectableMsgFilterStrategyFactory filterFactory;
     private HistoryBuff historyBuff;
     private Random random;
 
     @Inject
-    public ScareQuote(Bot bot, HistoryBuff historyBuff,
-                      Random random, InjectableMsgFilterStrategyFactory filterFactory) {
+    public ScareQuote(TSDBot bot, HistoryBuff historyBuff, Random random) {
         super(bot);
         this.description = "Scare quote \"function\"";
         this.usage = "USAGE: .quote";
         this.historyBuff = historyBuff;
         this.random = random;
-        this.filterFactory = filterFactory;
     }
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
 
-        NoCommandsStrategy noCmdStrat = new NoCommandsStrategy();
-        filterFactory.injectStrategy(noCmdStrat);
         HistoryBuff.Message chosen = historyBuff.getRandomFilteredMessage(
                 channel,
                 null,
                 MessageFilter.create()
-                        .addFilter(noCmdStrat)
+                        .addFilter(new NoCommandsStrategy())
                         .addFilter(new LengthStrategy(null, 100))
                         .addFilter(new NoBotsStrategy())
                         .addFilter(new MessageFilterStrategy() {

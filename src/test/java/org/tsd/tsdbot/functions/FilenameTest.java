@@ -4,8 +4,6 @@ import com.google.inject.name.Names;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.jibble.pircbot.User;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
@@ -13,10 +11,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.tsd.tsdbot.Bot;
-import org.tsd.tsdbot.FilenameLibrary;
-import org.tsd.tsdbot.IntegTestUtils;
-import org.tsd.tsdbot.TestBot;
+import org.tsd.tsdbot.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -30,21 +25,21 @@ public class FilenameTest {
 
     private static final File library = new File(System.getProperty("java.io.tmpdir")+"/filenames");
     private static final String channel = "#tsd";
-    private static final String serverUrl = "http://tsd.org";
+    private static final String serverUrl = IntegTestUtils.SERVER_URL;
     private static final String normalUserNick = "NormalUser";
     private static final String opUserNick = "OpUser";
 
     @Test
-    public void testBlank(Bot bot) {
-        TestBot testBot = (TestBot)bot;
+    public void testBlank(TSDBot bot) {
+        TestBot2 testBot = (TestBot2)bot;
         String response = sendFromNormalGuy(testBot, ".fname");
         assertTrue(StringUtils.isNotBlank(response));
         assertTrue(response.startsWith(serverUrl));
     }
 
     @Test
-    public void testQuery(Bot bot) {
-        TestBot testBot = (TestBot) bot;
+    public void testQuery(TSDBot bot) {
+        TestBot2 testBot = (TestBot2) bot;
         String response = sendFromNormalGuy(testBot, ".fname get red");
         assertTrue(response.equals(serverUrl + "/filenames/red_panda.png"));
         response = sendFromNormalGuy(testBot, ".fname get blergh");
@@ -52,8 +47,8 @@ public class FilenameTest {
     }
 
     @Test
-    public void testNoPermissions(Bot bot) {
-        TestBot testBot = (TestBot) bot;
+    public void testNoPermissions(TSDBot bot) {
+        TestBot2 testBot = (TestBot2) bot;
 
         String response = sendFromNormalGuy(testBot, ".fname add some_name.jpg http://imgur.com/something.jpg");
         assertTrue(response.startsWith("Only ops can add filenames directly"));
@@ -68,26 +63,26 @@ public class FilenameTest {
     }
 
     @Test
-    public void testAdd(Bot bot) {
-        TestBot testBot = (TestBot) bot;
+    public void testAdd(TSDBot bot) {
+        TestBot2 testBot = (TestBot2) bot;
         String response = sendFromOpGuy(testBot, ".fname add a_bear.gifv http://i.imgur.com/9lCE4Cv.gifv");
-        assertEquals("Filename successfully added: http://tsd.org/filenames/a_bear.gifv", response);
+        assertEquals("Filename successfully added: "+serverUrl+"/filenames/a_bear.gifv", response);
         File f = new File(library, "a_bear.gifv");
         assertTrue(f.exists());
     }
 
     @Test
-    public void testInferType(Bot bot) {
-        TestBot testBot = (TestBot) bot;
+    public void testInferType(TSDBot bot) {
+        TestBot2 testBot = (TestBot2) bot;
         String response = sendFromOpGuy(testBot, ".fname add a_bear http://i.imgur.com/9lCE4Cv.gifv");
-        assertEquals("Filename successfully added: http://tsd.org/filenames/a_bear.gifv", response);
+        assertEquals("Filename successfully added: "+serverUrl+"/filenames/a_bear.gifv", response);
         File f = new File(library, "a_bear.gifv");
         assertTrue(f.exists());
     }
 
     @Test
-    public void testSubmission(Bot bot, FilenameLibrary filenameLibrary) {
-        TestBot testBot = (TestBot) bot;
+    public void testSubmission(TSDBot bot, FilenameLibrary filenameLibrary) {
+        TestBot2 testBot = (TestBot2) bot;
 
         String response = sendFromNormalGuy(testBot, ".fname submit a_bear.gifv http://i.imgur.com/9lCE4Cv.gifv");
         assertEquals(1, filenameLibrary.listSubmissions().size());
@@ -99,8 +94,8 @@ public class FilenameTest {
     }
 
     @Test
-    public void testTooManySubmissions(Bot bot) {
-        TestBot testBot = (TestBot) bot;
+    public void testTooManySubmissions(TSDBot bot) {
+        TestBot2 testBot = (TestBot2) bot;
 
         String[] urls = {
                 "http://i.imgur.com/Fflfv5o.png",
@@ -122,15 +117,15 @@ public class FilenameTest {
     }
 
     @Test
-    public void testSubmitAndApprove(Bot bot, FilenameLibrary filenameLibrary) {
-        TestBot testBot = (TestBot) bot;
+    public void testSubmitAndApprove(TSDBot bot, FilenameLibrary filenameLibrary) {
+        TestBot2 testBot = (TestBot2) bot;
 
         String response = sendFromNormalGuy(testBot, ".fname submit a_pic http://i.imgur.com/Fflfv5o.png");
         String id = filenameLibrary.listSubmissions().get(0).getId();
         assertEquals("Submitted filename for approval (id = " + id + ")", response);
 
         response = sendFromOpGuy(testBot, ".fname approve " + id);
-        assertEquals("Filename approved: http://tsd.org/filenames/a_pic.png", response);
+        assertEquals("Filename approved: "+serverUrl+"/filenames/a_pic.png", response);
         assertEquals(0, filenameLibrary.listSubmissions().size());
 
         File f = new File(library+"/a_pic.png");
@@ -138,8 +133,8 @@ public class FilenameTest {
     }
 
     @Test
-    public void testSubmitAndDeny(Bot bot, FilenameLibrary filenameLibrary) {
-        TestBot testBot = (TestBot) bot;
+    public void testSubmitAndDeny(TSDBot bot, FilenameLibrary filenameLibrary) {
+        TestBot2 testBot = (TestBot2) bot;
 
         String response = sendFromNormalGuy(testBot, ".fname submit a_pic http://i.imgur.com/Fflfv5o.png");
         String id = filenameLibrary.listSubmissions().get(0).getId();
@@ -154,8 +149,8 @@ public class FilenameTest {
     }
 
     @Test
-    public void testInvalidUrl(Bot bot) {
-        TestBot testBot = (TestBot) bot;
+    public void testInvalidUrl(TSDBot bot) {
+        TestBot2 testBot = (TestBot2) bot;
 
         String[] badUrls = {
                 "..::something.gifv",
@@ -170,15 +165,15 @@ public class FilenameTest {
     }
 
     @Test
-    public void testMismatchedTypes(Bot bot) {
-        TestBot testBot = (TestBot) bot;
+    public void testMismatchedTypes(TSDBot bot) {
+        TestBot2 testBot = (TestBot2) bot;
         String response = sendFromOpGuy(testBot, ".fname add a_bear.gifv http://www.blah.com/something.jpg");
         assertEquals("Error: URL must match filetype of name: gifv", response);
     }
 
     @Test
-    public void testDuplicateName(Bot bot) {
-        TestBot testBot = (TestBot) bot;
+    public void testDuplicateName(TSDBot bot) {
+        TestBot2 testBot = (TestBot2) bot;
         String response = sendFromOpGuy(testBot, ".fname add red_panda.png http://www.blah.com/something.png");
         assertEquals("Error: detected an existing filename named red_panda.png", response);
     }
@@ -204,32 +199,30 @@ public class FilenameTest {
         }
     }
 
-    private String sendFromNormalGuy(TestBot bot, String message) {
+    private String sendFromNormalGuy(TestBot2 bot, String message) {
         return sendMessageGetResponse(bot, normalUserNick, "normal", channel, message);
     }
 
-    private String sendFromOpGuy(TestBot bot, String message) {
+    private String sendFromOpGuy(TestBot2 bot, String message) {
         return sendMessageGetResponse(bot, opUserNick, "important", channel, message);
     }
 
     public static class Module extends JukitoModule {
         @Override
         protected void configureTest() {
-            if(!library.exists())
+            if(!library.exists()) {
                 library.mkdir();
+            }
+            install(new TestBotModule(channel));
             bind(File.class).annotatedWith(Names.named("filenameLibrary"))
                     .toInstance(library);
-            bind(HttpClient.class).toInstance(HttpClients.createMinimal());
             bind(Random.class).toInstance(new Random());
-            bind(String.class).annotatedWith(Names.named("serverUrl"))
-                    .toInstance(serverUrl);
-
             bind(FilenameLibrary.class);
 
-            TestBot testBot = new TestBot(channel, null);
-            testBot.addChannelUser(channel, User.Priv.OP, opUserNick);
-            testBot.addChannelUser(channel, User.Priv.NONE, normalUserNick);
-            bind(Bot.class).toInstance(testBot);
+            TestBot2 testBot = new TestBot2();
+            testBot.addUser(IntegTestUtils.createUserWithPriv(opUserNick, User.Priv.OP), channel);
+            testBot.addUser(IntegTestUtils.createUserWithPriv(normalUserNick, User.Priv.NONE), channel);
+            bind(TSDBot.class).toInstance(testBot);
 
             IntegTestUtils.loadFunctions(binder(), Filename.class);
 

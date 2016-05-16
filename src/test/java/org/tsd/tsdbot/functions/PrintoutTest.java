@@ -1,9 +1,6 @@
 package org.tsd.tsdbot.functions;
 
 import com.google.inject.Injector;
-import com.google.inject.name.Names;
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.jibble.pircbot.User;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
@@ -21,18 +18,20 @@ import static org.junit.Assert.assertTrue;
 @RunWith(JukitoRunner.class)
 public class PrintoutTest {
 
-    private static final String server = "http://test";
-    private static final String channel = "#tsd";
+    private static final String channel = IntegTestUtils.MAIN_CHANNEL;
+    private static final String server = IntegTestUtils.SERVER_URL;
+    private static final String normalUser = "NormalUser";
+    private static final String opUser = "OpUser";
 
     private static FauxRandom random;
 
     @Test
     public void testNormal(Injector injector) throws FileNotFoundException {
-        TestBot bot = (TestBot) injector.getInstance(Bot.class);
+        TestBot2 bot = (TestBot2) injector.getInstance(TSDBot.class);
         PrintoutLibrary library = injector.getInstance(PrintoutLibrary.class);
 
         random.setDoubleVal(1.0);
-        bot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", "TSDBot I need a printout of a big ol' fuzzy bear");
+        sendMessage(bot, normalUser, "TSDBot I need a printout of a big ol' fuzzy bear");
         String lastMessage = bot.getLastMessage(channel);
         assertTrue(lastMessage.startsWith(server));
         String id = lastMessage.substring(lastMessage.lastIndexOf("/") + 1);
@@ -46,18 +45,18 @@ public class PrintoutTest {
     @Test
     public void testRepeat(Injector injector) throws FileNotFoundException {
 
-        TestBot bot = (TestBot) injector.getInstance(Bot.class);
+        TestBot2 bot = (TestBot2) injector.getInstance(TSDBot.class);
         PrintoutLibrary library = injector.getInstance(PrintoutLibrary.class);
 
         random.setDoubleVal(0);
-        bot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", "TSDBot I need a printout of a big ol' fuzzy bear");
+        sendMessage(bot, normalUser, "TSDBot I need a printout of a big ol' fuzzy bear");
         String lastMessage = bot.getLastMessage(channel);
         assertTrue(lastMessage.toLowerCase().startsWith("not computing"));
-        bot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", "BIG FUZZY BEAR");
+        sendMessage(bot, normalUser, "BIG FUZZY BEAR");
         lastMessage = bot.getLastMessage(channel);
         assertTrue(lastMessage.toLowerCase().startsWith("not computing"));
 
-        bot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", "BIG. FUZZY. BEAR.");
+        sendMessage(bot, normalUser, "BIG. FUZZY. BEAR.");
         lastMessage = bot.getLastMessage(channel);
         assertTrue(lastMessage.startsWith(server));
         String id = lastMessage.substring(lastMessage.lastIndexOf("/") + 1, lastMessage.indexOf(".jpg"));
@@ -69,31 +68,31 @@ public class PrintoutTest {
     @Test
     public void testBlacklist(Injector injector) throws FileNotFoundException {
 
-        TestBot bot = (TestBot) injector.getInstance(Bot.class);
+        TestBot2 bot = (TestBot2) injector.getInstance(TSDBot.class);
         PrintoutLibrary library = injector.getInstance(PrintoutLibrary.class);
 
         random.setDoubleVal(0);
-        bot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", "TSDBot I need a printout of a big ol' fuzzy bear");
+        sendMessage(bot, normalUser, "TSDBot I need a printout of a big ol' fuzzy bear");
         String lastMessage = bot.getLastMessage(channel);
         assertTrue(lastMessage.toLowerCase().startsWith("not computing"));
 
         for(int i=0 ; i < 3 ; i++) {
-            bot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", "nope :^)");
+            sendMessage(bot, normalUser, "nope :^)");
         }
 
         lastMessage = bot.getLastMessage(channel);
         assertTrue(lastMessage.toLowerCase().startsWith("insolence"));
 
-        bot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", "TSDBot I need a printout of a big ol' fuzzy bear");
+        sendMessage(bot, normalUser, "TSDBot I need a printout of a big ol' fuzzy bear");
         lastMessage = bot.getLastMessage(channel);
         assertTrue(lastMessage.toLowerCase().startsWith("make me"));
 
-        bot.onMessage(channel, "OpUser", "opuser", "hostname", ".printout clear");
+        sendMessage(bot, opUser, ".printout clear");
         lastMessage = bot.getLastMessage(channel);
         assertTrue(lastMessage.toLowerCase().startsWith("the printout blacklist"));
 
         random.setDoubleVal(1.0);
-        bot.onMessage(channel, "Schooly_D", "schoolyd", "hostname", "TSDBot I need a printout of a big ol' fuzzy bear");
+        sendMessage(bot, normalUser, "TSDBot I need a printout of a big ol' fuzzy bear");
         lastMessage = bot.getLastMessage(channel);
         assertTrue(lastMessage.startsWith(server));
         String id = lastMessage.substring(lastMessage.lastIndexOf("/") + 1, lastMessage.indexOf(".jpg"));
@@ -102,18 +101,22 @@ public class PrintoutTest {
         assertTrue(printout.length > 0);
     }
 
+    private void sendMessage(TSDBot bot, String user, String text) {
+        bot.onMessage(channel, user, user.toLowerCase(), "hostname", text);
+    }
+
     public static class Module extends JukitoModule {
         @Override
         protected void configureTest() {
+            install(new TestBotModule(channel));
             random = new FauxRandom();
             bind(Random.class).toInstance(random);
             bind(PrintoutLibrary.class).toInstance(new PrintoutLibrary());
-            bind(String.class).annotatedWith(Names.named("serverUrl")).toInstance(server);
-            bind(HttpClient.class).toInstance(HttpClients.createMinimal());
 
-            TestBot testBot = new TestBot(channel, null);
-            testBot.addChannelUser(channel, User.Priv.OP, "OpUser");
-            bind(Bot.class).toInstance(testBot);
+            TestBot2 testBot = new TestBot2();
+            testBot.addUser(IntegTestUtils.createUserWithPriv(normalUser, User.Priv.NONE), channel);
+            testBot.addUser(IntegTestUtils.createUserWithPriv(opUser, User.Priv.OP), channel);
+            bind(TSDBot.class).toInstance(testBot);
 
             GoogleConfig googleConfig = new GoogleConfig();
             googleConfig.gisCx = IntegTestUtils.loadProperty("gisCx");

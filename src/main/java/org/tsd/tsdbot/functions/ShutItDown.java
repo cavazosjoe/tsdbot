@@ -2,7 +2,7 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.module.Function;
 
 @Singleton
@@ -10,7 +10,7 @@ import org.tsd.tsdbot.module.Function;
 public class ShutItDown extends MainFunctionImpl {
 
     @Inject
-    public ShutItDown(Bot bot) {
+    public ShutItDown(TSDBot bot) {
         super(bot);
         this.description = "SHUT IT DOWN (owner only)";
         this.usage = "USAGE: SHUT IT DOWN";

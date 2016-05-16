@@ -4,8 +4,8 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.RecapLibrary;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.config.TSDBotConfiguration;
 import org.tsd.tsdbot.module.AllChannels;
 import org.tsd.tsdbot.module.Function;
@@ -37,7 +37,7 @@ public class Archivist /*Exedol*/ extends MainFunctionImpl {
     private HashMap<String, PrintWriter> writerMap = new HashMap<>();
 
     @Inject
-    public Archivist(Bot bot,
+    public Archivist(TSDBot bot,
                      TSDBotConfiguration config,
                      RecapLibrary recapLibrary,
                      @AllChannels List channels) throws IOException {
@@ -54,10 +54,12 @@ public class Archivist /*Exedol*/ extends MainFunctionImpl {
         File logDirF = new File(archiveDir);
         if(!logDirF.exists()) {
             log.info("Logging directory {} does not exist, creating...", archiveDir);
-            if(logDirF.mkdir())
+            if(logDirF.mkdir()) {
                 log.info("Logging directory {} successfully created", archiveDir);
-            else
+            }
+            else {
                 log.warn("Logging directory {} WAS NOT created", archiveDir);
+            }
         }
 
         // use injected list of channels so this can be initialized before the bot joins any
@@ -67,14 +69,17 @@ public class Archivist /*Exedol*/ extends MainFunctionImpl {
             File f = new File(archiveDir + channel.replace("#","") + ".log");
             if(!f.exists()) {
                 log.info("Logging file {} does not exist, creating...", f.getAbsolutePath());
-                if(f.createNewFile())
+                if(f.createNewFile()) {
                     log.info("Logging file {} successfully created", f.getAbsolutePath());
-                else
+                }
+                else {
                     log.warn("Logging file {} WAS NOT created", f.getAbsolutePath());
+                }
             }
 
-            if(!channel.startsWith("#"))
+            if(!channel.startsWith("#")) {
                 channel = "#" + channel;
+            }
             writerMap.put(channel, new PrintWriter(new FileWriter(f, true)));
         }
     }
@@ -86,10 +91,12 @@ public class Archivist /*Exedol*/ extends MainFunctionImpl {
             toWrite.addAll(writerMap.values());
         } else {
             PrintWriter pw = writerMap.get(channel);
-            if(pw != null)
+            if(pw != null) {
                 toWrite.add(pw);
-            else
+            }
+            else {
                 log.warn("Could not find FileWriter for channel {}", channel);
+            }
         }
 
         for(PrintWriter pw : toWrite) {
@@ -166,19 +173,15 @@ public class Archivist /*Exedol*/ extends MainFunctionImpl {
                         // get the message's time
                         Long now = Long.parseLong(line.split("\\s")[1]);
                         if (pastFiveMinutes.containsKey(now)) {
-//                            pastFiveMinutes.get(now).addLast(lineEvent.getPrettyFormatted(line));
                             pastFiveMinutes.get(now).addLast(line);
                         } else {
                             LinkedList<String> m = new LinkedList<>();
-//                            m.add(lineEvent.getPrettyFormatted(line));
                             m.add(line);
                             pastFiveMinutes.put(now, m);
                         }
 
                         pastFiveMinutes = trimFiveMinuteBuffer(pastFiveMinutes, now);
-
                     }
-
                 }
 
                 StringBuilder output = new StringBuilder();
@@ -390,8 +393,9 @@ public class Archivist /*Exedol*/ extends MainFunctionImpl {
 
         public static EventType getFromRaw(String raw) {
             for(EventType type : values()) {
-                if(raw.startsWith(type.toString()))
+                if(raw.startsWith(type.toString())) {
                     return type;
+                }
             }
             return null;
         }

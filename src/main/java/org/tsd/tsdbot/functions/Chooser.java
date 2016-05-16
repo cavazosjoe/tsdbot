@@ -1,7 +1,7 @@
 package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 
 import java.util.Random;
 
@@ -13,7 +13,7 @@ public class Chooser extends MainFunctionImpl {
     private Random random;
 
     @Inject
-    public Chooser(Bot bot, Random random) {
+    public Chooser(TSDBot bot, Random random) {
         super(bot);
         this.description = "Have the bot choose a random selection for you";
         this.usage = "USAGE: .choose option1 | option2 [ | option3...]";

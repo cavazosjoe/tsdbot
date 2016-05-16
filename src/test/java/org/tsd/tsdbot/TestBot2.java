@@ -17,6 +17,11 @@ public class TestBot2 extends TSDBot {
         linesSent.get(target).addFirst(text);
     }
 
+    @Override
+    public User[] getUsers(String channel) {
+        return channelUsers.get(channel).toArray(new User[channelUsers.get(channel).size()]);
+    }
+
     public void addUser(User user, String... channels) {
         Collection<String> addingChannels = (channels == null) ? channelUsers.keySet() : Arrays.asList(channels);
         for(String c : addingChannels) {
@@ -47,5 +52,11 @@ public class TestBot2 extends TSDBot {
             throw new RuntimeException("number must be larger than 0");
         }
         return linesSent.get(channel).subList(0, count);
+    }
+
+    public void reset() {
+        blacklist.clear();
+        blunderCount = 0;
+        linesSent.values().forEach(LinkedList<String>::clear);
     }
 }

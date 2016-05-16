@@ -7,8 +7,8 @@ import it.sauronsoftware.feed4j.bean.Feed;
 import it.sauronsoftware.feed4j.bean.FeedItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.NotificationType;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.module.NotifierChannels;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -20,9 +20,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Created by Joe on 2/18/14.
- */
 @Singleton
 public class HboNewsManager extends NotificationManager<HboNewsManager.HboNewsPost> {
 
@@ -38,7 +35,7 @@ public class HboNewsManager extends NotificationManager<HboNewsManager.HboNewsPo
     }
 
     @Inject
-    public HboNewsManager(Bot bot, @NotifierChannels Map notifierChannels) {
+    public HboNewsManager(TSDBot bot, @NotifierChannels Map notifierChannels) {
         super(bot, 5, true);
         this.channels = (List<String>) notifierChannels.get("hbon");
     }

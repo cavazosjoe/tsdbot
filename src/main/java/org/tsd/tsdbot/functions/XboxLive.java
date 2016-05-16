@@ -11,7 +11,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.config.TSDBotConfiguration;
 import org.tsd.tsdbot.util.RelativeDate;
 import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
@@ -70,7 +70,7 @@ public class XboxLive extends MainFunctionImpl {
             });
 
     @Inject
-    public XboxLive(Bot bot, TSDBotConfiguration config) {
+    public XboxLive(TSDBot bot, TSDBotConfiguration config) {
         super(bot);
         this.description = "Xbox Live utility";
         this.usage = "USAGE: .xbl [ gamertag ]";

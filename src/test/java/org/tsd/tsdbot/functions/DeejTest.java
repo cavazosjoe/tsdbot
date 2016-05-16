@@ -1,6 +1,6 @@
 package org.tsd.tsdbot.functions;
 
-import com.google.inject.multibindings.Multibinder;
+import org.jibble.pircbot.User;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
 import org.junit.Before;
@@ -12,52 +12,56 @@ import org.tsd.tsdbot.history.HistoryBuff;
 import java.util.HashSet;
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Joe on 3/27/2015.
- */
 @RunWith(JukitoRunner.class)
 public class DeejTest {
 
-    private static Random random;
     private static final String channel = "#tsd";
+    private static final String user = "Schooly_D";
 
     @Before
-    public void resetBot(Bot bot) {
-        ((TestBot) bot).reset();
+    public void resetBot(TSDBot bot) {
+        ((TestBot2) bot).reset();
     }
 
     @Test
-    public void testDeej(Bot bot) {
-        TestBot testBot = (TestBot)bot;
+    public void testDeej(TSDBot bot) {
+        TestBot2 testBot = (TestBot2)bot;
 
-        testBot.onMessage(channel, "Schooly_D", "schoolyd", "host", ".deej");
-        assertEquals(0, testBot.getAllMessages(channel).size());
+        sendMessage(bot, user, ".deej");
+        assertNull(testBot.getAllMessages(channel));
 
         // test that the "no commands" filter works
-        testBot.onMessage(channel, "Schooly_D", "schoolyd", "host", ".fname");
-        testBot.onMessage(channel, "Schooly_D", "schoolyd", "host", ".quote");
-        testBot.onMessage(channel, "Schooly_D", "schoolyd", "host", ".gv");
-        testBot.onMessage(channel, "Schooly_D", "schoolyd", "host", ".odb get");
-        testBot.onMessage(channel, "Schooly_D", "schoolyd", "host", ".tsdtv play ippo random");
-        testBot.onMessage(channel, "Schooly_D", "schoolyd", "host", ".deej");
-        assertEquals(0, testBot.getAllMessages(channel).size());
+        sendMessage(bot, user, ".fname");
+        sendMessage(bot, user, ".quote");
+        sendMessage(bot, user, ".gv");
+        sendMessage(bot, user, ".odb get");
+        sendMessage(bot, user, ".tsdtv play ippo random");
+        sendMessage(bot, user, ".deej");
+        assertNull(testBot.getAllMessages(channel));
 
-        testBot.onMessage(channel, "Schooly_D", "schoolyd", "host", "muh nert");
-        testBot.onMessage(channel, "Schooly_D", "schoolyd", "host", ".deej");
+        sendMessage(bot, user, ".muh nert");
+        sendMessage(bot, user, ".deej");
         String lastMessage = testBot.getLastMessage(channel);
         assertTrue(lastMessage.contains("muh nert"));
+    }
+
+    private void sendMessage(TSDBot bot, String user, String text) {
+        bot.onMessage(channel, user, user.toLowerCase(), "hostname", text);
     }
 
     public static class Module extends JukitoModule {
         @Override
         protected void configureTest() {
-            random = new FauxRandom();
+            install(new TestBotModule(channel));
+            Random random = new FauxRandom();
             bind(Random.class).toInstance(random);
 
-            TestBot testBot = new TestBot(channel, null);
-            bind(Bot.class).toInstance(testBot);
+            TestBot2 testBot = new TestBot2();
+            testBot.addUser(IntegTestUtils.createUserWithPriv(user, User.Priv.NONE), channel);
+            bind(TSDBot.class).toInstance(testBot);
 
             bind(HistoryBuff.class).asEagerSingleton();
 

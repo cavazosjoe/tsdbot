@@ -100,7 +100,7 @@ public class TSDBotLauncher {
 
         configureScheduler(injector);
         log.info("Scheduler configured successfully");
-        injector.injectMembers(Bot.class);
+        injector.injectMembers(TSDBot.class);
         log.info("Bot injected successfully");
         bot.initLogging();
 

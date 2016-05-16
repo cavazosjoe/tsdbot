@@ -4,11 +4,14 @@ import com.google.inject.Inject;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.ThreadType;
 import org.tsd.tsdbot.functions.Dorj;
 import org.tsd.tsdbot.history.HistoryBuff;
-import org.tsd.tsdbot.history.filter.*;
+import org.tsd.tsdbot.history.filter.LengthStrategy;
+import org.tsd.tsdbot.history.filter.MessageFilter;
+import org.tsd.tsdbot.history.filter.NoBotsStrategy;
+import org.tsd.tsdbot.history.filter.NoCommandsStrategy;
 import org.tsd.tsdbot.notifications.TwitterManager;
 import org.tsd.tsdbot.util.IRCUtil;
 import twitter4j.Status;
@@ -27,7 +30,6 @@ public class DorjThread extends IRCListenerThread {
     private static final int duration = 3; //minutes
     private static final String deejHandle = "@DeeJ_BNG";
 
-    private InjectableMsgFilterStrategyFactory msgFilterFact;
     private HistoryBuff historyBuff;
     private TwitterManager twitterManager;
     private Random random;
@@ -39,9 +41,8 @@ public class DorjThread extends IRCListenerThread {
     private LinkedList<String> dorjFormats = new LinkedList<>();
 
     @Inject
-    public DorjThread(Bot bot, Dorj dorj, ThreadManager threadManager, Random random,
-                      TwitterManager twitterManager, HistoryBuff historyBuff,
-                      InjectableMsgFilterStrategyFactory msgFilterFact) throws Exception {
+    public DorjThread(TSDBot bot, Dorj dorj, ThreadManager threadManager, Random random,
+                      TwitterManager twitterManager, HistoryBuff historyBuff) throws Exception {
         super(bot, threadManager);
         if(twitterManager == null) {
             throw new Exception("Twitter not initialized yet, can't start the dorj");
@@ -51,7 +52,6 @@ public class DorjThread extends IRCListenerThread {
         this.random = random;
         this.listeningRegex = "^\\.dorj$";
         this.historyBuff = historyBuff;
-        this.msgFilterFact = msgFilterFact;
         this.dorjFunction = dorj;
         dorjFormats.addAll(Arrays.asList(summoningFormats));
     }
@@ -120,10 +120,8 @@ public class DorjThread extends IRCListenerThread {
     protected void handleEnd() {
         if(summoners.size() == 4) try {
             // successful dorj
-            NoCommandsStrategy noCommandsStrategy = new NoCommandsStrategy();
-            msgFilterFact.injectStrategy(noCommandsStrategy);
             MessageFilter filter = MessageFilter.create()
-                    .addFilter(noCommandsStrategy)
+                    .addFilter(new NoCommandsStrategy())
                     .addFilter(new NoBotsStrategy())
                     .addFilter(new LengthStrategy(1, 140));
 

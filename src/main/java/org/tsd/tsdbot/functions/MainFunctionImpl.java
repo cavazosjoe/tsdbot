@@ -1,17 +1,17 @@
 package org.tsd.tsdbot.functions;
 
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.module.Function;
 
 public abstract class MainFunctionImpl implements MainFunction {
 
-    protected Bot bot;
+    protected TSDBot bot;
     protected String description;
     protected String usage;
 
     protected String listeningRegex;
 
-    public MainFunctionImpl(Bot bot) {
+    public MainFunctionImpl(TSDBot bot) {
         this.bot = bot;
         this.listeningRegex = getClass().getAnnotation(Function.class).initialRegex();
     }

@@ -15,8 +15,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.PrintoutLibrary;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.config.GoogleConfig;
 import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -62,7 +62,7 @@ public class Printout extends MainFunctionImpl {
 
     @Inject
     public Printout(
-            Bot bot,
+            TSDBot bot,
             Random random,
             PrintoutLibrary library,
             GoogleConfig googleConfig,

@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.tsdfm.TSDFM;
 import org.tsd.tsdbot.tsdfm.TSDFMLibrary;
@@ -25,7 +25,7 @@ public class TSDFMFunction extends MainFunctionImpl {
     private final TSDFMLibrary library;
 
     @Inject
-    public TSDFMFunction(Bot bot, TSDFM tsdfm, TSDFMLibrary library) {
+    public TSDFMFunction(TSDBot bot, TSDFM tsdfm, TSDFMLibrary library) {
         super(bot);
         this.tsdfm = tsdfm;
         this.library = library;

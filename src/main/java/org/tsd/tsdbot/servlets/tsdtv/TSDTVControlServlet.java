@@ -15,9 +15,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.InetAddress;
 
-/**
- * Created by Joe on 1/12/2015.
- */
 @Singleton
 public class TSDTVControlServlet extends HttpServlet {
 
@@ -36,12 +33,14 @@ public class TSDTVControlServlet extends HttpServlet {
                 tsdtv.kill(tsdtvWebUser);
             } else if (req.getParameter("type").equals("pause")) {
                 switch (tsdtv.getState()) {
-                    case running:
+                    case running: {
                         tsdtv.pause(tsdtvWebUser);
                         break;
-                    case paused:
+                    }
+                    case paused: {
                         tsdtv.unpause(tsdtvWebUser);
                         break;
+                    }
                     default:
                         throw new IllegalStateException("Trying to pause or unpause a " + tsdtv.getState() + " stream");
                 }

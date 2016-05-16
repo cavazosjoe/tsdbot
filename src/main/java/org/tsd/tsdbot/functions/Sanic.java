@@ -8,7 +8,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.module.Function;
 
 @Singleton
@@ -20,7 +20,7 @@ public class Sanic extends MainFunctionImpl {
     private HttpClient httpClient;
 
     @Inject
-    public Sanic(Bot bot, HttpClient httpClient) {
+    public Sanic(TSDBot bot, HttpClient httpClient) {
         super(bot);
         this.httpClient = httpClient;
         this.description = "Sanic \"fanfunction\". Retrieves a random page from the Sonic fanfiction wiki";

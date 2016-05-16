@@ -3,7 +3,7 @@ package org.tsd.tsdbot.functions;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.module.Function;
 
 @Singleton
@@ -13,7 +13,7 @@ public class CommandList extends MainFunctionImpl {
     private String serverUrl;
 
     @Inject
-    public CommandList(Bot bot, @Named("serverUrl") String serverUrl) {
+    public CommandList(TSDBot bot, @Named("serverUrl") String serverUrl) {
         super(bot);
         this.description = "Have the bot send you a list of commands";
         this.usage = "USAGE: .cmd";

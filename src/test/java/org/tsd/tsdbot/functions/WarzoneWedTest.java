@@ -15,9 +15,10 @@ import org.jukito.JukitoRunner;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.IntegTestUtils;
-import org.tsd.tsdbot.TestBot;
+import org.tsd.tsdbot.TSDBot;
+import org.tsd.tsdbot.TestBot2;
+import org.tsd.tsdbot.TestBotModule;
 import org.tsd.tsdbot.database.DBConnectionString;
 import org.tsd.tsdbot.database.JdbcConnectionProvider;
 import org.tsd.tsdbot.model.warzone.WarzoneRegular;
@@ -27,9 +28,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Joe on 10/30/2015.
- */
 @RunWith(JukitoRunner.class)
 public class WarzoneWedTest {
 
@@ -69,14 +67,13 @@ public class WarzoneWedTest {
     @Test
     public void testProcessGames(JdbcConnectionSource connectionSource,
                                  WarzoneWed warzoneFunction) throws Exception {
-
-//        warzoneFunction.processGames(connectionSource, ".ww " + testGames[0]);
-
     }
 
     public static class Module extends JukitoModule {
         @Override
         protected void configureTest() {
+
+            install(new TestBotModule(channel));
 
             bindManyNamedInstances(String.class, "regularsStrings",
                     regularsResultsMap.keySet().toArray(new String[regularsResultsMap.size()]));
@@ -84,9 +81,9 @@ public class WarzoneWedTest {
             bind(String.class).annotatedWith(DBConnectionString.class).toInstance("jdbc:h2:mem:test");
             bind(JdbcConnectionSource.class).toProvider(JdbcConnectionProvider.class);
 
-            TestBot testBot = new TestBot(channel);
-            bind(Bot.class).toInstance(testBot);
-            testBot.addMainChannelUser(User.Priv.OWNER, "OwnerUser");
+            TestBot2 testBot = new TestBot2();
+            bind(TSDBot.class).toInstance(testBot);
+            testBot.addUser(IntegTestUtils.createUserWithPriv("OwnerUser", User.Priv.OWNER), channel);
 
             WebClient webClient = new WebClient(BrowserVersion.CHROME);
             webClient.setAjaxController(new AjaxController() {

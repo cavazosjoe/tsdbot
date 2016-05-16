@@ -25,15 +25,16 @@ import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Set;
 
-public class TSDBot extends PircBot implements Bot {
+public class TSDBot extends PircBot {
 
     private static Logger logger = LoggerFactory.getLogger(TSDBot.class);
 
     protected static long blunderCount = 0;
-    protected static Set<User> blacklist = new ConcurrentHashSet<>();
+    protected static Set<String> blacklist = new ConcurrentHashSet<>();
 
     @Inject
     protected ThreadManager threadManager;
@@ -130,6 +131,21 @@ public class TSDBot extends PircBot implements Bot {
                 oldNick,
                 newNick
         ));
+
+        // watch out for schroogling
+        Iterator<String> it = blacklist.iterator();
+        boolean addToBlacklist = false;
+        while(it.hasNext()) {
+            String blacklisted = it.next();
+            if(blacklisted.equals(oldNick)) {
+                // this person was blacklisted and did a name change, remove the old one and add the new one
+                it.remove();
+                addToBlacklist = true;
+            }
+        }
+        if(addToBlacklist) {
+            blacklist.add(newNick);
+        }
     }
     @Override public synchronized void onKick(String channel, String kickerNick, String kickerLogin, String kickerHostname, String recipientNick, String reason) {
         archivist.log(channel, ArchivistUtil.getRawKick(
@@ -186,11 +202,13 @@ public class TSDBot extends PircBot implements Bot {
                 message
         ));
 
-        if(!blacklist.contains(getUserFromNick(channel, sender))) {
+        HistoryBuff.MessageType type = HistoryBuff.MessageType.NORMAL;
+        if(!blacklist.contains(sender)) {
             // pass message to functions that match its pattern
             for (MainFunction function : functions) {
                 if (message.matches(function.getListeningRegex())) {
                     function.run(channel, sender, login, message);
+                    type = HistoryBuff.MessageType.COMMAND;
                 }
             }
 
@@ -198,19 +216,21 @@ public class TSDBot extends PircBot implements Bot {
             for (IRCListenerThread listenerThread : threadManager.getThreadsByChannel(channel)) {
                 if (listenerThread.matches(message)) {
                     listenerThread.onMessage(sender, login, hostname, message);
+                    type = HistoryBuff.MessageType.COMMAND;
                 }
             }
+
+            // pass message to all stat-collecting entities
+            for(Stats s : stats) {
+                s.processMessage(channel, sender, login, hostname, message);
+            }
+        } else {
+            type = HistoryBuff.MessageType.BLACKLISTED;
         }
 
-        // pass message to all stat-collecting entities
-        for(Stats s : stats) {
-            s.processMessage(channel, sender, login, hostname, message);
-        }
-
-        historyBuff.updateHistory(channel, message, sender);
+        historyBuff.updateHistory(channel, message, sender, type);
     }
 
-    @Override
     public LinkedList<User> getNonBotUsers(String channel) {
         LinkedList<User> ret = new LinkedList<>();
         for(User u : getUsers(channel)) {
@@ -221,33 +241,35 @@ public class TSDBot extends PircBot implements Bot {
         return ret;
     }
 
-    @Override
     public boolean addToBlacklist(User user) {
-        return blacklist.add(user);
+        return blacklist.add(user.getNick());
     }
 
-    @Override
     public boolean removeFromBlacklist(User user) {
-        return blacklist.remove(user);
+        Iterator<String> it = blacklist.iterator();
+        while(it.hasNext()) {
+            String nick = it.next();
+            if(nick.equals(user.getNick())) {
+                it.remove();
+                return true;
+            }
+        }
+        return false;
     }
 
-    @Override
     public boolean userIsOwner(String nick) {
         return nick.equals(owner);
     }
 
-    @Override
     public boolean userHasGlobalPriv(String nick, User.Priv priv) {
         return userHasPrivInChannel(nick, mainChannel, priv);
     }
 
-    @Override
     public boolean userHasPrivInChannel(String nick, String channel, User.Priv priv) {
         User u = getUserFromNick(channel, nick);
         return u != null && (userIsOwner(nick) || u.hasPriv(priv));
     }
 
-    @Override
     public User getUserFromNick(String channel, String nick) {
         User user = null;
         String prefixlessNick;
@@ -261,19 +283,16 @@ public class TSDBot extends PircBot implements Bot {
         return user;
     }
 
-    @Override
     public void sendMessages(String target, String[] messages) {
         for(String m : messages) sendMessage(target, m);
     }
 
-    @Override
     public void broadcast(String message) {
         for(String channel : getChannels()) {
             sendMessage(channel, message);
         }
     }
 
-    @Override
     public void incrementBlunderCnt() {
         blunderCount++;
     }
@@ -287,7 +306,6 @@ public class TSDBot extends PircBot implements Bot {
         }
     }
 
-    @Override
     public void shutdownNow() {
         logger.warn("SHUTTING DOWN");
         disconnect();

@@ -5,8 +5,8 @@ import com.google.inject.Singleton;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.FilenameLibrary;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.util.IRCUtil;
 
@@ -24,7 +24,7 @@ public class Filename extends MainFunctionImpl {
     private final FilenameLibrary library;
 
     @Inject
-    public Filename(Bot bot, FilenameLibrary library) {
+    public Filename(TSDBot bot, FilenameLibrary library) {
         super(bot);
         this.description = "Pull a random entry from the TSD Filenames Database";
         this.usage = "USAGE: .fname [ add <filename> <URL> ] [ submit <filename> <URL> ] [ get <query> ]";

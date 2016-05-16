@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.Persistable;
 import org.tsd.tsdbot.module.Function;
@@ -17,9 +17,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Random;
 
-/**
- * Created by Joe on 5/24/14.
- */
 @Singleton
 @Function(initialRegex = "^\\.tc.*")
 public class TomCruise extends MainFunctionImpl implements Persistable {
@@ -30,7 +27,7 @@ public class TomCruise extends MainFunctionImpl implements Persistable {
     private Random random;
 
     @Inject
-    public TomCruise(Bot bot, DBConnectionProvider connectionProvider, Random random) throws SQLException {
+    public TomCruise(TSDBot bot, DBConnectionProvider connectionProvider, Random random) throws SQLException {
         super(bot);
         this.description = "Generate a random Tom Cruise clip or quote";
         this.usage = "USAGE: .tc [ clip | quote ]";

@@ -6,11 +6,12 @@ import com.google.inject.name.Named;
 import org.jibble.pircbot.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.tsdtv.*;
 import org.tsd.tsdbot.tsdtv.model.TSDTVEpisode;
 import org.tsd.tsdbot.tsdtv.model.TSDTVShow;
+import org.tsd.tsdbot.util.SurgeProtector;
 
 import javax.naming.AuthenticationException;
 import java.sql.SQLException;
@@ -34,7 +35,7 @@ public class TSDTVFunction extends MainFunctionImpl {
 
     @Inject
     public TSDTVFunction(
-            Bot bot,
+            TSDBot bot,
             TSDTV tsdtv,
             TSDTVLibrary library,
             TSDTVFileProcessor fileProcessor,
@@ -60,7 +61,7 @@ public class TSDTVFunction extends MainFunctionImpl {
         }
 
         User user = bot.getUserFromNick(channel, sender);
-        boolean isOp = bot.userHasGlobalPriv(sender, User.Priv.OP);
+        boolean isOp = bot.userIsOwner(sender);
         String subCmd = cmdParts[1];
 
         if(subCmd.equals("catalog")) {
@@ -190,6 +191,9 @@ public class TSDTVFunction extends MainFunctionImpl {
                 } catch (StreamLockedException sle) {
                     bot.sendMessage(channel, "The stream is currently locked down");
                 }
+            } catch (SurgeProtector.FloodException fe){
+                bot.sendMessage(channel, "Flood detected, blacklisting...");
+                bot.addToBlacklist(user);
             } catch (Exception e) {
                 logger.error("Error playing from chat", e);
                 bot.sendMessage(channel, "Error: " + e.getMessage());

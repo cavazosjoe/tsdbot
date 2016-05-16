@@ -2,9 +2,6 @@ package org.tsd.tsdbot.tsdtv;
 
 import java.net.InetAddress;
 
-/**
- * Created by Joe on 2/5/2015.
- */
 public class TSDTVWebUser extends TSDTVUser {
 
     private InetAddress inetAddress;

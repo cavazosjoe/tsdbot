@@ -5,15 +5,12 @@ import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.stats.HustleStats;
 
 import java.text.DecimalFormat;
 
-/**
- * Created by Joe on 1/3/2015.
- */
 @Singleton
 @Function(initialRegex = "^\\.hustle$")
 public class Hustle extends MainFunctionImpl {
@@ -26,7 +23,7 @@ public class Hustle extends MainFunctionImpl {
     private String serverUrl;
 
     @Inject
-    public Hustle(Bot bot, HustleStats hustleStats, @Named("serverUrl") String serverUrl) {
+    public Hustle(TSDBot bot, HustleStats hustleStats, @Named("serverUrl") String serverUrl) {
         super(bot);
         this.hustleStats = hustleStats;
         this.serverUrl = serverUrl;

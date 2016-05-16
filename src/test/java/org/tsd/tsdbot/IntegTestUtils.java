@@ -10,6 +10,10 @@ import java.util.Properties;
 
 public class IntegTestUtils {
 
+    public static final String MAIN_CHANNEL = "#tsd";
+    public static final String BOT_OWNER = "BotOwner";
+    public static final String SERVER_URL = "http://irc.org";
+
     @SafeVarargs
     public static void loadFunctions(Binder binder, Class<? extends MainFunction>... functions) {
         Multibinder<MainFunction> functionBinder = Multibinder.newSetBinder(binder, MainFunction.class);
@@ -28,7 +32,7 @@ public class IntegTestUtils {
         }
     }
 
-    public static String sendMessageGetResponse(TestBot testBot, String user, String ident, String channel, String msg) {
+    public static String sendMessageGetResponse(TestBot2 testBot, String user, String ident, String channel, String msg) {
         testBot.onMessage(channel, user, ident, "hostname", msg);
         return testBot.getLastMessage(channel);
     }

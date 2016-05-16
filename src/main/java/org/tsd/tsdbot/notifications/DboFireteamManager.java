@@ -10,8 +10,8 @@ import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
 import org.tsd.tsdbot.NotificationType;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.JdbcConnectionProvider;
 import org.tsd.tsdbot.model.dboft.*;
 import org.tsd.tsdbot.module.NotifierChannels;
@@ -54,7 +54,7 @@ public class DboFireteamManager extends NotificationManager<DboFireteamManager.D
     protected JdbcConnectionProvider connectionProvider;
 
     @Inject
-    public DboFireteamManager(Bot bot,
+    public DboFireteamManager(TSDBot bot,
                               WebClient webClient,
                               JdbcConnectionProvider connectionProvider,
                               @NotifierChannels Map notifierChannels) {

@@ -11,7 +11,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.util.HtmlSanitizer;
 import org.tsd.tsdbot.util.IRCUtil;
@@ -21,9 +21,6 @@ import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Created by Joe on 5/24/14.
- */
 @Singleton
 @Function(initialRegex = "^\\.(4chan|4ch).*")
 public class FourChan extends MainFunctionImpl {
@@ -34,7 +31,7 @@ public class FourChan extends MainFunctionImpl {
     private Random random;
 
     @Inject
-    public FourChan(Bot bot, HttpClient httpClient, Random random) {
+    public FourChan(TSDBot bot, HttpClient httpClient, Random random) {
         super(bot);
         this.httpClient = httpClient;
         this.random = random;

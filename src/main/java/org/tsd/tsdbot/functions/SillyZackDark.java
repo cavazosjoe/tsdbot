@@ -2,14 +2,11 @@ package org.tsd.tsdbot.functions;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.tsd.tsdbot.Bot;
+import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.module.Function;
 
 import java.util.HashSet;
 
-/**
- * Created by Joe on 10/2/2014.
- */
 @Singleton
 @Function(initialRegex = "^\\s*(o/|\\\\o)\\s*$")
 public class SillyZackDark extends MainFunctionImpl {
@@ -23,7 +20,7 @@ public class SillyZackDark extends MainFunctionImpl {
     private String banMask = null;
 
     @Inject
-    public SillyZackDark(Bot bot) {
+    public SillyZackDark(TSDBot bot) {
         super(bot);
         this.description = ";)";
         this.usage = ";)";
