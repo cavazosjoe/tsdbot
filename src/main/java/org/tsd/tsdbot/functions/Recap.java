@@ -7,6 +7,7 @@ import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.history.filter.LengthStrategy;
 import org.tsd.tsdbot.history.filter.MessageFilter;
 import org.tsd.tsdbot.history.filter.NoCommandsStrategy;
+import org.tsd.tsdbot.history.filter.NoURLsStrategy;
 import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.util.IRCUtil;
 
@@ -42,6 +43,7 @@ public class Recap extends MainFunctionImpl {
                 MessageFilter.create()
                         .addFilter(new NoCommandsStrategy())
                         .addFilter(new LengthStrategy(0, 80))
+                        .addFilter(new NoURLsStrategy())
         );
 
         if(!chosen.isEmpty()) {
