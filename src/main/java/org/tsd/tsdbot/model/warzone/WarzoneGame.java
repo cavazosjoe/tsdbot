@@ -6,9 +6,6 @@ import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.field.ForeignCollectionField;
 import com.j256.ormlite.table.DatabaseTable;
 
-/**
- * Created by Joe on 10/31/2015.
- */
 @DatabaseTable(tableName = "WarzoneGame")
 public class WarzoneGame {
 

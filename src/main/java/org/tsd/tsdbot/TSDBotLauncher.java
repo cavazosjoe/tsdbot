@@ -29,6 +29,7 @@ import org.tsd.tsdbot.module.ServerPort;
 import org.tsd.tsdbot.module.TSDBotFunctionalModule;
 import org.tsd.tsdbot.module.TSDBotModule;
 import org.tsd.tsdbot.module.TSDBotServletModule;
+import org.tsd.tsdbot.scheduled.DboForumSweeperJob;
 import org.tsd.tsdbot.scheduled.InjectableJobFactory;
 import org.tsd.tsdbot.scheduled.LogCleanerJob;
 import org.tsd.tsdbot.scheduled.SchedulerConstants;
@@ -193,12 +194,18 @@ public class TSDBotLauncher {
                     .withIdentity(SchedulerConstants.LOG_JOB_KEY)
                     .usingJobData(SchedulerConstants.LOGS_DIR_FIELD, config.archivist.logsDir)
                     .build();
-
             CronTrigger logCleanerTrigger = newTrigger()
                     .withSchedule(cronSchedule("0 0 4 ? * MON")) //4AM every monday
                     .build();
-
             scheduler.scheduleJob(logCleanerJob, logCleanerTrigger);
+
+            JobDetail dboForumSweeperJob = newJob(DboForumSweeperJob.class)
+                    .withIdentity(SchedulerConstants.DBO_FORUM_JOB_KEY)
+                    .build();
+            CronTrigger dboForumSweeperTrigger = newTrigger()
+                    .withSchedule(cronSchedule("0 0/5 * * * ?"))
+                    .build();
+            scheduler.scheduleJob(dboForumSweeperJob, dboForumSweeperTrigger);
 
             scheduler.start();
 

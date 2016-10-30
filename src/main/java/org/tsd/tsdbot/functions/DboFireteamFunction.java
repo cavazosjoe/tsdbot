@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.JdbcConnectionProvider;
-import org.tsd.tsdbot.model.dboft.Fireteam;
+import org.tsd.tsdbot.model.dbo.fireteam.Fireteam;
 import org.tsd.tsdbot.module.Function;
 
 import java.sql.SQLException;

@@ -93,7 +93,10 @@ public class Recap extends MainFunctionImpl {
             "Survivor: TSDIRC",                     "TSD: The College Years",
             "Fast Times at TSD High",               "Slappy Days",
             "T.S.D.I.R.C.",                         "Hajime no Kanbo",
-            "Tips & Tricks: Professional Rusemen",  "Real Housewives of Bellevue"
+            "Tips & Tricks: Professional Rusemen",  "Real Housewives of Bellevue",
+            "Schooly Drew Mysteries",               "Macross but Without Kaifun",
+            "TSD: Brothers Under Fire",             "TSD: Australia",
+            "TSD: Japan"
     };
 
     private static final String[] episodeNames = new String[] {
@@ -143,6 +146,10 @@ public class Recap extends MainFunctionImpl {
             "Grillin' with Bernie",
             "Bar in the Pocket: Tex and the Hidden Flask Technique",
             "Take Flight, Gundam!",
+            "Overmeme",
+            "Justice Rains From Above",
+            "High Noon",
+            "Monkey Trouble",
             "Dr. Strangedeej, or: How I Learned to Stop Worrying and Love the Dorj",
             "Dr. GV, PhD, although I guess if he was a medical doctor he wouldn't have a PhD? Or maybe they can, " +
                     "I don't know. I know he'd be called \"Dr.\" though. I think they should make that clearer, like " +
@@ -151,7 +158,7 @@ public class Recap extends MainFunctionImpl {
                     "and I was supposed to go to bed 23 minutes ago but then this came up and uuuggggghhhhh >_>"
     };
 
-    private static enum DramaStyle {
+    private enum DramaStyle {
         exclamation {
             @Override
             public String apply(String s) {
@@ -185,8 +192,10 @@ public class Recap extends MainFunctionImpl {
         ellipses {
             @Override
             public String apply(String s) {
-                if(!s.endsWith("...")) {
-                    if(s.endsWith("?") || s.endsWith("!")) s = s.substring(0, s.length()-1);
+                if(!s.endsWith("..")) {
+                    if(s.endsWith("?") || s.endsWith("!")) {
+                        s = s.substring(0, s.length()-1);
+                    }
                     return s + "...";
                 }
                 return s; // already ends with ellipses...

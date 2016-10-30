@@ -1,5 +1,6 @@
 package org.tsd.tsdbot.stats;
 
+import com.google.common.collect.EvictingQueue;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.apache.http.NameValuePair;
@@ -26,7 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.config.TSDBotConfiguration;
-import org.tsd.tsdbot.util.CircularBuffer;
 
 import java.awt.*;
 import java.text.DecimalFormat;
@@ -49,7 +49,7 @@ public class HustleStats implements Stats {
     private final TSDBot bot;
     private final HttpClient httpClient;
     private final String apiKey;
-    private final CircularBuffer<DataPoint> hustleBuffer = new CircularBuffer<>(50);
+    private final EvictingQueue<DataPoint> hustleBuffer = EvictingQueue.create(50);
 
     private int msgCnt = 0;
     private JFreeChart chart = null;

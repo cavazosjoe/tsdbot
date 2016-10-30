@@ -18,9 +18,13 @@ public class JdbcConnectionProvider implements Provider<JdbcConnectionSource> {
 
     private static final Logger logger = LoggerFactory.getLogger(JdbcConnectionProvider.class);
 
+    private final String connectionString;
+
     @Inject
-    @DBConnectionString
-    private String connectionString;
+    public JdbcConnectionProvider(@DBConnectionString String connectionString) {
+        this.connectionString = connectionString;
+    }
+
     private JdbcConnectionSource jdbcConnectionSource;
     private boolean tablesLoaded = false;
 

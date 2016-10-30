@@ -1,11 +1,8 @@
-package org.tsd.tsdbot.model.dboft;
+package org.tsd.tsdbot.model.dbo;
 
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 
-/**
- * Created by Joe on 2/7/2015.
- */
 @DatabaseTable(tableName = "DBO_USER")
 public class DboUser {
 
@@ -46,9 +43,7 @@ public class DboUser {
 
         DboUser dboUser = (DboUser) o;
 
-        if (id != dboUser.id) return false;
-
-        return true;
+        return id == dboUser.id;
     }
 
     @Override

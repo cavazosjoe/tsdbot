@@ -1,7 +1,8 @@
-package org.tsd.tsdbot.model.dboft;
+package org.tsd.tsdbot.model.dbo.fireteam;
 
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
+import org.tsd.tsdbot.model.dbo.DboUser;
 
 /**
  * Created by Joe on 2/7/2015.

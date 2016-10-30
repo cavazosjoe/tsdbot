@@ -1,4 +1,4 @@
-package org.tsd.tsdbot.model.dboft;
+package org.tsd.tsdbot.model.dbo.fireteam;
 
 /**
 * Created by Joe on 2/7/2015.

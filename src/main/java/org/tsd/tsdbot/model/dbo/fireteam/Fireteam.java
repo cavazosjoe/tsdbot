@@ -1,19 +1,17 @@
-package org.tsd.tsdbot.model.dboft;
+package org.tsd.tsdbot.model.dbo.fireteam;
 
 import com.j256.ormlite.dao.ForeignCollection;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.field.ForeignCollectionField;
 import com.j256.ormlite.table.DatabaseTable;
 import org.apache.commons.lang3.StringUtils;
+import org.tsd.tsdbot.model.dbo.DboUser;
 import org.tsd.tsdbot.util.IRCUtil;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 
-/**
- * Created by Joe on 2/7/2015.
- */
 @DatabaseTable(tableName = "DBO_FIRETEAM")
 public class Fireteam {
 

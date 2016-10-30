@@ -41,7 +41,7 @@ public class RssFeedManager extends NotificationManager<RssItem> {
 
         try {
             rssPage = webClient.getPage(rssUrl);
-            InputStream is = new ByteArrayInputStream(rssPage.getContent().getBytes());
+            InputStream is = new ByteArrayInputStream(rssPage.getTextContent().getBytes());
 
 
             SyndFeedInput input = new SyndFeedInput();

@@ -8,6 +8,7 @@ public class SchedulerConstants {
     public static final String TSDFM_GROUP_ID = "tsdfm";
 
     public static final JobKey LOG_JOB_KEY = new JobKey("log-job");
+    public static final JobKey DBO_FORUM_JOB_KEY = new JobKey("dbo-forum-job");
 
     // TSDTVBlockJob
     public static final String TSDTV_BLOCK_ID_FIELD = "id";

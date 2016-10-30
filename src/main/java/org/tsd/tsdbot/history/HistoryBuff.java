@@ -1,8 +1,8 @@
 package org.tsd.tsdbot.history;
 
+import com.google.common.collect.EvictingQueue;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.apache.commons.collections.buffer.CircularFifoBuffer;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.history.filter.MessageFilter;
 import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
@@ -15,23 +15,23 @@ public class HistoryBuff {
 
     private static final int CHANNEL_HISTORY_SIZE = 750;
     private Random random;
-    private Map<String, CircularFifoBuffer> channelHistory = new HashMap<>();
+    private Map<String, EvictingQueue<Message>> channelHistory = new HashMap<>();
 
     @Inject
     public HistoryBuff(TSDBot bot, Random random) {
         for(String channel : bot.getChannels())
-            channelHistory.put(channel, new CircularFifoBuffer(CHANNEL_HISTORY_SIZE));
+            channelHistory.put(channel, EvictingQueue.create(CHANNEL_HISTORY_SIZE));
         this.random = random;
     }
 
     public synchronized void updateHistory(String channel, String message, String sender, MessageType type) {
 
-        CircularFifoBuffer messages;
+        EvictingQueue<Message> messages;
 
         if (channelHistory.containsKey(channel)) {
             messages = channelHistory.get(channel);
         } else {
-            messages = new CircularFifoBuffer(CHANNEL_HISTORY_SIZE);
+            messages = EvictingQueue.create(CHANNEL_HISTORY_SIZE);
             channelHistory.put(channel, messages);
         }
 
@@ -51,7 +51,7 @@ public class HistoryBuff {
             return possibilities;
         }
 
-        CircularFifoBuffer buffer = channelHistory.get(channel);
+        EvictingQueue<Message> buffer = channelHistory.get(channel);
 
         if(targetUser == null) {
             // not filtering by user, dump everything
@@ -97,7 +97,7 @@ public class HistoryBuff {
     }
 
     public void reset() {
-        for(CircularFifoBuffer buffer : channelHistory.values()) {
+        for(EvictingQueue<Message> buffer : channelHistory.values()) {
             buffer.clear();
         }
     }
@@ -114,5 +114,4 @@ public class HistoryBuff {
         COMMAND,
         BLACKLISTED
     }
-
 }

@@ -15,9 +15,9 @@ import org.tsd.tsdbot.TestBot2;
 import org.tsd.tsdbot.TestBotModule;
 import org.tsd.tsdbot.database.DBConnectionString;
 import org.tsd.tsdbot.database.JdbcConnectionProvider;
-import org.tsd.tsdbot.model.dboft.DboUser;
-import org.tsd.tsdbot.model.dboft.Fireteam;
-import org.tsd.tsdbot.model.dboft.Platform;
+import org.tsd.tsdbot.model.dbo.DboUser;
+import org.tsd.tsdbot.model.dbo.fireteam.Fireteam;
+import org.tsd.tsdbot.model.dbo.fireteam.Platform;
 
 import java.sql.SQLException;
 import java.util.Date;
