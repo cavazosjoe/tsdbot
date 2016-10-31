@@ -12,6 +12,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.util.Random;
+import java.util.concurrent.Executors;
 
 import static org.junit.Assert.*;
 
@@ -25,12 +26,12 @@ public class MarkovFileManagerTest {
 
     @Before
     public void setup() {
-        markovFileManager = new MarkovFileManager(temporaryFolder.getRoot(), new Random());
+        markovFileManager = new MarkovFileManager(temporaryFolder.getRoot(), new Random(), Executors.newFixedThreadPool(5));
     }
 
     @Test
     public void testAddToFile() throws Exception {
-        String filename = "Cody Miller.txt";
+        String filename = "codymiller";
         markovFileManager.addToFile(filename, new MarkovKey("hey", "you"), "guy");
 
         File markovFile = new File(temporaryFolder.getRoot(), filename);
@@ -40,7 +41,7 @@ public class MarkovFileManagerTest {
 
     @Test
     public void testAddMultipleToFile() throws Exception {
-        String filename = "Znite.txt";
+        String filename = "znite";
         markovFileManager.addToFile(filename, new MarkovKey("hey", "you"), "guy");
         markovFileManager.addToFile(filename, new MarkovKey("hey", "you"), "dude");
 
@@ -51,7 +52,7 @@ public class MarkovFileManagerTest {
 
     @Test
     public void testAddManyToFile() throws Exception {
-        String filename = "Revenant.txt";
+        String filename = "revenant";
         int valueCount = 1000;
         String key1;
         String key2;
@@ -66,7 +67,7 @@ public class MarkovFileManagerTest {
 
     @Test
     public void testGetWord() throws Exception {
-        String filename = "Dorj.txt";
+        String filename = "dorj";
         MarkovKey key = new MarkovKey("one", "two");
         markovFileManager.addToFile(filename, key, "engage");
         String[] result = markovFileManager.getWordsForKey(filename, key);
@@ -75,7 +76,7 @@ public class MarkovFileManagerTest {
 
     @Test
     public void testGetWords() throws Exception {
-        String filename = "Double Dorj.txt";
+        String filename = "doubledorj";
         MarkovKey key = new MarkovKey("one", "two");
         markovFileManager.addToFile(filename, key, "engage");
         markovFileManager.addToFile(filename, key, "justice");

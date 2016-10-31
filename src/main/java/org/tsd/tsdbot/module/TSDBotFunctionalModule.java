@@ -7,10 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.functions.MainFunction;
 import org.tsd.tsdbot.notifications.*;
-import org.tsd.tsdbot.stats.GvStats;
-import org.tsd.tsdbot.stats.HustleStats;
-import org.tsd.tsdbot.stats.Stats;
-import org.tsd.tsdbot.stats.SystemStats;
+import org.tsd.tsdbot.stats.*;
 
 public class TSDBotFunctionalModule extends AbstractModule {
 
@@ -32,6 +29,7 @@ public class TSDBotFunctionalModule extends AbstractModule {
         statsBinder.addBinding().to(HustleStats.class);
         statsBinder.addBinding().to(SystemStats.class);
         statsBinder.addBinding().to(GvStats.class);
+        statsBinder.addBinding().to(MarkovListener.class);
     }
 
     private void bindFunctions() {

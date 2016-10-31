@@ -14,6 +14,7 @@ import org.tsd.tsdbot.database.JdbcConnectionProvider;
 import org.tsd.tsdbot.markov.MarkovFileManager;
 
 import java.util.Random;
+import java.util.concurrent.Executors;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DboForumSweeperJobTest {
@@ -33,7 +34,7 @@ public class DboForumSweeperJobTest {
         dboForumSweeperJob = new DboForumSweeperJob(
                 webClient,
                 new JdbcConnectionProvider("jdbc:h2:mem:testdb"),
-                new MarkovFileManager(temporaryFolder.getRoot(), new Random())
+                new MarkovFileManager(temporaryFolder.getRoot(), new Random(), Executors.newFixedThreadPool(5))
         );
     }
 

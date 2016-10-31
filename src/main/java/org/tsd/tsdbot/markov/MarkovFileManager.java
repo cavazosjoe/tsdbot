@@ -14,6 +14,7 @@ import org.tsd.tsdbot.util.MarkovUtil;
 import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
 
 @Singleton
 public class MarkovFileManager {
@@ -25,11 +26,23 @@ public class MarkovFileManager {
 
     private final File baseDir;
     private final Random random;
+    private final ExecutorService executorService;
+
+    private final Map<File, Object> locks = new HashMap<>();
 
     @Inject
-    public MarkovFileManager(@Named("markovDirectory") File baseDir, Random random) {
+    public MarkovFileManager(@Named("markovDirectory") File baseDir,
+                             Random random,
+                             ExecutorService executorService) {
         this.baseDir = baseDir;
         this.random = random;
+        this.executorService = executorService;
+        File[] files = baseDir.listFiles();
+        if(files != null) {
+            for (File f : files) {
+                locks.put(f, new Object());
+            }
+        }
     }
 
     public List<File> allFiles() {
@@ -46,59 +59,88 @@ public class MarkovFileManager {
         if(!f.exists()) {
             log.info("Markov file {} does not exist, creating...", name);
             f.createNewFile();
+            locks.put(f, new Object());
         }
         log.info("Found markov file: {} -> {}", name, f);
         return f;
     }
 
-    public void addToFile(String filename, MarkovKey key, String... values) throws IOException {
-        File markovFile = getFile(filename);
-
-        // during loop, record each line so the file can be re-compiled at the end
-        File temp = Files.createTempFile(RandomStringUtils.randomAlphabetic(20), ".txt").toFile();
-
-        log.info("Adding to markov file: key=\"{}\", values={}", key, ArrayUtils.toString(values));
-        boolean foundKey = false;
-        try(
-                BufferedReader reader = new BufferedReader(new FileReader(markovFile));
-                BufferedWriter tempWriter = new BufferedWriter(new FileWriter(temp))
-        ) {
-            String line;
-            while((line = reader.readLine()) != null) {
-                log.trace("Evaluating markov line: {}", line);
-                if(line.startsWith(key.toString())) {
-                    log.info("Line starts with key: {}", key);
-                    foundKey = true;
-                    String[] words = line.substring(key.toString().length()).split(wordDelimiter);
-                    log.info("Parsed words: {}", Arrays.toString(words));
-                    for(String value : values) {
-                        value = MarkovUtil.sanitize(value);
-                        log.info("Sanitized word: {}", value);
-                        words = ArrayUtils.add(words, value);
-                    }
-                    line = key.toString()+StringUtils.join(words, wordDelimiter);
-                    log.info("Adding revised line: {}", line);
-                }
-                tempWriter.write(line);
-                tempWriter.newLine();
-            }
-
-            if(!foundKey) {
-                String[] words = new String[values.length];
-                for(int i=0 ; i < values.length ; i++) {
-                    String value = MarkovUtil.sanitize(values[i]);
-                    log.info("Sanitized word: {}", value);
-                    words[i] = value;
-                }
-                line = key.toString()+StringUtils.join(words, wordDelimiter);
-                log.info("Did not find key in markov file, adding line: {}", line);
-                tempWriter.write(line);
+    public void process(String filename, String... values) throws IOException {
+        List<String> sanitizedWords = new LinkedList<>();
+        String word;
+        for (String rawWord : values) {
+            word = MarkovUtil.sanitize(rawWord);
+            if (StringUtils.isNotBlank(word)) {
+                sanitizedWords.add(word);
             }
         }
 
-        FileUtils.copyFile(temp, markovFile);
-        if(!temp.delete()) {
-            log.warn("Temporary file not deleted: {}", temp);
+        executorService.submit(() -> {
+            String[] sanitizedWordsArray = sanitizedWords.toArray(new String[sanitizedWords.size()]);
+            int keyLength = 2;
+            MarkovKey key;
+            try {
+                for (int i = (keyLength - 1); i < (sanitizedWordsArray.length - 1); i++) {
+                    key = new MarkovKey(ArrayUtils.subarray(sanitizedWordsArray, i - (keyLength - 1), i + 1));
+                    addToFile(filename, key, sanitizedWordsArray[i + 1]);
+                }
+            } catch (Exception e) {
+                log.error("Error processing markov entry, filename="+filename+", values="+ArrayUtils.toString(values), e);
+            }
+        });
+
+    }
+
+    public void addToFile(String filename, MarkovKey key, String... values) throws IOException {
+        File markovFile = getFile(filename);
+
+        synchronized (locks.get(markovFile)) {
+            // during loop, record each line so the file can be re-compiled at the end
+            File temp = Files.createTempFile(RandomStringUtils.randomAlphabetic(20), ".txt").toFile();
+
+            log.info("Adding to markov file: key=\"{}\", values={}", key, ArrayUtils.toString(values));
+            boolean foundKey = false;
+            try (
+                    BufferedReader reader = new BufferedReader(new FileReader(markovFile));
+                    BufferedWriter tempWriter = new BufferedWriter(new FileWriter(temp))
+            ) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    log.trace("Evaluating markov line: {}", line);
+                    if (line.startsWith(key.toString())) {
+                        log.info("Line starts with key: {}", key);
+                        foundKey = true;
+                        String[] words = line.substring(key.toString().length()).split(wordDelimiter);
+                        log.info("Parsed words: {}", Arrays.toString(words));
+                        for (String value : values) {
+                            value = MarkovUtil.sanitize(value);
+                            log.info("Sanitized word: {}", value);
+                            words = ArrayUtils.add(words, value);
+                        }
+                        line = key.toString() + StringUtils.join(words, wordDelimiter);
+                        log.info("Adding revised line: {}", line);
+                    }
+                    tempWriter.write(line);
+                    tempWriter.newLine();
+                }
+
+                if (!foundKey) {
+                    String[] words = new String[values.length];
+                    for (int i = 0; i < values.length; i++) {
+                        String value = MarkovUtil.sanitize(values[i]);
+                        log.info("Sanitized word: {}", value);
+                        words[i] = value;
+                    }
+                    line = key.toString() + StringUtils.join(words, wordDelimiter);
+                    log.info("Did not find key in markov file, adding line: {}", line);
+                    tempWriter.write(line);
+                }
+            }
+
+            FileUtils.copyFile(temp, markovFile);
+            if (!temp.delete()) {
+                log.warn("Temporary file not deleted: {}", temp);
+            }
         }
     }
 
@@ -106,15 +148,17 @@ public class MarkovFileManager {
         File markovFile = getFile(filename);
         log.info("Reading from markov file: key=\"{}\"", key);
 
-        try(BufferedReader reader = new BufferedReader(new FileReader(markovFile))) {
-            String line;
-            while((line = reader.readLine()) != null) {
-                log.trace("Evaluating markov line: {}", line);
-                if(line.startsWith(key.toString())) {
-                    log.info("Line starts with key: {}", key);
-                    String wordsRaw = line.substring(key.toString().length());
-                    log.info("Parsed words: {}", wordsRaw);
-                    return StringUtils.isNotBlank(wordsRaw) ? wordsRaw.split(wordDelimiter) : null;
+        synchronized (locks.get(markovFile)) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(markovFile))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    log.trace("Evaluating markov line: {}", line);
+                    if (line.startsWith(key.toString())) {
+                        log.info("Line starts with key: {}", key);
+                        String wordsRaw = line.substring(key.toString().length());
+                        log.info("Parsed words: {}", wordsRaw);
+                        return StringUtils.isNotBlank(wordsRaw) ? wordsRaw.split(wordDelimiter) : null;
+                    }
                 }
             }
         }
