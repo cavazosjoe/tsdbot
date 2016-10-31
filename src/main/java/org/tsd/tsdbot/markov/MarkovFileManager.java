@@ -2,6 +2,7 @@ package org.tsd.tsdbot.markov;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.google.inject.name.Named;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -12,8 +13,7 @@ import org.tsd.tsdbot.util.MarkovUtil;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 @Singleton
 public class MarkovFileManager {
@@ -21,12 +21,15 @@ public class MarkovFileManager {
     private static final Logger log = LoggerFactory.getLogger(MarkovFileManager.class);
 
     private static final String wordDelimiter = ",";
+    private static final int maxSentenceWords = 25;
 
     private final File baseDir;
+    private final Random random;
 
     @Inject
-    public MarkovFileManager(File baseDir) {
+    public MarkovFileManager(@Named("markovDirectory") File baseDir, Random random) {
         this.baseDir = baseDir;
+        this.random = random;
     }
 
     public List<File> allFiles() {
@@ -38,6 +41,7 @@ public class MarkovFileManager {
     }
 
     protected File createFileIfNotExists(String name) throws IOException {
+        name = MarkovUtil.sanitize(name);
         File f = new File(baseDir, name);
         if(!f.exists()) {
             log.info("Markov file {} does not exist, creating...", name);
@@ -98,7 +102,7 @@ public class MarkovFileManager {
         }
     }
 
-    public String[] getWordsForKey(String filename, MarkovKey key) throws IOException {
+    protected String[] getWordsForKey(String filename, MarkovKey key) throws IOException {
         File markovFile = getFile(filename);
         log.info("Reading from markov file: key=\"{}\"", key);
 
@@ -117,5 +121,74 @@ public class MarkovFileManager {
 
         log.info("Failed to find line for key: {}", key);
         return null;
+    }
+
+    protected MarkovKey getRandomKey(String filename) throws IOException {
+        File markovFile = getFile(filename);
+        String[] lines;
+        try(BufferedReader reader = new BufferedReader(new FileReader(markovFile))) {
+            lines = reader.lines().toArray(String[]::new);
+            log.info("Read {} lines from file {}", lines.length, markovFile);
+        }
+
+        String keyLine = lines[random.nextInt(lines.length)];
+        keyLine = keyLine.substring(keyLine.indexOf("[")+1, keyLine.indexOf("]"));
+        String[] keyParts = keyLine.split(" ");
+        return new MarkovKey(keyParts);
+    }
+
+    public String generateChain(String filename, int chainLength) throws IOException {
+        MarkovKey searchingKey = getRandomKey(filename);
+        log.info("Using random key: {}", searchingKey);
+
+        List<String> rawWords = new LinkedList<>();
+        String[] possibleNextWords;
+        String nextWord;
+        do {
+            possibleNextWords = getWordsForKey(filename, searchingKey);
+            if(possibleNextWords != null) {
+                nextWord = possibleNextWords[random.nextInt(possibleNextWords.length)];
+                rawWords.add(nextWord);
+                searchingKey = new MarkovKey(searchingKey, nextWord);
+            }
+        } while(possibleNextWords != null && possibleNextWords.length > 0 && sizeOfList(rawWords) < chainLength);
+
+        boolean capitalize = true;
+        StringBuilder chain = new StringBuilder();
+        int wordsLeftInSentence = random.nextInt(maxSentenceWords)+1;
+        String[] sentenceEnds = {".", "...", ",", "?", "!"};
+        Set<String> wordsNotToEndOn = new HashSet<>(Arrays.asList("the", "and"));
+        for(String word : rawWords) {
+
+            if(chain.length() > 0) {
+                chain.append(" ");
+            }
+
+            if(capitalize) {
+                word = word.substring(0, 1).toUpperCase() + word.substring(1, word.length());
+                capitalize = false;
+            }
+
+            if(word.equals("i")) {
+                word = "I";
+            }
+
+            chain.append(word);
+            wordsLeftInSentence--;
+            if(wordsLeftInSentence <= 0 && !wordsNotToEndOn.contains(word)) {
+                String punctuation = sentenceEnds[random.nextInt(sentenceEnds.length)];
+                chain.append(sentenceEnds[random.nextInt(sentenceEnds.length)]);
+                if(!punctuation.equals(",")) {
+                    capitalize = true;
+                }
+                wordsLeftInSentence = random.nextInt(maxSentenceWords)+1;
+            }
+        }
+
+        return chain.toString();
+    }
+
+    private int sizeOfList(List<String> strings) {
+        return strings.stream().mapToInt(String::length).sum();
     }
 }

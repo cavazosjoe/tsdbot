@@ -13,6 +13,8 @@ import org.quartz.JobExecutionException;
 import org.tsd.tsdbot.database.JdbcConnectionProvider;
 import org.tsd.tsdbot.markov.MarkovFileManager;
 
+import java.util.Random;
+
 @RunWith(MockitoJUnitRunner.class)
 public class DboForumSweeperJobTest {
 
@@ -29,7 +31,9 @@ public class DboForumSweeperJobTest {
         webClient.getCookieManager().setCookiesEnabled(false);
 
         dboForumSweeperJob = new DboForumSweeperJob(
-                webClient, new JdbcConnectionProvider("jdbc:h2:mem:testdb"), new MarkovFileManager(temporaryFolder.getRoot())
+                webClient,
+                new JdbcConnectionProvider("jdbc:h2:mem:testdb"),
+                new MarkovFileManager(temporaryFolder.getRoot(), new Random())
         );
     }
 

@@ -11,6 +11,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.File;
 import java.nio.charset.Charset;
+import java.util.Random;
 
 import static org.junit.Assert.*;
 
@@ -24,7 +25,7 @@ public class MarkovFileManagerTest {
 
     @Before
     public void setup() {
-        markovFileManager = new MarkovFileManager(temporaryFolder.getRoot());
+        markovFileManager = new MarkovFileManager(temporaryFolder.getRoot(), new Random());
     }
 
     @Test
@@ -80,5 +81,15 @@ public class MarkovFileManagerTest {
         markovFileManager.addToFile(filename, key, "justice");
         String[] result = markovFileManager.getWordsForKey(filename, key);
         assertArrayEquals(new String[]{"engage", "justice"}, result);
+    }
+
+    @Test
+    public void testGetRandomKey() throws Exception {
+        String filename = "sanic";
+        MarkovKey key = new MarkovKey("go", "fast");
+        markovFileManager.addToFile(filename, key, "now");
+
+        key = markovFileManager.getRandomKey(filename);
+        int i=0;
     }
 }

@@ -109,3 +109,6 @@ google:
 jetty:
   hostname: localhost
   port: 7777
+
+# Where files for markov generation are stored
+markovFileDirectory: "/home/me/markov"

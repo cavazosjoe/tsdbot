@@ -68,4 +68,8 @@ public class TSDBotConfiguration {
     @NotNull
     public String voiceRssApiKey;
 
+    @NotEmpty
+    @NotNull
+    public String markovFileDirectory;
+
 }

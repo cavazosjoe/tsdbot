@@ -239,6 +239,15 @@ public class TSDBotModule extends AbstractModule {
                 .toInstance(filenameLibrary);
         log.info("Bound filename library directory to {}", filenameLibrary.getAbsolutePath());
 
+        File markovDirectory = new File(configuration.markovFileDirectory);
+        if(!markovDirectory.exists()) {
+            markovDirectory.mkdir();
+        }
+        bind(File.class)
+                .annotatedWith(Names.named("markovDirectory"))
+                .toInstance(markovDirectory);
+        log.info("Bound markov directory to {}", markovDirectory.getAbsolutePath());
+
         log.info("Binding JDBC connection provider...");
         bind(Connection.class).toProvider(DBConnectionProvider.class);
         bind(JdbcConnectionSource.class).toProvider(JdbcConnectionProvider.class);

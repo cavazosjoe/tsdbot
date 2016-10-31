@@ -121,3 +121,5 @@ jetty:
   port: 7777
 
 haloApiKey: "3e93fc8f1bd9425aa9847cb833713cff"
+
+markovFileDirectory: "C:/Users/Joe/markov"
