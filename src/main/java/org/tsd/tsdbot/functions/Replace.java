@@ -30,16 +30,17 @@ public class Replace extends MainFunctionImpl {
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
-        String replaceResult = tryStringReplace(channel, text, historyBuff);
-        if(replaceResult != null)
+        String replaceResult = tryStringReplace(channel, text);
+        if(replaceResult != null) {
             bot.sendMessage(channel, replaceResult);
+        }
     }
 
-    public String tryStringReplace(String channel, String message, HistoryBuff historyBuffer) {
-        return tryStringReplace(channel, message, null, historyBuffer);
+    private String tryStringReplace(String channel, String message) {
+        return tryStringReplace(channel, message, null);
     }
 
-    public String tryStringReplace(String channel, String message, String myName, HistoryBuff historyBuffer) {
+    private String tryStringReplace(String channel, String message, String myName) {
 
         Matcher matcher = commandFormat.matcher(message);
         if (matcher.find()) {
@@ -51,9 +52,9 @@ public class Replace extends MainFunctionImpl {
             // Trim off any leading "/g" looking stuff that comes before the username
             String user = theRest.replaceFirst("^(/g ?|/)\\s*", "");
 
-            List<HistoryBuff.Message> possibilities = historyBuffer.getMessagesByChannel(channel, user);
+            List<HistoryBuff.Message> possibilities = historyBuff.getMessagesByChannel(channel, user);
 
-            for (HistoryBuff.Message m: possibilities) {
+            for (HistoryBuff.Message m : possibilities) {
                 String replaced = replace(m.text, find, replace);
                 if (replaced != null) {
                     return m.sender + " \u0002meant\u0002 to say: " + replaced;
@@ -69,14 +70,8 @@ public class Replace extends MainFunctionImpl {
     }
 
     private String replace(String message, String find, String replace) {
-
         String modified = message.replace(find, replace);
-
-        if (!modified.equals(message)) {
-            return modified;
-        }
-
-        return null;
+        return modified.equals(message) ? null : modified;
     }
 
 }

@@ -15,6 +15,8 @@ import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Singleton
 public class MarkovFileManager {
@@ -39,9 +41,10 @@ public class MarkovFileManager {
         this.executorService = executorService;
         File[] files = baseDir.listFiles();
         if(files != null) {
-            for (File f : files) {
-                locks.put(f, new Object());
-            }
+            locks.putAll(
+                    Arrays.asList(files).parallelStream()
+                            .collect(Collectors.toMap(file -> file, file -> new Object()))
+            );
         }
     }
 
@@ -67,28 +70,26 @@ public class MarkovFileManager {
 
     public void process(String filename, String... values) throws IOException {
         List<String> sanitizedWords = new LinkedList<>();
-        String word;
-        for (String rawWord : values) {
-            word = MarkovUtil.sanitize(rawWord);
-            if (StringUtils.isNotBlank(word)) {
-                sanitizedWords.add(word);
-            }
-        }
+        sanitizedWords.addAll(
+                Arrays.asList(values).stream()
+                        .map(MarkovUtil::sanitize)
+                        .collect(Collectors.toList())
+        );
 
         executorService.submit(() -> {
             String[] sanitizedWordsArray = sanitizedWords.toArray(new String[sanitizedWords.size()]);
             int keyLength = 2;
-            MarkovKey key;
-            try {
-                for (int i = (keyLength - 1); i < (sanitizedWordsArray.length - 1); i++) {
-                    key = new MarkovKey(ArrayUtils.subarray(sanitizedWordsArray, i - (keyLength - 1), i + 1));
-                    addToFile(filename, key, sanitizedWordsArray[i + 1]);
-                }
-            } catch (Exception e) {
-                log.error("Error processing markov entry, filename="+filename+", values="+ArrayUtils.toString(values), e);
-            }
+            IntStream.range(keyLength-1, sanitizedWordsArray.length-1)
+                    .forEach(i -> {
+                        MarkovKey key = new MarkovKey(ArrayUtils.subarray(sanitizedWordsArray, i - (keyLength - 1), i + 1));
+                        try {
+                            addToFile(filename, key, sanitizedWordsArray[i + 1]);
+                        } catch (Exception e) {
+                            log.error("Error processing markov entry, filename="+filename+", values="+ArrayUtils.toString(values), e);
+                            throw new RuntimeException(e);
+                        }
+                    });
         });
-
     }
 
     public void addToFile(String filename, MarkovKey key, String... values) throws IOException {
@@ -126,11 +127,12 @@ public class MarkovFileManager {
 
                 if (!foundKey) {
                     String[] words = new String[values.length];
-                    for (int i = 0; i < values.length; i++) {
-                        String value = MarkovUtil.sanitize(values[i]);
-                        log.info("Sanitized word: {}", value);
-                        words[i] = value;
-                    }
+                    IntStream.range(0, values.length)
+                            .forEach(i -> {
+                                String value = MarkovUtil.sanitize(values[i]);
+                                log.info("Sanitized word: {}", value);
+                                words[i] = value;
+                            });
                     line = key.toString() + StringUtils.join(words, wordDelimiter);
                     log.info("Did not find key in markov file, adding line: {}", line);
                     tempWriter.write(line);
@@ -202,6 +204,7 @@ public class MarkovFileManager {
         int wordsLeftInSentence = random.nextInt(maxSentenceWords)+1;
         String[] sentenceEnds = {".", "...", ",", "?", "!"};
         Set<String> wordsNotToEndOn = new HashSet<>(Arrays.asList("the", "and"));
+
         for(String word : rawWords) {
 
             if(chain.length() > 0) {
@@ -222,9 +225,7 @@ public class MarkovFileManager {
             if(wordsLeftInSentence <= 0 && !wordsNotToEndOn.contains(word)) {
                 String punctuation = sentenceEnds[random.nextInt(sentenceEnds.length)];
                 chain.append(sentenceEnds[random.nextInt(sentenceEnds.length)]);
-                if(!punctuation.equals(",")) {
-                    capitalize = true;
-                }
+                capitalize = !punctuation.equals(",");
                 wordsLeftInSentence = random.nextInt(maxSentenceWords)+1;
             }
         }

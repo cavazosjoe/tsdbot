@@ -1,8 +1,5 @@
 package org.tsd.tsdbot.tsdtv;
 
-/**
-* Created by Joe on 2/4/2015.
-*/
 public abstract class TSDTVUser {
 
     public abstract boolean isOp();

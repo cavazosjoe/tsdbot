@@ -8,7 +8,7 @@ import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.notifications.NotificationEntity;
 import org.tsd.tsdbot.notifications.NotificationManager;
 
-import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 @Singleton
@@ -55,12 +55,12 @@ public class OmniPost extends MainFunctionImpl {
             if(mgr.history().isEmpty()) {
                 bot.sendMessage(channel,"No " + type.getDisplayString() +" posts in recent history");
             } else if(cmdParts.length == 2) {
-                NotificationEntity mostRecent = mgr.history().getFirst();
+                NotificationEntity mostRecent = mgr.history().get(0);
                 if(mostRecent.isOpened()) bot.sendMessage(channel,"Post " + mostRecent.getKey() + " has already been opened");
                 else bot.sendMessage(channel,mostRecent.getPreview());
             } else {
                 String postKey = cmdParts[2].trim();
-                LinkedList<NotificationEntity> ret = mgr.getNotificationByTail(postKey);
+                List<NotificationEntity> ret = mgr.getNotificationByTail(postKey);
                 if(ret.size() == 0) bot.sendMessage(channel,"Could not find " + type.getDisplayString() + " post with ID " + postKey + " in recent history");
                 else if(ret.size() > 1) {
                     String returnString = "Found multiple matching " + type.getDisplayString() + " posts in recent history:";

@@ -2,16 +2,13 @@ package org.tsd.tsdbot.model.dbo.fireteam;
 
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.tsd.tsdbot.model.BasicEntity;
 import org.tsd.tsdbot.model.dbo.DboUser;
 
-/**
- * Created by Joe on 2/7/2015.
- */
 @DatabaseTable(tableName = "DBO_FIRETEAM_RSVP")
-public class FireteamRSVP {
-
-    @DatabaseField(generatedId = true)
-    private int id;
+public class FireteamRSVP extends BasicEntity {
 
     @DatabaseField(foreign = true, foreignAutoRefresh = true, columnName = "fireteamId", canBeNull = false)
     private Fireteam fireteam;
@@ -41,14 +38,6 @@ public class FireteamRSVP {
         this.fireteam = fireteam;
         this.creator = creator;
         this.gamertag = gamertag;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     public Fireteam getFireteam() {
@@ -110,35 +99,40 @@ public class FireteamRSVP {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
+
         if (o == null || getClass() != o.getClass()) return false;
 
         FireteamRSVP that = (FireteamRSVP) o;
 
-        if (!creator.equals(that.creator)) return false;
-        if (!fireteam.equals(that.fireteam)) return false;
-        if (!gamertag.equals(that.gamertag)) return false;
-
-        return true;
+        return new EqualsBuilder()
+                .append(fireteam, that.fireteam)
+                .append(creator, that.creator)
+                .append(gamertag, that.gamertag)
+                .isEquals();
     }
 
     @Override
     public int hashCode() {
-        int result = fireteam.hashCode();
-        result = 31 * result + creator.hashCode();
-        result = 31 * result + gamertag.hashCode();
-        return result;
+        return new HashCodeBuilder(17, 37)
+                .append(fireteam)
+                .append(creator)
+                .append(gamertag)
+                .toHashCode();
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(gamertag);
-        if(characterClass != null)
+        if(characterClass != null) {
             sb.append(", ").append(characterClass.getDisplayString());
-        if(level != null)
+        }
+        if(level != null) {
             sb.append(", Level ").append(level);
-        if(tentative)
+        }
+        if(tentative) {
             sb.append(" (tentative)");
+        }
         return sb.toString();
     }
 }

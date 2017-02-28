@@ -12,6 +12,7 @@ import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.JdbcConnectionProvider;
 import org.tsd.tsdbot.model.dbo.fireteam.Fireteam;
 import org.tsd.tsdbot.module.Function;
+import org.tsd.tsdbot.util.AuthenticationUtil;
 
 import java.sql.SQLException;
 
@@ -21,15 +22,17 @@ public class DboFireteamFunction extends MainFunctionImpl {
 
     private static final Logger logger = LoggerFactory.getLogger(DboFireteamFunction.class);
 
-    private JdbcConnectionProvider connectionProvider;
+    private final AuthenticationUtil authenticationUtil;
+    private final JdbcConnectionProvider connectionProvider;
 
     @Inject
-    public DboFireteamFunction(TSDBot bot, JdbcConnectionProvider connectionProvider) {
+    public DboFireteamFunction(TSDBot bot, JdbcConnectionProvider connectionProvider, AuthenticationUtil authenticationUtil) {
         super(bot);
         this.description = "DBO Fireteam function. Manage subscriptions to DBO Fireteam notifications";
         this.usage = "USAGE: .dboft [ subscribe <id> | unsubscribe <id> ]";
         this.bot = bot;
         this.connectionProvider = connectionProvider;
+        this.authenticationUtil = authenticationUtil;
     }
 
     @Override
@@ -79,7 +82,7 @@ public class DboFireteamFunction extends MainFunctionImpl {
 
                 } else {
 
-                    if(!bot.userHasPrivInChannel(sender, channel, User.Priv.OP)) {
+                    if(!authenticationUtil.userHasPrivInChannel(bot, sender, channel, User.Priv.OP)) {
                         bot.sendMessage(channel, "Only an op can unsubscribe from notifications");
                         return;
                     }
@@ -91,11 +94,8 @@ public class DboFireteamFunction extends MainFunctionImpl {
                         fireteamDao.update(fireteam);
                         bot.sendMessage(channel, "No longer subscribed to " + fireteam.getEffectiveTitle() + " (id=" + fireteamId + ")");
                     }
-
                 }
-
             }
-
         } catch (SQLException e) {
             logger.error("Error getting connection to database", e);
             bot.sendMessage(channel, "Error communicating with database");

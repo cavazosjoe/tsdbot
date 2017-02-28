@@ -28,8 +28,9 @@ public class TSDTVUtil {
     public static File getRandomFileFromDirectory(Random random, File dir) {
         if(dir.exists()) {
             File[] files = dir.listFiles();
-            if(files == null || files.length == 0)
+            if(files == null || files.length == 0) {
                 return null;
+            }
             return files[random.nextInt(files.length)];
         }
         return null;
@@ -49,29 +50,31 @@ public class TSDTVUtil {
             pb.redirectErrorStream(true);
             Process p = pb.start();
             p.waitFor();
-            InputStream out = p.getInputStream();
-            InputStreamReader reader = new InputStreamReader(out);
-            BufferedReader br = new BufferedReader(reader);
-            String line;
-            Double maxVolume = null;
-            while ( maxVolume == null && (line = br.readLine()) != null) {
-                log.debug(line);
-                if (line.contains("max_volume")) {
-                    String volString = line.substring(line.indexOf(":")+1, line.indexOf("dB"));
-                    maxVolume = Double.parseDouble(volString.trim());
+
+            try(InputStream out = p.getInputStream();
+                InputStreamReader reader = new InputStreamReader(out);
+                BufferedReader br = new BufferedReader(reader)) {
+
+                String line;
+                Double maxVolume = null;
+                while ( maxVolume == null && (line = br.readLine()) != null ) {
+                    log.debug(line);
+                    if (line.contains("max_volume")) {
+                        String volString = line.substring(line.indexOf(":")+1, line.indexOf("dB"));
+                        maxVolume = Double.parseDouble(volString.trim());
+                    }
                 }
+
+                if(maxVolume == null) {
+                    throw new Exception("Could not find max_volume");
+                }
+
+                return maxVolume;
             }
-
-            if(maxVolume == null)
-                throw new Exception("Could not find max_volume");
-
-            return maxVolume;
 
         } catch (Exception e) {
             log.error("Error parsing max_volume for {}", file.getAbsolutePath(), e);
             throw new FileAnalysisException("Could not parse max_volume for " + file.getAbsolutePath());
         }
-
     }
-
 }

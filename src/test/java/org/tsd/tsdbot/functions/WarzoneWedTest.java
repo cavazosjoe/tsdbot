@@ -57,10 +57,10 @@ public class WarzoneWedTest {
         List<WarzoneRegular> regularsInDb = dao.queryForAll();
         assertEquals(expected.length, regularsInDb.size());
 
-        WarzoneRegular checking;
+        List<WarzoneRegular> checking;
         for(String[] ex : expected) {
-            checking = dao.queryForId(ex[0]);
-            assertEquals(ex[1], checking.getForumHandle());
+            checking = dao.queryForEq("gamertag", ex[0]);
+            assertEquals(ex[1], checking.get(0).getForumHandle());
         }
     }
 

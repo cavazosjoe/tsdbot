@@ -12,8 +12,8 @@ import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.util.IRCUtil;
 
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Random;
+import java.util.Stack;
 
 @Singleton
 @Function(initialRegex = "^\\.recap")
@@ -36,7 +36,7 @@ public class Recap extends MainFunctionImpl {
     @Override
     public void run(String channel, String sender, String ident, String text) {
 
-        LinkedList<HistoryBuff.Message> chosen = historyBuff.getRandomFilteredMessages(
+        Stack<HistoryBuff.Message> chosen = historyBuff.getRandomFilteredMessages(
                 channel,
                 null,
                 dramaCount,

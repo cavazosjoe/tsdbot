@@ -5,12 +5,13 @@ import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.field.ForeignCollectionField;
 import com.j256.ormlite.table.DatabaseTable;
+import org.tsd.tsdbot.model.BasicEntity;
 
 @DatabaseTable(tableName = "WarzoneGame")
-public class WarzoneGame {
+public class WarzoneGame extends BasicEntity {
 
-    @DatabaseField(id = true)
-    private String id;
+    @DatabaseField(unique = true)
+    private String gameId;
 
     @DatabaseField(foreign = true, foreignAutoRefresh = true, columnName = "warzoneNightId", canBeNull = false)
     private WarzoneNight night;
@@ -43,12 +44,16 @@ public class WarzoneGame {
         return players;
     }
 
-    public String getId() {
-        return id;
+    public void setPlayers(ForeignCollection<WarzoneGamePlayer> players) {
+        this.players = players;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public String getGameId() {
+        return gameId;
+    }
+
+    public void setGameId(String gameId) {
+        this.gameId = gameId;
     }
 
     public WarzoneNight getNight() {
@@ -113,21 +118,5 @@ public class WarzoneGame {
 
     public void setWin(boolean win) {
         this.win = win;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        WarzoneGame that = (WarzoneGame) o;
-
-        return !(id != null ? !id.equals(that.id) : that.id != null);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return id != null ? id.hashCode() : 0;
     }
 }

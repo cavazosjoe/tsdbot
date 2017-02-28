@@ -1,8 +1,5 @@
 package org.tsd.tsdbot.util;
 
-/**
- * Created by Joe on 2/19/14.
- */
 import org.apache.commons.validator.UrlValidator;
 
 import java.util.ArrayList;

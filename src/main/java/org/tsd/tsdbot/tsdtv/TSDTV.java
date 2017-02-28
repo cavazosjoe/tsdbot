@@ -21,10 +21,10 @@ import org.tsd.tsdbot.tsdtv.model.TSDTVFiller;
 import org.tsd.tsdbot.tsdtv.model.TSDTVShow;
 import org.tsd.tsdbot.tsdtv.processor.FileAnalysis;
 import org.tsd.tsdbot.tsdtv.processor.StreamType;
+import org.tsd.tsdbot.util.AuthenticationUtil;
 import org.tsd.tsdbot.util.FfmpegUtils;
 import org.tsd.tsdbot.util.SurgeProtector;
 import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
-import org.tsd.tsdbot.util.fuzzy.FuzzyVisitor;
 
 import javax.naming.AuthenticationException;
 import java.io.*;
@@ -66,6 +66,7 @@ public class TSDTV implements Persistable {
     private final FfmpegUtils ffmpegUtils;
     private final List<String> tsdtvChannels;
     private final SurgeProtector surgeProtector;
+    private final AuthenticationUtil authenticationUtil;
 
     private LockdownMode lockdownMode = LockdownMode.open;
 
@@ -82,6 +83,7 @@ public class TSDTV implements Persistable {
                  InjectableStreamFactory streamFactory,
                  FfmpegUtils ffmpegUtils,
                  SurgeProtector surgeProtector,
+                 AuthenticationUtil authenticationUtil,
                  @Named("serverUrl") String serverUrl,
                  @Named("tsdtvDirect") String tsdtvDirect,
                  @TSDTVChannels List tsdtvChannels) throws SQLException {
@@ -98,6 +100,7 @@ public class TSDTV implements Persistable {
         this.tsdtvDirect = tsdtvDirect;
         this.ffmpegUtils = ffmpegUtils;
         this.tsdtvChannels = tsdtvChannels;
+        this.authenticationUtil = authenticationUtil;
         initDB();
         buildSchedule();
     }
@@ -389,7 +392,8 @@ public class TSDTV implements Persistable {
 
     public boolean authorized(TSDTVUser tsdtvUser) throws NoStreamRunningException {
         if(runningStream != null) {
-            return tsdtvUser.isOp() || tsdtvUser.equals(runningStream.getMovie().owner);
+            return authenticationUtil.userHasGlobalPriv(bot, tsdtvUser.getId(), User.Priv.OP)
+                    || tsdtvUser.equals(runningStream.getMovie().owner);
         } else {
             throw new NoStreamRunningException();
         }
@@ -397,10 +401,11 @@ public class TSDTV implements Persistable {
 
     public void kill(TSDTVUser user) throws NoStreamRunningException, AuthenticationException {
         if(runningStream != null) {
-            if(authorized(user))
+            if(authorized(user)) {
                 runningStream.kill(true);
-            else
+            } else {
                 throw new AuthenticationException();
+            }
         } else {
             throw new NoStreamRunningException();
         }
@@ -408,10 +413,11 @@ public class TSDTV implements Persistable {
 
     public void killAll(TSDTVUser user) throws AuthenticationException, NoStreamRunningException {
         if(runningStream != null) {
-            if(user.isOp())
+            if(authenticationUtil.userHasGlobalPriv(bot, user.getId(), User.Priv.OP) ) {
                 runningStream.kill(false);
-            else
+            } else {
                 throw new AuthenticationException();
+            }
         } else {
             throw new NoStreamRunningException();
         }
@@ -419,10 +425,11 @@ public class TSDTV implements Persistable {
 
     public void pause(TSDTVUser user) throws NoStreamRunningException, IllegalStateException, AuthenticationException {
         if(runningStream != null) {
-            if(authorized(user))
+            if(authorized(user)) {
                 runningStream.pauseStream();
-            else
+            } else {
                 throw new AuthenticationException();
+            }
         } else {
             throw new NoStreamRunningException();
         }
@@ -430,10 +437,11 @@ public class TSDTV implements Persistable {
 
     public void unpause(TSDTVUser user) throws NoStreamRunningException, IllegalStateException, AuthenticationException {
         if(runningStream != null) {
-            if(authorized(user))
+            if(authorized(user)) {
                 runningStream.resumeStream();
-            else
+            } else {
                 throw new AuthenticationException();
+            }
         } else {
             throw new NoStreamRunningException();
         }
@@ -573,29 +581,26 @@ public class TSDTV implements Persistable {
 
         try {
             Set<JobKey> keys = scheduler.getJobKeys(GroupMatcher.<JobKey>groupEquals(SchedulerConstants.TSDTV_GROUP_ID));
-            LinkedList<JobKey> matchedJobs = FuzzyLogic.fuzzySubset(blockQuery, new LinkedList<>(keys), new FuzzyVisitor<JobKey>() {
-                @Override
-                public String visit(JobKey o1) {
-                    try {
-                        JobDetail job = scheduler.getJobDetail(o1);
-                        return job.getJobDataMap().getString(SchedulerConstants.TSDTV_BLOCK_NAME_FIELD);
-                    } catch (SchedulerException e) {
-                        log.error("Error getting job for key {}", o1.getName());
-                    }
-                    return null;
+            List<JobKey> matchedJobs = FuzzyLogic.fuzzySubset(blockQuery, keys, key -> {
+                try {
+                    JobDetail job = scheduler.getJobDetail(key);
+                    return job.getJobDataMap().getString(SchedulerConstants.TSDTV_BLOCK_NAME_FIELD);
+                } catch (SchedulerException e) {
+                    log.error("Error getting job for key {}", key.getName());
                 }
+                return null;
             });
 
             if(matchedJobs.size() == 0) {
                 bot.sendMessage(channel, "Could not find any blocks matching " + blockQuery);
             } else if(matchedJobs.size() > 1) {
                 StringBuilder sb = new StringBuilder();
-                boolean first = true;
                 for(JobKey jobKey : matchedJobs) {
                     JobDetail job = scheduler.getJobDetail(jobKey);
-                    if(!first) sb.append(", ");
+                    if(sb.length() > 0) {
+                        sb.append(", ");
+                    }
                     sb.append(job.getJobDataMap().getString(SchedulerConstants.TSDTV_BLOCK_NAME_FIELD));
-                    first = false;
                 }
                 bot.sendMessage(channel, "Found multiple blocks matching \"" + blockQuery + "\": " + sb.toString());
             } else {

@@ -16,7 +16,6 @@ import org.tsd.tsdbot.tsdfm.model.TSDFMAlbum;
 import org.tsd.tsdbot.tsdfm.model.TSDFMArtist;
 import org.tsd.tsdbot.tsdfm.model.TSDFMSong;
 import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
-import org.tsd.tsdbot.util.fuzzy.FuzzyVisitor;
 
 import javax.inject.Named;
 import java.io.File;
@@ -136,15 +135,10 @@ public class TSDFMLibrary implements Persistable {
     }
 
     List<TSDFMArtist> queryArtists(String query) {
-        if(StringUtils.isBlank(query))
+        if(StringUtils.isBlank(query)) {
             return new LinkedList<>(artists);
-
-        return FuzzyLogic.fuzzySubset(query, artists, new FuzzyVisitor<TSDFMArtist>() {
-            @Override
-            public String visit(TSDFMArtist o1) {
-                return o1.getName();
-            }
-        });
+        }
+        return FuzzyLogic.fuzzySubset(query, artists, artist -> artist.getName());
     }
 
     public TSDFMAlbum getAlbum(String albumQuery, String artistQuery) throws TSDFMQueryException {
@@ -183,12 +177,7 @@ public class TSDFMLibrary implements Persistable {
             albumsToSearch.addAll(artist.getAlbums());
         }
 
-        return FuzzyLogic.fuzzySubset(query, albumsToSearch, new FuzzyVisitor<TSDFMAlbum>() {
-            @Override
-            public String visit(TSDFMAlbum o1) {
-                return o1.getName();
-            }
-        });
+        return FuzzyLogic.fuzzySubset(query, albumsToSearch, album -> album.getName());
     }
 
     public TSDFMSong getSong(String songQuery, String albumQuery, String artistQuery) throws TSDFMQueryException {
@@ -211,12 +200,7 @@ public class TSDFMLibrary implements Persistable {
             }
         }
 
-        List<TSDFMSong> matches = FuzzyLogic.fuzzySubset(songQuery, songs, new FuzzyVisitor<TSDFMSong>() {
-            @Override
-            public String visit(TSDFMSong o1) {
-                return o1.getTitle();
-            }
-        });
+        List<TSDFMSong> matches = FuzzyLogic.fuzzySubset(songQuery, songs, song -> song.getTitle());
 
         if(matches.size() > 1) {
             String s = matches.stream().map(TSDFMSong::getTitle).collect(Collectors.joining(", "));

@@ -11,6 +11,7 @@ import org.tsd.tsdbot.notifications.TwitterManager;
 import org.tsd.tsdbot.runnable.DorjThread;
 import org.tsd.tsdbot.runnable.InjectableIRCThreadFactory;
 import org.tsd.tsdbot.runnable.ThreadManager;
+import org.tsd.tsdbot.util.AuthenticationUtil;
 import org.tsd.tsdbot.util.IRCUtil;
 
 @Singleton
@@ -19,17 +20,19 @@ public class Dorj extends MainFunctionImpl {
 
     private static final Logger logger = LoggerFactory.getLogger(Dorj.class);
 
-    private InjectableIRCThreadFactory threadFactory;
-    private ThreadManager threadManager;
-    private TwitterManager twitterManager;
+    private final InjectableIRCThreadFactory threadFactory;
+    private final ThreadManager threadManager;
+    private final TwitterManager twitterManager;
+    private final AuthenticationUtil authenticationUtil;
     private long lastDorjId = -1;
 
     @Inject
-    public Dorj(TSDBot bot, ThreadManager threadManager,
+    public Dorj(TSDBot bot, ThreadManager threadManager, AuthenticationUtil authenticationUtil,
                 InjectableIRCThreadFactory threadFactory, TwitterManager twitterManager) {
         super(bot);
         this.description = "Dorj: use teamwork to summon the legendary Double Dorj";
         this.usage = "USAGE: .dorj";
+        this.authenticationUtil = authenticationUtil;
         this.threadManager = threadManager;
         this.threadFactory = threadFactory;
         this.twitterManager = twitterManager;
@@ -57,7 +60,7 @@ public class Dorj extends MainFunctionImpl {
 
         } else if(cmdParts[1].equals("rollback")) {
 
-            if(!bot.userIsOwner(sender)) {
+            if(!authenticationUtil.userIsOwner(sender)) {
                 bot.sendMessage(channel, "Only my master can change the course of history");
                 return;
             }
@@ -70,7 +73,6 @@ public class Dorj extends MainFunctionImpl {
                 lastDorjId = -1;
             }
         }
-
     }
 
     public void setSuccessfulDorj(long tweetId) {

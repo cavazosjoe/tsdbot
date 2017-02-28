@@ -1,9 +1,9 @@
 package org.tsd.tsdbot.stats;
 
 import com.google.inject.Inject;
-import org.jibble.pircbot.User;
 import org.tsd.tsdbot.TSDBot;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 
 public class GvStats implements Stats {
@@ -32,13 +32,9 @@ public class GvStats implements Stats {
     }
 
     private boolean isGvOnline() {
-        for(String channel : bot.getChannels()) {
-            for(User user : bot.getUsers(channel)) {
-                if(user.getNick().toLowerCase().contains("general") || user.getNick().toLowerCase().contains("gv")) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return Arrays.stream(bot.getChannels())
+                .flatMap(channel -> Arrays.stream(bot.getUsers(channel)))
+                .map(user -> user.getNick().toLowerCase())
+                .anyMatch(nick -> nick.contains("general") || nick.contains("gv"));
     }
 }

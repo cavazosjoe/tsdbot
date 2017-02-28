@@ -5,6 +5,7 @@ import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import org.jukito.JukitoModule;
 import org.jukito.JukitoRunner;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.tsd.tsdbot.model.warzone.*;
@@ -13,14 +14,12 @@ import org.tsd.tsdbot.model.warzone.dao.WarzoneGamePlayerDao;
 import org.tsd.tsdbot.model.warzone.dao.WarzoneNightDao;
 
 import java.util.Date;
-import java.util.UUID;
+import java.util.Random;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by Joe on 11/1/2015.
- */
 @RunWith(JukitoRunner.class)
+@Ignore
 public class WarzoneDatabaseTest {
 
     @Test
@@ -39,7 +38,7 @@ public class WarzoneDatabaseTest {
             assertEquals(d, night.getDate());
 
             WarzoneGame game = new WarzoneGame();
-            game.setId(UUID.randomUUID().toString());
+            game.setId(new Random().nextInt(1000));
             game.setNight(night);
             game.setGametype("Raid");
             game.setMap("Apex");

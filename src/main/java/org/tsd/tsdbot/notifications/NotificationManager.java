@@ -5,6 +5,7 @@ import org.tsd.tsdbot.TSDBot;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public abstract class NotificationManager<T extends NotificationEntity> {
 
@@ -21,39 +22,38 @@ public abstract class NotificationManager<T extends NotificationEntity> {
     }
 
     public abstract NotificationType getNotificationType();
-    protected abstract LinkedList<T> sweep();
+    protected abstract List<T> sweep();
 
-    public LinkedList<T> history() {
+    public List<T> history() {
         return recentNotifications;
     }
 
-    public LinkedList<T> getNotificationByTail(String q) {
-        LinkedList<T> matchedNotifications = new LinkedList<>();
-        for(T notification : recentNotifications) {
-            if(q.equals(notification.getKey()) || notification.getKey().endsWith(q))
-                matchedNotifications.add(notification);
-        }
-        return matchedNotifications;
+    public List<T> getNotificationByTail(String q) {
+        return recentNotifications.stream()
+                .filter(notification -> q.equals(notification.getKey()) || notification.getKey().endsWith(q))
+                .collect(Collectors.toList());
     }
 
     public T getNotificationExact(String key) {
-        for(T notification : recentNotifications) {
-            if(key.equals(notification.getKey())) return notification;
-        }
-        return null;
+        return recentNotifications.stream()
+                .filter(notification -> key.equals(notification.getKey()))
+                .findFirst().orElse(null);
     }
 
     protected void trimHistory() {
-        while(recentNotifications.size() > MAX_HISTORY) recentNotifications.removeLast();
+        while(recentNotifications.size() > MAX_HISTORY) {
+            recentNotifications.removeLast();
+        }
     }
 
     public void sweepAndNotify() {
-        for(NotificationEntity notification : sweep()) {
-            if(!muted) {
-                for(String channel : channels) {
-                    bot.sendMessage(channel, notification.getInline());
-                }
-            }
+        if(!muted) {
+            sweep().stream()
+                    .map(NotificationEntity::getInline)
+                    .forEach(notification -> {
+                        channels.stream()
+                                .forEach(channel -> bot.sendMessage(channel, notification));
+                    });
         }
         muted = false;
     }

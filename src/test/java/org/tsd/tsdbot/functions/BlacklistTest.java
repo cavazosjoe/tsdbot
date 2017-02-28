@@ -53,7 +53,7 @@ public class BlacklistTest {
         sendMessage(bot, notOwner, "s/e/a");
         assertEquals("Schooly_B has been sent to the shadow realm", testBot.getLastMessage(channel));
         sendMessage(bot, owner, "s/e/a");
-        assertEquals("Schooly_B \u0002meant\u0002 to say: s/a/a", testBot.getLastMessage(channel));
+        assertEquals("Schooly_B \u0002meant\u0002 to say: hay thara, this hara's soma taxt", testBot.getLastMessage(channel));
     }
 
     @Before

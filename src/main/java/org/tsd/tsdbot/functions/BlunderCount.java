@@ -5,6 +5,7 @@ import com.google.inject.Singleton;
 import org.jibble.pircbot.User;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.module.Function;
+import org.tsd.tsdbot.util.AuthenticationUtil;
 
 import java.util.Random;
 
@@ -12,12 +13,14 @@ import java.util.Random;
 @Function(initialRegex = "^\\.blunder.*")
 public class BlunderCount extends MainFunctionImpl {
 
-    private Random random;
+    private final Random random;
+    private final AuthenticationUtil authenticationUtil;
 
     @Inject
-    public BlunderCount(TSDBot bot, Random random) {
+    public BlunderCount(TSDBot bot, Random random, AuthenticationUtil authenticationUtil) {
         super(bot);
         this.random = random;
+        this.authenticationUtil = authenticationUtil;
         this.description = "View, manage, and update the blunder count";
         this.usage = "USAGE: .blunder [ count | + ]";
     }
@@ -35,7 +38,8 @@ public class BlunderCount extends MainFunctionImpl {
                 bot.sendMessage(channel, "Current blunder count: " + bot.getBlunderCount());
             } else if(subCmd.equals("+") // vv not correct but help em out anyway vv
                     || (cmdParts.length > 2 && cmdParts[1].equals("count") && cmdParts[2].equals("+"))) {
-                if( (!bot.userHasPrivInChannel(sender, channel, User.Priv.SUPEROP)) && random.nextDouble() < 0.05 ) {
+                if( (!authenticationUtil.userHasPrivInChannel(bot, sender, channel, User.Priv.SUPEROP))
+                        && random.nextDouble() < 0.05 ) {
                     // user is not a super op
                     bot.kick(channel, sender, "R-E-K-T, REKT REKT REKT!");
                     return;

@@ -19,6 +19,7 @@ import org.tsd.tsdbot.PrintoutLibrary;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.config.GoogleConfig;
 import org.tsd.tsdbot.module.Function;
+import org.tsd.tsdbot.util.AuthenticationUtil;
 import org.tsd.tsdbot.util.IRCUtil;
 import org.tsd.tsdbot.util.ImageUtils;
 import org.tsd.tsdbot.util.MiscUtils;
@@ -52,13 +53,14 @@ public class Printout extends MainFunctionImpl {
     private final Random random;
     private final HttpClient httpClient;
     private final PrintoutLibrary printoutLibrary;
+    private final AuthenticationUtil authenticationUtil;
 
     // set of people who can trigger a printout with a deliberate repitition
     // e.g. "TSDBot printout of two bears" -> "Not Computing." -> "Two. Bears." -> [img]
     // ident -> (number of times they've said a line while we're listening for their repeat)
-    private HashMap<String, Integer> notComputing = new HashMap<>();
+    private Map<String, Integer> notComputing = new HashMap<>();
 
-    private HashSet<String> banned = new HashSet<>();
+    private Set<String> banned = new HashSet<>();
 
     @Inject
     public Printout(
@@ -67,6 +69,7 @@ public class Printout extends MainFunctionImpl {
             PrintoutLibrary library,
             GoogleConfig googleConfig,
             HttpClient httpClient,
+            AuthenticationUtil authenticationUtil,
             @Named("serverUrl") String serverUrl) {
         super(bot);
         this.random = random;
@@ -75,6 +78,7 @@ public class Printout extends MainFunctionImpl {
         this.cx = googleConfig.gisCx;
         this.apiKey = googleConfig.apiKey;
         this.httpClient = httpClient;
+        this.authenticationUtil = authenticationUtil;
         this.description = "Get a printout";
         this.usage = "USAGE: TSDBot can you get me a printout of [query]";
     }
@@ -85,7 +89,7 @@ public class Printout extends MainFunctionImpl {
         String q = null;
 
         if(text.startsWith(".printout clear")) {
-            if(bot.userHasPrivInChannel(sender, channel, User.Priv.OP)) {
+            if(authenticationUtil.userHasPrivInChannel(bot, sender, channel, User.Priv.OP)) {
                 banned.clear();
                 bot.sendMessage(channel, "The printout blacklist has been cleared");
             } else {

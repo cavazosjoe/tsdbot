@@ -4,7 +4,10 @@ import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -33,13 +36,9 @@ public class SurgeProtector {
         actionHistory.get(id).add(new Action(id, type));
         double maxPerMinute = maxActionsPerMinute.get(type);
         long historyStart = System.currentTimeMillis();
-        int occurrences = 0;
-        for(Action a : actionHistory.get(id)) {
-            historyStart = Math.min(a.time, historyStart);
-            if(a.actionType.equals(type)) {
-                occurrences++;
-            }
-        }
+        long occurrences = actionHistory.get(id).stream()
+                .filter(action -> action.actionType.equals(type))
+                .count();
 
         if(occurrences >= actionMinimum) {
             long elapsedTimeInMinutes = TimeUnit.MILLISECONDS.toMinutes(System.currentTimeMillis() - historyStart);
@@ -53,15 +52,9 @@ public class SurgeProtector {
     }
 
     private void trimHistory(String id) {
-        long now = System.currentTimeMillis();
         if(actionHistory.containsKey(id)) {
-            Iterator<Action> it = actionHistory.get(id).iterator();
-            while(it.hasNext()) {
-                Action a = it.next();
-                if(now - a.time > actionHistoryLength) {
-                    it.remove();
-                }
-            }
+            long now = System.currentTimeMillis();
+            actionHistory.get(id).removeIf(action -> now - action.time > actionHistoryLength);
         }
     }
 

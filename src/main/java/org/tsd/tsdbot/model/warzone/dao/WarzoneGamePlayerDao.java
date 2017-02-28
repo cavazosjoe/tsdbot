@@ -7,9 +7,6 @@ import org.tsd.tsdbot.model.warzone.WarzoneGamePlayer;
 
 import java.sql.SQLException;
 
-/**
- * Created by Joe on 10/31/2015.
- */
 public class WarzoneGamePlayerDao extends BaseDaoImpl<WarzoneGamePlayer, Void> {
 
     public WarzoneGamePlayerDao(ConnectionSource connectionSource) throws SQLException {
@@ -19,7 +16,11 @@ public class WarzoneGamePlayerDao extends BaseDaoImpl<WarzoneGamePlayer, Void> {
     @Override
     public int delete(WarzoneGamePlayer data) throws SQLException {
         DeleteBuilder<WarzoneGamePlayer, Void> deleteBuilder = deleteBuilder();
-        deleteBuilder.where().eq("warzoneGameId", data.getGame().getId()).and().eq("gamertag", data.getGamertag());
+        deleteBuilder
+                .where()
+                .eq("warzoneGameId", data.getGame().getGameId())
+                .and()
+                .eq("gamertag", data.getGamertag());
         return deleteBuilder.delete();
     }
 }

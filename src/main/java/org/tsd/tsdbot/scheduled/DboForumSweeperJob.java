@@ -25,6 +25,7 @@ import java.text.SimpleDateFormat;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 
 public class DboForumSweeperJob implements Job {
 
@@ -74,42 +75,46 @@ public class DboForumSweeperJob implements Job {
         Document rssDoc = rssPage.getXmlDocument();
         NodeList nlist = rssDoc.getElementsByTagName("item");
 
-        for(int i=0 ; i < nlist.getLength() ; i++) {
-            Node n = nlist.item(i);
-            if(n.getNodeType() == Node.ELEMENT_NODE) {
-                DeferredElementNSImpl e = (DeferredElementNSImpl)n;
-                processItem(e, postDao, pullThreads);
-            }
-        }
+        IntStream.range(0, nlist.getLength())
+                .mapToObj(nlist::item)
+                .filter(node -> node.getNodeType() == Node.ELEMENT_NODE)
+                .forEach(node -> {
+                    DeferredElementNSImpl e = (DeferredElementNSImpl)node;
+                    processItem(e, postDao, pullThreads);
+                });
     }
 
-    private void processItem(DeferredElementNSImpl e, Dao<Post, Integer> postDao, boolean pullThread) throws Exception {
-        int postId = getPostNumFromLink(getField(e, "guid"));
+    private void processItem(DeferredElementNSImpl e, Dao<Post, Integer> postDao, boolean pullThread) {
+        try {
+            int postId = getPostNumFromLink(getField(e, "guid"));
 
-        Post post = postDao.queryForId(postId);
-        boolean newPost = false;
-        if(post != null) {
-            logger.info("Post {} already exists in database", postId);
-        } else {
-            logger.info("Post {} is new, adding...", postId);
-            post = new Post(postId);
-            newPost = true;
-        }
+            Post post = postDao.queryForId(postId);
+            boolean newPost = false;
+            if (post != null) {
+                logger.info("Post {} already exists in database", postId);
+            } else {
+                logger.info("Post {} is new, adding...", postId);
+                post = new Post(postId);
+                newPost = true;
+            }
 
-        post.setAuthor(getField(e, "dc:creator"));
-        post.setSubject(getField(e, "title"));
-        post.setDate(dboSdf.parse(getField(e, "pubDate")));
-        post.setBody(HtmlSanitizer.sanitize(getField(e, "content:encoded")));
+            post.setAuthor(getField(e, "dc:creator"));
+            post.setSubject(getField(e, "title"));
+            post.setDate(dboSdf.parse(getField(e, "pubDate")));
+            post.setBody(HtmlSanitizer.sanitize(getField(e, "content:encoded")));
 
-        postDao.createOrUpdate(post);
+            postDao.createOrUpdate(post);
 
-        if(newPost) {
-            processMarkov(post);
-        }
+            if (newPost) {
+                processMarkov(post);
+            }
 
-        if(pullThread) {
-            String threadUri = getField(e, "wfw:commentRss");
-            processPage(threadUri, postDao, false);
+            if (pullThread) {
+                String threadUri = getField(e, "wfw:commentRss");
+                processPage(threadUri, postDao, false);
+            }
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
         }
     }
 

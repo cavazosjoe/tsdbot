@@ -12,6 +12,7 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.annotations.XYAnnotation;
 import org.jfree.chart.annotations.XYPointerAnnotation;
 import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.NumberAxis;
@@ -99,17 +100,16 @@ public class HustleStats implements Stats {
             responseString = EntityUtils.toString(response.getEntity());
 
             JSONObject json = new JSONObject(responseString);
-            for(String key : json.keySet()) {
-                if(key.equals("result")) {
-                    double confidence = Double.parseDouble(json.getJSONObject(key).getString("confidence"));
-                    Sentiment sentiment = Sentiment.fromString(json.getJSONObject(key).getString("sentiment"));
-                    DataPoint dataPoint = new DataPoint(message, sentiment, confidence);
-                    log.debug("Analysis result: {}, Confidence {} -> Score = {}", new Object[]{sentiment, confidence, dataPoint.getScore()});
-                    hustleBuffer.add(dataPoint);
-                    dataPoint.newHhr = calculateCurrentHhr();
-                    log.debug("New HHR: {}", dataPoint.newHhr);
-                }
-            }
+            json.keySet().parallelStream()
+                    .filter(key -> key.equals("result"))
+                    .map(key -> getDataPointFromKey(message, json, key))
+                    .forEach(dataPoint -> {
+                        log.debug("Analysis result: {}, Confidence {} -> Score = {}",
+                                new Object[]{dataPoint.sentiment, dataPoint.confidence, dataPoint.getScore()});
+                        hustleBuffer.add(dataPoint);
+                        dataPoint.newHhr = calculateCurrentHhr();
+                        log.debug("New HHR: {}", dataPoint.newHhr);
+                    });
 
             EntityUtils.consumeQuietly(response.getEntity());
 
@@ -119,13 +119,22 @@ public class HustleStats implements Stats {
 
         } catch (Exception e) {
             log.error("Error retrieving text sentiment, response={}", responseString, e);
-            if(!error) //TODO: replace hardcoded target with something better that doesn't annoy the chat
+            if(!error){
+                //TODO: replace hardcoded target with something better that doesn't annoy the chat
                 bot.sendMessage("Schooly_D", "(Error calculating hustle quotient, please check logs)");
+            }
             error = true;
         } finally {
-            if(post != null)
+            if(post != null) {
                 post.releaseConnection();
+            }
         }
+    }
+
+    private static DataPoint getDataPointFromKey(String originalMessage, JSONObject json, String key) {
+        double confidence = Double.parseDouble(json.getJSONObject(key).getString("confidence"));
+        Sentiment sentiment = Sentiment.fromString(json.getJSONObject(key).getString("sentiment"));
+        return new DataPoint(originalMessage, sentiment, confidence);
     }
 
     @Override
@@ -171,26 +180,27 @@ public class HustleStats implements Stats {
         renderer.setSeriesShape(0, ShapeUtilities.createDiamond(5));
         renderer.setSeriesShapesVisible(0, true);
 
-        int limit = 5;
-        int i = 0;
-        for(DataPoint dp : orderedByScore.descendingSet()) {
-            if(i++ > limit)
-                break;
-            log.debug("Adding annotation, hhr = {}, score = {}", dp.newHhr, dp.getScore());
-            TimeSeriesDataItem importantItem = timeSeries.getDataItem(new Second(dp.date));
-            double x = importantItem.getPeriod().getFirstMillisecond();
-            double y = importantItem.getValue().doubleValue();
-            double r = (y > mid) ? (Math.PI / 2) : (3 * Math.PI / 2);
-            String s = trimMessage(dp.text);
-            XYPointerAnnotation a = new XYPointerAnnotation(s, x, y, r);
-            a.setLabelOffset(10);
-            a.setFont(new Font("SansSerif", Font.PLAIN, 12));
-            a.setOutlineStroke(new BasicStroke(5));
-            plot.addAnnotation(a);
-        }
+        orderedByScore.descendingSet().stream()
+                .limit(5)
+                .map(dataPoint -> getAnnotationFromDataPoint(dataPoint, timeSeries, mid))
+                .forEach(plot::addAnnotation);
 
         this.chart = chart;
         log.debug("Hustle chart generated successfully");
+    }
+
+    private static XYAnnotation getAnnotationFromDataPoint(DataPoint dp, TimeSeries timeSeries, double mid) {
+        log.debug("Adding annotation, hhr = {}, score = {}", dp.newHhr, dp.getScore());
+        TimeSeriesDataItem importantItem = timeSeries.getDataItem(new Second(dp.date));
+        double x = importantItem.getPeriod().getFirstMillisecond();
+        double y = importantItem.getValue().doubleValue();
+        double r = (y > mid) ? (Math.PI / 2) : (3 * Math.PI / 2);
+        String s = trimMessage(dp.text);
+        XYPointerAnnotation a = new XYPointerAnnotation(s, x, y, r);
+        a.setLabelOffset(10);
+        a.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        a.setOutlineStroke(new BasicStroke(5));
+        return a;
     }
 
     private double calculateCurrentHhr() {
@@ -210,7 +220,7 @@ public class HustleStats implements Stats {
         return hustle/hate;
     }
 
-    private String trimMessage(String text) {
+    private static String trimMessage(String text) {
         int maxChars = 50;
         String[] words = text.split("\\s+");
         StringBuilder sb = new StringBuilder();
@@ -243,7 +253,7 @@ public class HustleStats implements Stats {
         }
     }
 
-    class DataPoint {
+    static class DataPoint {
 
         public String text;
         public Sentiment sentiment;

@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,9 +33,9 @@ public class FfmpegUtils {
         Matcher m = durationPattern.matcher(durationString);
         long duration = 0;
         while(m.find()) {
-            duration += (Integer.parseInt(m.group(1)) * 60 * 60 * 1000);
-            duration += (Integer.parseInt(m.group(2)) * 60 * 1000);
-            duration += (Integer.parseInt(m.group(3)) * 1000);
+            duration += TimeUnit.HOURS.toMillis(Long.parseLong(m.group(1)));
+            duration += TimeUnit.MINUTES.toMillis(Long.parseLong(m.group(2)));
+            duration += TimeUnit.SECONDS.toMillis(Long.parseLong(m.group(3)));
         }
         return duration;
     }

@@ -42,6 +42,7 @@ public class JdbcConnectionProvider implements Provider<JdbcConnectionSource> {
                 Reflections modelReflect = new Reflections("org.tsd.tsdbot.model");
                 Set<Class<?>> tables = modelReflect.getTypesAnnotatedWith(DatabaseTable.class);
                 for (Class clazz : tables) {
+                    logger.info("Creating table {}", clazz);
                     TableUtils.createTableIfNotExists(jdbcConnectionSource, clazz);
                 }
                 tablesLoaded = true;

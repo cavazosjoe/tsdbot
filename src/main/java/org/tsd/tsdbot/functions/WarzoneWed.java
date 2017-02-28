@@ -12,10 +12,12 @@ import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.JdbcConnectionProvider;
 import org.tsd.tsdbot.model.warzone.WarzoneRegular;
 import org.tsd.tsdbot.module.Function;
+import org.tsd.tsdbot.util.AuthenticationUtil;
 
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -29,22 +31,24 @@ public class WarzoneWed extends MainFunctionImpl {
     private static final int startHour = 17; // 5PM Pacific
 
     private final JdbcConnectionProvider connectionProvider;
+    private final AuthenticationUtil authenticationUtil;
 
     // feed in game links one at a time, then process
     private final HashSet<String> gameIds = new HashSet<>();
 
     @Inject
-    public WarzoneWed(TSDBot bot, JdbcConnectionProvider connectionProvider) {
+    public WarzoneWed(TSDBot bot, JdbcConnectionProvider connectionProvider, AuthenticationUtil authenticationUtil) {
         super(bot);
         this.connectionProvider = connectionProvider;
         this.description = "They said it couldn't be done. They were wrong, mostly.";
         this.usage = "USAGE: .ww link1 [link2 link 3...]";
+        this.authenticationUtil = authenticationUtil;
     }
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
 
-        if(!bot.userHasGlobalPriv(sender, User.Priv.OWNER)) {
+        if(!authenticationUtil.userHasGlobalPriv(bot, sender, User.Priv.OWNER)) {
             bot.sendMessage(channel, "Only owners can use that");
             return;
         }
@@ -140,8 +144,8 @@ public class WarzoneWed extends MainFunctionImpl {
             gt = tokens[0].trim();
             handle = tokens[1].trim();
 
-            regular = regularDao.queryForId(gt);
-            if(regular == null) {
+            List<WarzoneRegular> matchedRegulars = regularDao.queryForEq("gamertag", gt);
+            if(matchedRegulars.isEmpty()) {
                 log.info("Did not find regular with GT {} in database, creating...", gt);
                 regular = new WarzoneRegular();
                 regular.setGamertag(gt);
@@ -150,6 +154,7 @@ public class WarzoneWed extends MainFunctionImpl {
                 result.addCreated();
             } else {
                 log.info("Found regular with GT {} in database, updating handle to {}...", gt, handle);
+                regular = matchedRegulars.get(0);
                 regular.setForumHandle(handle);
                 regularDao.update(regular);
                 result.addUpdated();

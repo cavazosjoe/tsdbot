@@ -16,7 +16,9 @@ import java.util.Random;
 @Function(initialRegex = "^\\.movie")
 public class MovieTitle extends MainFunctionImpl {
 
-    private static final String titleFormat = "%s vs %s: %s";
+    private static final String versusFormat = "%s vs %s: %s";
+    private static final String buddyFormat = "%s and %s: %s";
+    private static final String biographyFormat = "\"%s\": The %s Story";
 
     private final HistoryBuff historyBuff;
     private final Random random;
@@ -35,6 +37,30 @@ public class MovieTitle extends MainFunctionImpl {
     @Override
     public void run(String channel, String sender, String ident, String text) {
 
+        MovieType type = MovieType.values()[random.nextInt(MovieType.values().length)];
+        String title = null;
+        switch (type) {
+            case VERSUS:
+            case BUDDY: {
+                title = getCoupleTitle(channel);
+                break;
+            }
+            case BIOGRAPHY: {
+                title = getBiographyTitle(channel);
+                break;
+            }
+        }
+
+        bot.sendMessage(channel, title == null ? "Show's over, fucko" : title);
+    }
+
+    private String getBiographyTitle(String channel) {
+        String user = getRandomNick(channel);
+        String title = getRandomChatMessage(channel);
+        return String.format(biographyFormat, title, user);
+    }
+
+    private String getCoupleTitle(String channel) {
         String item1 = random.nextBoolean() ?
                 standardItems[random.nextInt(standardItems.length)] : getRandomNick(channel);
 
@@ -43,38 +69,45 @@ public class MovieTitle extends MainFunctionImpl {
 
         String subtitle = null;
         if(random.nextBoolean()) {
-            HistoryBuff.Message chosen = historyBuff.getRandomFilteredMessage(
-                    channel,
-                    null,
-                    MessageFilter
-                            .create()
-                            .addFilter(new NoCommandsStrategy())
-                            .addFilter(new NoBotsStrategy())
-                            .addFilter(new LengthStrategy(5, 30))
-                            .addFilter(new NoURLsStrategy())
-            );
-
-            if(chosen != null) {
-                String[] words = chosen.text.split("\\s+");
-                StringBuilder sb = new StringBuilder();
-                for(String w : words) {
-                    if(sb.length() > 0) {
-                        sb.append(" ");
-                    }
-                    sb.append(w.substring(0, 1).toUpperCase());
-                    if(w.length() > 1) {
-                        sb.append(w.substring(1));
-                    }
-                }
-                subtitle = sb.toString();
-            }
+            subtitle = getRandomChatMessage(channel);
         }
 
         if(subtitle == null) {
             subtitle = standardSubtitles[random.nextInt(standardSubtitles.length)];
         }
 
-        bot.sendMessage(channel, String.format(titleFormat, item1, item2, subtitle));
+        String formatToUse = random.nextBoolean() ? versusFormat : buddyFormat;
+        return String.format(formatToUse, item1, item2, subtitle);
+    }
+
+    private String getRandomChatMessage(String channel) {
+        HistoryBuff.Message chosen = historyBuff.getRandomFilteredMessage(
+                channel,
+                null,
+                MessageFilter
+                        .create()
+                        .addFilter(new NoCommandsStrategy())
+                        .addFilter(new NoBotsStrategy())
+                        .addFilter(new LengthStrategy(5, 30))
+                        .addFilter(new NoURLsStrategy())
+        );
+
+        if(chosen != null) {
+            String[] words = chosen.text.split("\\s+");
+            StringBuilder sb = new StringBuilder();
+            for(String w : words) {
+                if(sb.length() > 0) {
+                    sb.append(" ");
+                }
+                sb.append(w.substring(0, 1).toUpperCase());
+                if(w.length() > 1) {
+                    sb.append(w.substring(1));
+                }
+            }
+            return sb.toString();
+        }
+
+        return null;
     }
 
     private String getRandomNick(String channel) {
@@ -91,10 +124,15 @@ public class MovieTitle extends MainFunctionImpl {
             if(scrambled.equals(userNick)) {
                 users.remove(user);
             }
-
         } while(userNick.equals(scrambled));
 
         return scrambled;
+    }
+
+    enum MovieType {
+        VERSUS,
+        BUDDY,
+        BIOGRAPHY
     }
 
     private static final String[] standardItems = {

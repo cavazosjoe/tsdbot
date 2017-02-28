@@ -11,6 +11,7 @@ import org.tsd.tsdbot.module.Function;
 import org.tsd.tsdbot.tsdtv.*;
 import org.tsd.tsdbot.tsdtv.model.TSDTVEpisode;
 import org.tsd.tsdbot.tsdtv.model.TSDTVShow;
+import org.tsd.tsdbot.util.AuthenticationUtil;
 import org.tsd.tsdbot.util.SurgeProtector;
 
 import javax.naming.AuthenticationException;
@@ -26,12 +27,12 @@ public class TSDTVFunction extends MainFunctionImpl {
 
     private static final Logger logger = LoggerFactory.getLogger(TSDTVFunction.class);
 
-    private TSDTV tsdtv;
-    private TSDTVLibrary library;
-    private TSDTVFileProcessor fileProcessor;
-
-    private String serverUrl;
-    private Random random;
+    private final TSDTV tsdtv;
+    private final TSDTVLibrary library;
+    private final TSDTVFileProcessor fileProcessor;
+    private final String serverUrl;
+    private final Random random;
+    private final AuthenticationUtil authenticationUtil;
 
     @Inject
     public TSDTVFunction(
@@ -40,6 +41,7 @@ public class TSDTVFunction extends MainFunctionImpl {
             TSDTVLibrary library,
             TSDTVFileProcessor fileProcessor,
             Random random,
+            AuthenticationUtil authenticationUtil,
             @Named("serverUrl") String serverUrl) {
         super(bot);
         this.description = "The TSDTV Streaming Entertainment Value Service";
@@ -49,6 +51,7 @@ public class TSDTVFunction extends MainFunctionImpl {
         this.serverUrl = serverUrl;
         this.random = random;
         this.fileProcessor = fileProcessor;
+        this.authenticationUtil = authenticationUtil;
     }
 
     @Override
@@ -61,277 +64,270 @@ public class TSDTVFunction extends MainFunctionImpl {
         }
 
         User user = bot.getUserFromNick(channel, sender);
-        boolean isOp = bot.userIsOwner(sender);
+        boolean isOp = authenticationUtil.userIsOwner(sender);
         String subCmd = cmdParts[1];
 
-        if(subCmd.equals("catalog")) {
-            bot.sendMessage(channel, serverUrl + "/tsdtv");
-        } else if(subCmd.equals("replay")) {
+        switch (subCmd) {
+            case "catalog":
+                bot.sendMessage(channel, serverUrl + "/tsdtv");
+                break;
 
-            if(cmdParts.length < 3) {
-                bot.sendMessage(channel, usage);
-                return;
-            }
-
-            tsdtv.prepareBlockReplay(channel, cmdParts[2]);
-
-        } else if(subCmd.equals("set")) {
-
-            if(!isOp) {
-                bot.sendMessage(channel, "Only ops can use that");
-                return;
-            }
-
-            if(cmdParts.length < 4) {
-                bot.sendMessage(channel, "USAGE: .tsdtv set <show> <episode_number>");
-                return;
-            }
-
-            TSDTVShow show;
-            try {
-                show = library.getShow(cmdParts[2]);
-            } catch (ShowNotFoundException snfe) {
-                bot.sendMessage(channel, "Could not find show matching query \"" + cmdParts[2] + "\"");
-                return;
-            }
-
-            int episodeNumber = Integer.parseInt(cmdParts[3]);
-            if(episodeNumber < 1) {
-                bot.sendMessage(channel, "Episode number must be greater than 0");
-                return;
-            }
-
-            try {
-                TSDTVEpisode episode = show.getEpisode(episodeNumber);
-                tsdtv.updateCurrentEpisode(show, episode);
-                bot.sendMessage(channel, show.getPrettyName() + "'s next episode is now " + episodeNumber
-                        + " (" + episode.getPrettyName() + ")");
-            } catch (EpisodeNotFoundException enfe) {
-                bot.sendMessage(channel, cmdParts[3] + " is not a valid episode number");
-            } catch (SQLException sqle) {
-                bot.sendMessage(channel, "Error setting episode number, please check logs");
-            }
-
-        } else if(subCmd.equals("analyze")) {
-
-            if(!isOp) {
-                bot.sendMessage(channel, "Only ops can use that");
-                return;
-            }
-
-            if(cmdParts.length < 3) {
-                bot.sendMessage(channel, "USAGE: .tsdtv analyze <raw-directory>");
-                return;
-            }
-
-            fileProcessor.analyzeDirectory(cmdParts[2], channel);
-
-        } else if(subCmd.equals("process")) {
-
-            if(!isOp) {
-                bot.sendMessage(channel, "Only ops can use that");
-                return;
-            }
-
-            // .tsdtv process -input korra4 -output Legend_of_Korra_S4 -type dub|sub|manual
-            if(cmdParts.length < 8) {
-                bot.sendMessage(channel, "USAGE: .tsdtv process -input <analysis_id> -output <output_dir> -type dub|sub|manual");
-                return;
-            }
-
-            String analysisId = null;
-            String outputDir = null;
-            TSDTVFileProcessor.ProcessType type = null;
-
-            for(int i=2 ; i < cmdParts.length ; i++) {
-                String arg = cmdParts[i];
-                if("-input".equals(arg)) {
-                    i++;
-                    analysisId = cmdParts[i];
-                } else if("-output".equals(arg)) {
-                    i++;
-                    outputDir = cmdParts[i];
-                } else if("-type".equals(arg)) {
-                    i++;
-                    type = TSDTVFileProcessor.ProcessType.fromString(cmdParts[i]);
+            case "replay":
+                if (cmdParts.length < 3) {
+                    bot.sendMessage(channel, usage);
+                    return;
                 }
-            }
+                tsdtv.prepareBlockReplay(channel, cmdParts[2]);
+                break;
 
-            if(analysisId == null)
-                bot.sendMessage(channel, "Could not parse analysis ID");
-            else if(outputDir == null)
-                bot.sendMessage(channel, "Could not parse output directory");
-            else if(type == null)
-                bot.sendMessage(channel, "Could not parse process type");
-            else try {
-                fileProcessor.process(channel, analysisId, outputDir, type);
-            } catch (Exception e) {
-                bot.sendMessage(channel, "ERROR: " + e.getMessage());
-            }
+            case "set":
 
-        } else if(subCmd.equals("play")) {
+                if (!isOp) {
+                    bot.sendMessage(channel, "Only ops can use that");
+                    return;
+                }
 
-            if(cmdParts.length != 4) {
-                bot.sendMessage(channel, "USAGE: .tsdtv play <show> [ <episode> | random ]");
-                return;
-            }
+                if (cmdParts.length < 4) {
+                    bot.sendMessage(channel, "USAGE: .tsdtv set <show> <episode_number>");
+                    return;
+                }
 
-            try {
-                TSDTVShow show = library.getShow(cmdParts[2]);
-                TSDTVEpisode episode = (TSDTVConstants.RANDOM_QUERY.equals(cmdParts[3])) ?
-                        show.getRandomEpisode(random) : show.getEpisode(cmdParts[3]);
                 try {
-                    if (!tsdtv.playFromChat(episode, user)) {
-                        bot.sendMessage(channel, "There is already a stream running. Your show has been enqueued");
-                    } else {
-                        String msg = String.format("You got it, chief. Now playing: \"%s - %s\"",
-                                episode.getShow().getPrettyName(), episode.getPrettyName());
-                        bot.sendMessage(channel, msg);
+                    TSDTVShow show = library.getShow(cmdParts[2]);
+                    int episodeNumber = Integer.parseInt(cmdParts[3]);
+                    if (episodeNumber < 1) {
+                        bot.sendMessage(channel, "Episode number must be greater than 0");
+                        return;
                     }
-                } catch (StreamLockedException sle) {
-                    bot.sendMessage(channel, "The stream is currently locked down");
+                    TSDTVEpisode episode = show.getEpisode(episodeNumber);
+                    tsdtv.updateCurrentEpisode(show, episode);
+                    bot.sendMessage(channel, show.getPrettyName() + "'s next episode is now " + episodeNumber
+                            + " (" + episode.getPrettyName() + ")");
+                } catch (ShowNotFoundException snfe) {
+                    bot.sendMessage(channel, "Could not find show matching query \"" + cmdParts[2] + "\"");
+                } catch (EpisodeNotFoundException enfe) {
+                    bot.sendMessage(channel, cmdParts[3] + " is not a valid episode number");
+                } catch (SQLException sqle) {
+                    bot.sendMessage(channel, "Error setting episode number, please check logs");
                 }
-            } catch (SurgeProtector.FloodException fe){
-                bot.sendMessage(channel, "Flood detected, blacklisting...");
-                bot.addToBlacklist(user);
-            } catch (Exception e) {
-                logger.error("Error playing from chat", e);
-                bot.sendMessage(channel, "Error: " + e.getMessage());
-            }
+                break;
 
-        } else if(subCmd.equals("kill")) {
+            case "analyze":
+                if (!isOp) {
+                    bot.sendMessage(channel, "Only ops can use that");
+                    return;
+                }
+                if (cmdParts.length < 3) {
+                    bot.sendMessage(channel, "USAGE: .tsdtv analyze <raw-directory>");
+                    return;
+                }
+                fileProcessor.analyzeDirectory(cmdParts[2], channel);
+                break;
 
-            try {
-                if (cmdParts.length == 3 && cmdParts[2].equals("all")) { // kill everything
-                    try {
-                        tsdtv.killAll(new TSDTVChatUser(user));
-                        bot.sendMessage(channel, "The stream has been nuked");
-                    } catch (AuthenticationException e) {
-                        bot.sendMessage(channel, "Only ops can use that");
-                    }
-                } else { // just kill whatever's playing now
-                    try {
-                        tsdtv.kill(new TSDTVChatUser(user));
-                        bot.sendMessage(channel, "The current video has been killed");
-                    } catch (AuthenticationException e) {
-                        bot.sendMessage(channel, "You don't have permission to end the current video");
+            case "process":
+                if (!isOp) {
+                    bot.sendMessage(channel, "Only ops can use that");
+                    return;
+                }
+                // .tsdtv process -input korra4 -output Legend_of_Korra_S4 -type dub|sub|manual
+                if (cmdParts.length < 8) {
+                    bot.sendMessage(channel, "USAGE: .tsdtv process -input <analysis_id> -output <output_dir> -type dub|sub|manual");
+                    return;
+                }
+
+                String analysisId = null;
+                String outputDir = null;
+                TSDTVFileProcessor.ProcessType type = null;
+                for (int i = 2; i < cmdParts.length; i++) {
+                    String arg = cmdParts[i];
+                    if ("-input".equals(arg)) {
+                        i++;
+                        analysisId = cmdParts[i];
+                    } else if ("-output".equals(arg)) {
+                        i++;
+                        outputDir = cmdParts[i];
+                    } else if ("-type".equals(arg)) {
+                        i++;
+                        type = TSDTVFileProcessor.ProcessType.fromString(cmdParts[i]);
                     }
                 }
-            } catch (NoStreamRunningException nsre) {
-                bot.sendMessage(channel, "There's no stream running");
-            }
 
-        } else if(subCmd.equals("pause")) {
+                if (analysisId == null) {
+                    bot.sendMessage(channel, "Could not parse analysis ID");
+                } else if (outputDir == null) {
+                    bot.sendMessage(channel, "Could not parse output directory");
+                } else if (type == null) {
+                    bot.sendMessage(channel, "Could not parse process type");
+                } else {
+                    try {
+                        fileProcessor.process(channel, analysisId, outputDir, type);
+                    } catch (Exception e) {
+                        bot.sendMessage(channel, "ERROR: " + e.getMessage());
+                    }
+                }
+                break;
 
-            try {
+            case "play":
+                if (cmdParts.length != 4) {
+                    bot.sendMessage(channel, "USAGE: .tsdtv play <show> [ <episode> | random ]");
+                    return;
+                }
+                try {
+                    TSDTVShow show = library.getShow(cmdParts[2]);
+                    TSDTVEpisode episode = (TSDTVConstants.RANDOM_QUERY.equals(cmdParts[3])) ?
+                            show.getRandomEpisode(random) : show.getEpisode(cmdParts[3]);
+                    try {
+                        if (!tsdtv.playFromChat(episode, user)) {
+                            bot.sendMessage(channel, "There is already a stream running. Your show has been enqueued");
+                        } else {
+                            String msg = String.format("You got it, chief. Now playing: \"%s - %s\"",
+                                    episode.getShow().getPrettyName(), episode.getPrettyName());
+                            bot.sendMessage(channel, msg);
+                        }
+                    } catch (StreamLockedException sle) {
+                        bot.sendMessage(channel, "The stream is currently locked down");
+                    }
+                } catch (SurgeProtector.FloodException fe) {
+                    bot.sendMessage(channel, "Flood detected, blacklisting...");
+                    bot.addToBlacklist(user);
+                } catch (Exception e) {
+                    logger.error("Error playing from chat", e);
+                    bot.sendMessage(channel, "Error: " + e.getMessage());
+                }
+                break;
+
+            case "kill":
+                try {
+                    if (cmdParts.length == 3 && cmdParts[2].equals("all")) { // kill everything
+                        try {
+                            tsdtv.killAll(new TSDTVChatUser(user));
+                            bot.sendMessage(channel, "The stream has been nuked");
+                        } catch (AuthenticationException e) {
+                            bot.sendMessage(channel, "Only ops can use that");
+                        }
+                    } else { // just kill whatever's playing now
+                        try {
+                            tsdtv.kill(new TSDTVChatUser(user));
+                            bot.sendMessage(channel, "The current video has been killed");
+                        } catch (AuthenticationException e) {
+                            bot.sendMessage(channel, "You don't have permission to end the current video");
+                        }
+                    }
+                } catch (NoStreamRunningException nsre) {
+                    bot.sendMessage(channel, "There's no stream running");
+                }
+                break;
+
+            case "pause":
                 try {
                     tsdtv.pause(new TSDTVChatUser(user));
                     bot.sendMessage(channel, "The stream has been paused. \".tsdtv unpause\" to resume");
                 } catch (AuthenticationException e) {
                     bot.sendMessage(channel, "You don't have permission to pause the current stream");
+                }catch (NoStreamRunningException nsre) {
+                    bot.sendMessage(channel, "There's no stream running");
+                } catch (IllegalStateException ise) {
+                    bot.sendMessage(channel, "Error: " + ise.getMessage());
                 }
-            } catch (NoStreamRunningException nsre) {
-                bot.sendMessage(channel, "There's no stream running");
-            } catch (IllegalStateException ise) {
-                bot.sendMessage(channel, "Error: " + ise.getMessage());
-            }
+                break;
 
-        } else if(subCmd.equals("unpause") || subCmd.equals("resume")) {
-
-            try {
+            case "unpause":
+            case "resume":
                 try {
                     tsdtv.unpause(new TSDTVChatUser(user));
                     bot.sendMessage(channel, "The stream has been resumed");
                 } catch (AuthenticationException e) {
                     bot.sendMessage(channel, "You don't have permission to resume the current stream");
+                }catch (NoStreamRunningException nsre) {
+                    bot.sendMessage(channel, "There's no stream running");
+                } catch (IllegalStateException ise) {
+                    bot.sendMessage(channel, "Error: " + ise.getMessage());
                 }
-            } catch (NoStreamRunningException nsre) {
-                bot.sendMessage(channel, "There's no stream running");
-            } catch (IllegalStateException ise) {
-                bot.sendMessage(channel, "Error: " + ise.getMessage());
-            }
+                break;
 
-        } else if(subCmd.equals("lock") || subCmd.equals("unlock")) {
-
-            if(!user.hasPriv(User.Priv.OP)) {
-                bot.sendMessage(channel, "Only ops can use that");
-                return;
-            }
-
-            if(subCmd.equals("unlock")) {
-                tsdtv.setLockdownMode(LockdownMode.open);
-                bot.sendMessage(channel, "Unlocking stream ... [ " + color("UNLOCKED", IRCColor.green) + " ]");
-            } else {
-                if(cmdParts.length == 3 && cmdParts[2].equals("all")) {
-                    tsdtv.setLockdownMode(LockdownMode.locked);
-                    bot.sendMessage(channel, "Locking stream ... [ " + color("LOCKED", IRCColor.red) + " ] ");
+            case "lock":
+            case "unlock":
+                if (!user.hasPriv(User.Priv.OP)) {
+                    bot.sendMessage(channel, "Only ops can use that");
+                    return;
+                }
+                if (subCmd.equals("unlock")) {
+                    tsdtv.setLockdownMode(LockdownMode.open);
+                    bot.sendMessage(channel, "Unlocking stream ... [ " + color("UNLOCKED", IRCColor.green) + " ]");
                 } else {
-                    tsdtv.setLockdownMode(LockdownMode.chat_only);
-                    bot.sendMessage(channel, "Web access: [" + color("LOCKED", IRCColor.red) + "] | Chat access: [" + color("UNLOCKED", IRCColor.green) + "]");
+                    if (cmdParts.length == 3 && cmdParts[2].equals("all")) {
+                        tsdtv.setLockdownMode(LockdownMode.locked);
+                        bot.sendMessage(channel, "Locking stream ... [ " + color("LOCKED", IRCColor.red) + " ] ");
+                    } else {
+                        tsdtv.setLockdownMode(LockdownMode.chat_only);
+                        bot.sendMessage(channel, "Web access: [" + color("LOCKED", IRCColor.red) + "] | Chat access: [" + color("UNLOCKED", IRCColor.green) + "]");
+                    }
                 }
-            }
+                break;
 
-        } else if(subCmd.equals("reload")) {
-
-            if(!isOp) {
-                bot.sendMessage(channel, "Only ops can use that");
-                return;
-            }
-
-            try{
-                tsdtv.initDB();
-                logger.info("");
-            } catch (SQLException e) {
-                logger.error("Error re-initializing TSDTV DB", e);
-                bot.sendMessage(channel, "Error re-initializing TSDTV DB");
-            }
-            tsdtv.buildSchedule();
-            bot.sendMessage(channel, "The schedule has been reloaded");
-
-        } else if(subCmd.equals("schedule")) {
-
-            if(cmdParts.length > 2 && cmdParts[2].equalsIgnoreCase("all"))
-                tsdtv.printSchedule(channel, false);
-            else
-                tsdtv.printSchedule(channel, true);
-
-        } else if(subCmd.equals("viewers")) {
-
-            int count = tsdtv.getViewerCount();
-            String msg;
-            switch (count) {
-                case -1: msg = "An error occurred getting the viewer count"; break;
-                case 1: msg = "There is 1 viewer watching the stream"; break;
-                default: msg = "There are " + count + " viewers watching the stream"; break;
-            }
-            if(!tsdtv.isRunning()) {
-                msg += ". But there isn't a stream running";
-            }
-            bot.sendMessage(channel, msg);
-
-        } else if(subCmd.equals("current")) {
-
-            // .tsdtv current ippo
-            if(cmdParts.length > 2) {
+            case "reload":
+                if (!isOp) {
+                    bot.sendMessage(channel, "Only ops can use that");
+                    return;
+                }
                 try {
-                    ShowInfo result = tsdtv.getPrevAndNextEpisodeNums(cmdParts[2]);
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("The next episode of ")
-                            .append(result.name)
-                            .append(" will be ")
-                            .append(result.nextEpisode)
-                            .append(". The previously watched episode was ")
-                            .append(result.previousEpisode)
-                            .append(".");
-                    bot.sendMessage(channel, sb.toString());
-                } catch (Exception e) {
-                    bot.sendMessage(channel, "Error: " + e.getMessage());
+                    tsdtv.initDB();
+                    logger.info("");
+                } catch (SQLException e) {
+                    logger.error("Error re-initializing TSDTV DB", e);
+                    bot.sendMessage(channel, "Error re-initializing TSDTV DB");
                 }
-            } else {
-                bot.sendMessage(channel, usage);
-            }
-        } else if(subCmd.equals("links")) {
-            bot.sendMessage(channel, tsdtv.getLinks(true));
+                tsdtv.buildSchedule();
+                bot.sendMessage(channel, "The schedule has been reloaded");
+                break;
+
+            case "schedule":
+                if (cmdParts.length > 2 && cmdParts[2].equalsIgnoreCase("all")) {
+                    tsdtv.printSchedule(channel, false);
+                } else {
+                    tsdtv.printSchedule(channel, true);
+                }
+                break;
+
+            case "viewers":
+                int count = tsdtv.getViewerCount();
+                String msg;
+                switch (count) {
+                    case -1:
+                        msg = "An error occurred getting the viewer count";
+                        break;
+                    case 1:
+                        msg = "There is 1 viewer watching the stream";
+                        break;
+                    default:
+                        msg = "There are " + count + " viewers watching the stream";
+                        break;
+                }
+                if (!tsdtv.isRunning()) {
+                    msg += ". But there isn't a stream running";
+                }
+                bot.sendMessage(channel, msg);
+                break;
+
+            case "current":
+                // .tsdtv current ippo
+                if (cmdParts.length > 2) {
+                    try {
+                        ShowInfo result = tsdtv.getPrevAndNextEpisodeNums(cmdParts[2]);
+                        bot.sendMessage(channel, "The next episode of " + result.name
+                                + " will be " + result.nextEpisode
+                                + ". The previously watched episode was " + result.previousEpisode + ".");
+                    } catch (Exception e) {
+                        bot.sendMessage(channel, "Error: " + e.getMessage());
+                    }
+                } else {
+                    bot.sendMessage(channel, usage);
+                }
+                break;
+
+            case "links":
+                bot.sendMessage(channel, tsdtv.getLinks(true));
+                break;
         }
     }
 }

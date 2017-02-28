@@ -7,9 +7,6 @@ import org.tsd.tsdbot.model.warzone.WarzoneNight;
 
 import java.sql.SQLException;
 
-/**
- * Created by Joe on 10/31/2015.
- */
 public class WarzoneNightDao extends BaseDaoImpl<WarzoneNight, Integer> {
 
     public WarzoneNightDao(ConnectionSource connectionSource) throws SQLException {

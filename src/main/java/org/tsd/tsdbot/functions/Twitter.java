@@ -6,6 +6,8 @@ import com.google.inject.name.Named;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jibble.pircbot.User;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -18,14 +20,13 @@ import org.tsd.tsdbot.notifications.TwitterManager;
 import org.tsd.tsdbot.runnable.InjectableIRCThreadFactory;
 import org.tsd.tsdbot.runnable.ThreadManager;
 import org.tsd.tsdbot.runnable.TweetPoll;
+import org.tsd.tsdbot.util.AuthenticationUtil;
 import org.tsd.tsdbot.util.IRCUtil;
 import twitter4j.QueryResult;
 import twitter4j.Status;
 import twitter4j.TwitterException;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.Random;
+import java.util.*;
 
 @Singleton
 @Function(initialRegex = "^\\.tw.*")
@@ -33,15 +34,21 @@ public class Twitter extends MainFunctionImpl {
 
     private static final Logger logger = LoggerFactory.getLogger(Twitter.class);
 
-    private ThreadManager threadManager;
-    private InjectableIRCThreadFactory threadFactory;
-    private TwitterManager twitterManager;
-    private String mashapeKey;
-    private Random random;
+    private final ThreadManager threadManager;
+    private final InjectableIRCThreadFactory threadFactory;
+    private final TwitterManager twitterManager;
+    private final String mashapeKey;
+    private final Random random;
+    private final AuthenticationUtil authenticationUtil;
 
     @Inject
-    public Twitter(TSDBot bot, TwitterManager mgr, ThreadManager threadManager, Random random,
-                   InjectableIRCThreadFactory threadFactory, @Named("mashapeKey") String mashapeKey) {
+    public Twitter(TSDBot bot,
+                   TwitterManager mgr,
+                   ThreadManager threadManager,
+                   Random random,
+                   InjectableIRCThreadFactory threadFactory,
+                   AuthenticationUtil authenticationUtil,
+                   @Named("mashapeKey") String mashapeKey) {
         super(bot);
         this.description = "Twitter utility: send and receive tweets from our exclusive @TSD_IRC Twitter account! " +
                 "Propose tweets for the chat to vote on.";
@@ -52,6 +59,7 @@ public class Twitter extends MainFunctionImpl {
         this.threadFactory = threadFactory;
         this.mashapeKey = mashapeKey;
         this.random = random;
+        this.authenticationUtil = authenticationUtil;
     }
 
     @Override
@@ -61,7 +69,7 @@ public class Twitter extends MainFunctionImpl {
         if(TweetPoll.TweetPollOperation.fromString(text) != null)
             return;
 
-        boolean isOp = bot.userHasGlobalPriv(sender, User.Priv.OP);
+        boolean isOp = authenticationUtil.userHasGlobalPriv(bot, sender, User.Priv.OP);
 
         String[] cmdParts = text.split("\\s+");
 
@@ -73,17 +81,20 @@ public class Twitter extends MainFunctionImpl {
 
                 if(subCmd.equals("following")) {
 
-                    bot.sendMessage(sender,"Here is a list of the people I'm following: ");
-                    for(String s : twitterManager.getFollowing())
-                        bot.sendMessage(sender,s);
+                    bot.sendMessage(sender, "Here is a list of the people I'm following: ");
+                    String following = StringUtils.join(twitterManager.getFollowing(), ", ");
+                    Arrays.stream(IRCUtil.splitLongString(following))
+                            .forEach(msgPart -> bot.sendMessage(sender, msgPart));
 
                 } else if(subCmd.equals("timeline")) {
 
-                    if(twitterManager.history().isEmpty())
-                        bot.sendMessage(channel,"I don't have any tweets in my recent history");
-                    else
-                        for(TwitterManager.Tweet t : twitterManager.history())
-                            bot.sendMessage(channel,t.getInline());
+                    if(twitterManager.history().isEmpty()) {
+                        bot.sendMessage(channel, "I don't have any tweets in my recent history");
+                    } else {
+                        twitterManager.history().stream()
+                                .map(TwitterManager.Tweet::getInline)
+                                .forEach(tweet -> bot.sendMessage(channel, tweet));
+                    }
 
                 } else if(cmdParts.length < 3) { // below this clause, 3 args are always required
 
@@ -95,8 +106,8 @@ public class Twitter extends MainFunctionImpl {
                         bot.sendMessage(channel,"Only ops can use .tw tweet");
                         return;
                     }
-                    String tweet = "";
-                    for(int i=2 ; i < cmdParts.length ; i++) tweet += (cmdParts[i] + " ");
+
+                    String tweet = StringUtils.join(ArrayUtils.subarray(cmdParts, 2, cmdParts.length), " ");
                     Status postedTweet = twitterManager.postTweet(tweet);
                     bot.sendMessage(channel,"Tweet successful: " + "https://twitter.com/TSD_IRC/status/" + postedTweet.getId());
                     logger.info("[TWITTER] Posted tweet: {}", "https://twitter.com/TSD_IRC/status/" + postedTweet.getId());
@@ -108,11 +119,13 @@ public class Twitter extends MainFunctionImpl {
                         return;
                     }
                     String replyToString = cmdParts[2];
-                    LinkedList<TwitterManager.Tweet> matchedTweets = twitterManager.getNotificationByTail(replyToString);
+                    List<TwitterManager.Tweet> matchedTweets = twitterManager.getNotificationByTail(replyToString);
                     if(matchedTweets.size() == 0) bot.sendMessage(channel,"Could not find tweet with ID matching" + replyToString + " in recent history");
                     else if(matchedTweets.size() > 1) {
                         String returnString = "Found multiple matching Tweets in recent history:";
-                        for(NotificationEntity not : matchedTweets) returnString += (" " + not.getKey());
+                        for(NotificationEntity not : matchedTweets) {
+                            returnString += (" " + not.getKey());
+                        }
                         returnString += ". Help me out here";
                         bot.sendMessage(channel,returnString);
                     } else {
@@ -130,7 +143,7 @@ public class Twitter extends MainFunctionImpl {
                         return;
                     }
                     String retweetString = cmdParts[2];
-                    LinkedList<TwitterManager.Tweet> matchedTweets = twitterManager.getNotificationByTail(retweetString);
+                    List<TwitterManager.Tweet> matchedTweets = twitterManager.getNotificationByTail(retweetString);
                     if(matchedTweets.size() == 0) bot.sendMessage(channel,"Could not find tweet with ID matching" + retweetString + " in recent history");
                     else if(matchedTweets.size() > 1) {
                         String returnString = "Found multiple matching Tweets in recent history:";
@@ -211,7 +224,7 @@ public class Twitter extends MainFunctionImpl {
                         }
 
                         String replyToId = cmdParts[3];
-                        LinkedList<TwitterManager.Tweet> matchedTweets = twitterManager.getNotificationByTail(replyToId);
+                        List<TwitterManager.Tweet> matchedTweets = twitterManager.getNotificationByTail(replyToId);
                         if(matchedTweets.size() == 0) bot.sendMessage(channel,"Could not find tweet with ID matching " + replyToId + " in recent history");
                         else if(matchedTweets.size() > 1) {
                             String returnString = "Found multiple matching Tweets in recent history:";

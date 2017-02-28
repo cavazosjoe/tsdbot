@@ -2,12 +2,13 @@ package org.tsd.tsdbot.model.dbo;
 
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
+import org.tsd.tsdbot.model.BasicEntity;
 
 @DatabaseTable(tableName = "DBO_USER")
-public class DboUser {
+public class DboUser extends BasicEntity {
 
-    @DatabaseField(id = true)
-    private int id;
+    @DatabaseField(canBeNull = false, unique = true)
+    private int userId;
 
     @DatabaseField
     private String handle;
@@ -16,16 +17,16 @@ public class DboUser {
     public DboUser() {}
 
     public DboUser(int id, String handle) {
-        this.id = id;
+        this.userId = id;
         this.handle = handle;
     }
 
-    public int getId() {
-        return id;
+    public int getUserId() {
+        return userId;
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public void setUserId(int userId) {
+        this.userId = userId;
     }
 
     public String getHandle() {
@@ -34,20 +35,5 @@ public class DboUser {
 
     public void setHandle(String handle) {
         this.handle = handle;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        DboUser dboUser = (DboUser) o;
-
-        return id == dboUser.id;
-    }
-
-    @Override
-    public int hashCode() {
-        return id;
     }
 }

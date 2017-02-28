@@ -13,9 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.config.TSDBotConfiguration;
+import org.tsd.tsdbot.util.AuthenticationUtil;
 import org.tsd.tsdbot.util.RelativeDate;
 import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
-import org.tsd.tsdbot.util.fuzzy.FuzzyVisitor;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -52,6 +52,7 @@ public class XboxLive extends MainFunctionImpl {
 
     private final String xblApiKey; // App key to use API
     private final long xuid;      // XUID for TSD IRC account
+    private final AuthenticationUtil authenticationUtil;
 
     private TreeSet<Player> friendsList = new TreeSet<>(new Comparator<Player>() {
         @Override
@@ -70,12 +71,13 @@ public class XboxLive extends MainFunctionImpl {
             });
 
     @Inject
-    public XboxLive(TSDBot bot, TSDBotConfiguration config) {
+    public XboxLive(TSDBot bot, TSDBotConfiguration config, AuthenticationUtil authenticationUtil) {
         super(bot);
         this.description = "Xbox Live utility";
         this.usage = "USAGE: .xbl [ gamertag ]";
         this.xblApiKey = config.xbl.apiKey;
         this.xuid = Long.parseLong(config.xbl.xuid);
+        this.authenticationUtil = authenticationUtil;
         try {
             loadFriendsList();
         } catch (Exception e) {
@@ -130,58 +132,52 @@ public class XboxLive extends MainFunctionImpl {
 
             String subCmd = cmdParts[1];
 
-            if(subCmd.equals("reload")) {
-
-                if(!bot.userHasGlobalPriv(sender, User.Priv.OP)) {
-                    bot.sendMessage(channel, "Only ops can use .xbl reload");
-                } else try {
-                    loadFriendsList();
-                    bot.sendMessage(channel, "Friends list reloaded successfully");
-                } catch (Exception e) {
-                    logger.error("Error reloading friends list", e);
-                    bot.sendMessage(channel, "Error reloading friends list");
-                }
-
-            } else if(subCmd.equals("list")) {
-
-                bot.sendMessage(channel, "Sending you my friends list, " + sender);
-                StringBuilder sb = new StringBuilder();
-                for(Player player : friendsList) {
-                    if(sb.length() > 0) sb.append(", ");
-                    sb.append(player.gamertag);
-                }
-                bot.sendMessage(sender, sb.toString());
-
-            } else try {
-
-                String gt = cmdParts[1];
-
-                List<Player> matchedPlayers = FuzzyLogic.fuzzySubset(gt, friendsList, new FuzzyVisitor<Player>() {
-                    @Override
-                    public String visit(Player o1) {
-                        return o1.gamertag;
+            switch (subCmd) {
+                case "reload": {
+                    if (!authenticationUtil.userHasGlobalPriv(bot, sender, User.Priv.OP)) {
+                        bot.sendMessage(channel, "Only ops can use .xbl reload");
+                    } else try {
+                        loadFriendsList();
+                        bot.sendMessage(channel, "Friends list reloaded successfully");
+                    } catch (Exception e) {
+                        logger.error("Error reloading friends list", e);
+                        bot.sendMessage(channel, "Error reloading friends list");
                     }
-                });
-
-                if(matchedPlayers.size() == 0) {
-                    bot.sendMessage(channel, "Could not find gamertag matching \"" + gt + "\"... maybe I'm not following them?");
-                } else if(matchedPlayers.size() > 1) {
-                    StringBuilder msg = new StringBuilder();
-                    msg.append("Found multiple gamertags matching \"").append(gt).append("\": ").append(StringUtils.join(matchedPlayers, ", "));
-                    bot.sendMessage(channel, msg.toString());
-                } else {
-                    Player player = matchedPlayers.get(0);
-                    PlayerStatus status = getCachedPlayerStatus(player);
-                    if(status.xuid != null) {
-                        bot.sendMessage(channel, status.toString());
-                    } else {
-                        bot.sendMessage(channel, "Error fetching status for " + player.gamertag);
-                    }
+                    break;
                 }
-
-            } catch (Exception e) {
-                logger.error("Error getting player status", e);
-                bot.sendMessage(channel, "Error getting player status");
+                case "list": {
+                    bot.sendMessage(channel, "Sending you my friends list, " + sender);
+                    StringBuilder sb = new StringBuilder();
+                    for (Player player : friendsList) {
+                        if (sb.length() > 0) sb.append(", ");
+                        sb.append(player.gamertag);
+                    }
+                    bot.sendMessage(sender, sb.toString());
+                    break;
+                }
+                default: {
+                    try {
+                        String gt = cmdParts[1];
+                        List<Player> matchedPlayers = FuzzyLogic.fuzzySubset(gt, friendsList, player -> player.gamertag);
+                        if (matchedPlayers.size() == 0) {
+                            bot.sendMessage(channel, "Could not find gamertag matching \"" + gt + "\"... maybe I'm not following them?");
+                        } else if (matchedPlayers.size() > 1) {
+                            bot.sendMessage(channel, "Found multiple gamertags matching \"" + gt + "\": " + StringUtils.join(matchedPlayers, ", "));
+                        } else {
+                            Player player = matchedPlayers.get(0);
+                            PlayerStatus status = getCachedPlayerStatus(player);
+                            if (status.xuid != null) {
+                                bot.sendMessage(channel, status.toString());
+                            } else {
+                                bot.sendMessage(channel, "Error fetching status for " + player.gamertag);
+                            }
+                        }
+                    } catch (Exception e) {
+                        logger.error("Error getting player status", e);
+                        bot.sendMessage(channel, "Error getting player status");
+                    }
+                    break;
+                }
             }
         }
     }

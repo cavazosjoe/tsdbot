@@ -3,6 +3,7 @@ package org.tsd.tsdbot.notifications;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.NotificationType;
@@ -14,14 +15,18 @@ import org.tsd.tsdbot.util.IRCUtil;
 import org.tsd.tsdbot.util.RelativeDate;
 import twitter4j.*;
 import twitter4j.auth.AccessToken;
+import twitter4j.conf.ConfigurationBuilder;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Singleton
 public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
@@ -29,15 +34,17 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     private static Logger logger = LoggerFactory.getLogger(TwitterManager.class);
 
     private static final long USER_ID = 2349834990l;
-    private static final long EXCEPTION_COOLDOWN = 1000 * 60 * 2; // 2 minutes
-    private static final long COOLDOWN_PERIOD = 1000 * 60 * 60 * 2; // 2 hours
+    private static final long EXCEPTION_COOLDOWN = TimeUnit.MINUTES.toMillis(2);
+    private static final long COOLDOWN_PERIOD = TimeUnit.HOURS.toMillis(2);
 
     private Stage stage;
     private Twitter twitter;
-//    private TwitterStream stream;
-    private HashMap<Long, User> following;
-    private HashMap<Long, Long> cooldown; // userId -> timestamp of last tweet
-    private List<String> channels;
+    private TwitterStream stream;
+    private List<String> channels = new LinkedList<>();
+
+    private final Map<Long, User> following = new HashMap<>();
+    private final Map<Long, Long> throttledUsers = new HashMap<>(); // userId -> timestamp of last tweet
+    private final DelayQueue<DelayedImpl> exceptionThrottle = new DelayQueue<>();
 
     @Inject
     public TwitterManager(final TSDBot bot,
@@ -63,12 +70,125 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
 
             logger.info("Twitter API initialized successfully");
 
-            this.following = new HashMap<>();
-            this.cooldown = new HashMap<>();
-            Long[] followingIds = ArrayUtils.toObject(twitter.getFriendsIDs(USER_ID, -1).getIDs());
-            for(Long id : followingIds) {
-                following.put(id, twitter.showUser(id));
-                cooldown.put(id, 0L);
+            long[] followingIds = twitter.getFriendsIDs(USER_ID, -1).getIDs();
+            following.putAll(
+                    IntStream.range(0, followingIds.length)
+                            .mapToObj(i -> getUserFromId(followingIds[i]))
+                            .collect(Collectors.toMap(User::getId, u -> u))
+            );
+
+            if(stage.equals(Stage.production)) { // disable streaming if in dev mode
+
+                exceptionThrottle.put(new DelayedImpl(EXCEPTION_COOLDOWN)); // delay for two minutes
+
+                ConfigurationBuilder cb = new ConfigurationBuilder()
+                        .setOAuthConsumerKey(CONSUMER_KEY)
+                        .setOAuthConsumerSecret(CONSUMER_KEY_SECRET)
+                        .setOAuthAccessToken(ACCESS_TOKEN)
+                        .setOAuthAccessTokenSecret(ACCESS_TOKEN_SECRET);
+
+                stream = new TwitterStreamFactory(cb.build()).getInstance();
+                stream.addListener(new StatusListener() {
+                    @Override
+                    public void onStatus(Status status) {
+
+                        long userId = status.getUser().getId();
+                        logger.debug("Evaluating status: {} (user = {})", status.getId(), userId);
+
+                        // don't display our tweets
+                        if(userId == USER_ID) {
+                            logger.info("Status is ours, userId = {}", userId);
+                            return;
+                        }
+
+                        if(status.isRetweet()) {
+                            long currentUserRetweetId = status.getCurrentUserRetweetId();
+                            if(!following.containsKey(currentUserRetweetId)) {
+                                logger.debug("Status is retweet from not-followed user: {}", currentUserRetweetId);
+                                return;
+                            } else {
+                                logger.debug("Status is retweet from followed user: {}", following.get(currentUserRetweetId).getScreenName());
+                            }
+                        } else {
+                            if(!following.containsKey(userId)) {
+                                logger.debug("Status is from not-followed user: {}", userId);
+                                return;
+                            } else {
+                                logger.debug("Status is from followed user: {}", following.get(userId).getScreenName());
+                            }
+                        }
+
+                        // don't display replies to tweets from people we don't follow
+                        String text = status.getText();
+                        if(StringUtils.isNotBlank(text) && text.startsWith("@")) {
+                            logger.debug("Status is probably a reply, discerning user...");
+                            boolean foundUser = false;
+                            String firstWord = status.getText().split("\\s+")[0]; // @DARKSNIPER99
+                            if(firstWord.length() > 1) {
+                                final String replyTo = firstWord.substring(1);
+                                logger.debug("Checking for user in following list: {}", replyTo);
+                                foundUser = following.values()
+                                        .parallelStream()
+                                        .anyMatch(user -> user.getScreenName().equals(replyTo));
+                            }
+                            if(!foundUser) {
+                                logger.debug("Unable to find user in following list");
+                                return; // we're not following whomever this is a reply to
+                            } else {
+                                logger.debug("We are following this user");
+                            }
+                        }
+
+                        if(throttledUsers.containsKey(userId)) {
+                            // don't display the tweet if the tweeter has tweeted < within cooldown period
+                            long currentTime = System.currentTimeMillis();
+                            if (currentTime - throttledUsers.get(status.getUser().getId()) < COOLDOWN_PERIOD) {
+                                return;
+                            } else {
+                                throttledUsers.put(userId, currentTime);
+                            }
+                        }
+
+                        Tweet newTweet = new Tweet(status);
+                        recentNotifications.addFirst(newTweet);
+                        trimHistory();
+
+                        for(String channel : channels) {
+                            bot.sendMessage(channel, newTweet.getInline());
+                        }
+
+                        logger.info("Successfully logged tweet: {}", newTweet.getInline());
+                    }
+
+                    @Override
+                    public void onDeletionNotice(StatusDeletionNotice statusDeletionNotice) {}
+
+                    @Override
+                    public void onTrackLimitationNotice(int i) {}
+
+                    @Override
+                    public void onScrubGeo(long l, long l2) {}
+
+                    @Override
+                    public void onStallWarning(StallWarning stallWarning) {}
+
+                    @Override
+                    public void onException(Exception e) {
+                        logger.error("Twitter Stream ERROR", e);
+                        bot.incrementBlunderCnt();
+                        try {
+                            exceptionThrottle.take();
+                            exceptionThrottle.put(new DelayedImpl(EXCEPTION_COOLDOWN));
+                        } catch (InterruptedException e1) {
+                            logger.error("Interrupted during exception throttling", e1);
+                        }
+                    }
+                });
+
+                FilterQuery fq = new FilterQuery(getFollowingIds());
+                stream.filter(fq);
+
+                logger.info("Twitter Streaming API initialized successfully");
             }
 
         } catch (TwitterException e) {
@@ -77,10 +197,19 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
         }
     }
 
+    private User getUserFromId(long id) {
+        try {
+            return twitter.showUser(id);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public QueryResult search(String queryString, int limit) throws TwitterException {
         Query q = new Query(queryString);
-        if(limit > 0)
+        if(limit > 0) {
             q.setCount(limit);
+        }
         return twitter.search(q);
     }
 
@@ -94,7 +223,9 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     }
 
     public Status postTweet(String text) throws TwitterException {
-        if(text.length() > 140) throw new TwitterException("Must be 140 characters or less");
+        if(text.length() > 140) {
+            throw new TwitterException("Must be 140 characters or less");
+        }
         return twitter.updateStatus(text);
     }
 
@@ -106,7 +237,9 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
 
         if(text.startsWith("@")) { // text = @whoever I thought you were dead!
             String[] parts = text.split(" ",2);
-            if(parts.length > 1) text = parts[1];
+            if(parts.length > 1) {
+                text = parts[1];
+            }
         }
 
         // text = I thought you were dead!
@@ -115,7 +248,9 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
 
         // text = @whoever I thought you were dead!
 
-        if(text.length() > 140) throw new TwitterException("Must be 140 characters or less");
+        if(text.length() > 140) {
+            throw new TwitterException("Must be 140 characters or less");
+        }
 
         StatusUpdate reply = new StatusUpdate(text);
         reply.setInReplyToStatusId(replyTo.getStatus().getId());
@@ -129,7 +264,6 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
             User followed = twitter.createFriendship(handle);
             if(followed != null) {
                 following.put(followed.getId(), followed);
-                cooldown.put(followed.getId(), 0L);
                 refreshFollowersFilter();
                 bot.sendMessage(channel, "Now following @" + followed.getScreenName());
             }
@@ -145,7 +279,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
             User unfollowed = twitter.destroyFriendship(handle);
             if(unfollowed != null) {
                 following.remove(unfollowed.getId());
-                cooldown.remove(unfollowed.getId());
+                throttledUsers.remove(unfollowed.getId());
                 refreshFollowersFilter();
                 bot.sendMessage(channel, "No longer following @" + unfollowed.getScreenName());
             }
@@ -159,7 +293,7 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
         handle = handle.replace("@","");
         for(User followed : following.values()) {
             if(followed.getScreenName().equalsIgnoreCase(handle)) {
-                cooldown.remove(followed.getId());
+                throttledUsers.remove(followed.getId());
                 bot.sendMessage(channel, "@" + handle + " has been UNLEASHED!");
                 return;
             }
@@ -168,21 +302,22 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
         bot.incrementBlunderCnt();
     }
 
-    public void throttle(String channel, String handle) {
-        handle = handle.replace("@","");
-        for(User followed : following.values()) {
-            if(followed.getScreenName().equalsIgnoreCase(handle)) {
-                if(cooldown.containsKey(followed.getId())) {
-                    bot.sendMessage(channel, "@" + handle + " is already being throttled");
-                } else {
-                    cooldown.put(followed.getId(), 0L);
-                    bot.sendMessage(channel, "@" + handle + " has been restrained");
-                }
-                return;
+    public void throttle(String channel, final String handle) {
+        User user = following.values().stream()
+                .filter(followed -> followed.getScreenName().equalsIgnoreCase(handle))
+                .findFirst().orElse(null);
+
+        if(user != null) {
+            if(throttledUsers.containsKey(user.getId())) {
+                bot.sendMessage(channel, "@" + handle + " is already being throttled");
+            } else {
+                throttledUsers.put(user.getId(), 0L);
+                bot.sendMessage(channel, "@" + handle + " has been restrained");
             }
+        } else {
+            bot.sendMessage(channel, "I could not throttle @" + handle + " because I'm not following xir");
+            bot.incrementBlunderCnt();
         }
-        bot.sendMessage(channel, "I could not throttle @" + handle + " because I'm not following xir");
-        bot.incrementBlunderCnt();
     }
 
     public void delete(String channel, long id) {
@@ -200,18 +335,22 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
         }
     }
 
-    public LinkedList<String> getFollowing() throws TwitterException {
-        LinkedList<String> ret = new LinkedList<>();
-        for(Long id : following.keySet()) {
-            User f = following.get(id);
-            ret.add(f.getName() + " (@" + f.getScreenName() + ")");
-        }
-        return ret;
+    public List<String> getFollowing() throws TwitterException {
+        return following.keySet().stream()
+                .map(following::get)
+                .map(user -> String.format("%s (@%s)", user.getName(), user.getScreenName()))
+                .collect(Collectors.toList());
     }
 
     private void refreshFollowersFilter() throws TwitterException {
-//        if(stage.equals(Stage.production))
-//            stream.filter(new FilterQuery(ArrayUtils.toPrimitive(following.keySet().toArray(new Long[]{}))));
+        if(stage.equals(Stage.production)) {
+            FilterQuery filterQuery = new FilterQuery(getFollowingIds());
+            stream.filter(filterQuery);
+        }
+    }
+
+    private long[] getFollowingIds() {
+        return ArrayUtils.toPrimitive(following.keySet().toArray(new Long[following.size()]));
     }
 
     @Override
@@ -225,6 +364,8 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
     }
 
     public class Tweet extends NotificationEntity {
+
+        private static final String inlineFormat = "[Twitter] [%s @%s] %s (%s) id=%s";
 
         private Status status;
 
@@ -241,26 +382,36 @@ public class TwitterManager extends NotificationManager<TwitterManager.Tweet> {
             return asString.substring(asString.length()-4); // ...4321
         }
 
+        private String getRelativeDate() {
+            return RelativeDate.getRelativeDate(status.getCreatedAt());
+        }
+
         @Override
         public String getInline() {
-            return IRCUtil.trimToSingleMsg("[Twitter] " + "[" + status.getUser().getName() + " @" + status.getUser().getScreenName() + "] " + status.getText() + " (" + RelativeDate.getRelativeDate(status.getCreatedAt()) + ") id=" + getTrimmedId()) ;
+            return IRCUtil.trimToSingleMsg(
+                    String.format(inlineFormat,
+                            status.getUser().getName(),
+                            status.getUser().getScreenName(),
+                            status.getText(),
+                            getRelativeDate(),
+                            getTrimmedId()));
         }
 
         @Override
         public String getPreview() {
             setOpened(true);
-            return IRCUtil.trimToSingleMsg("[" + status.getUser().getName() + " @" + status.getUser().getScreenName() + "] " + status.getText() + " (" + RelativeDate.getRelativeDate(status.getCreatedAt()) + ") id=" + getTrimmedId()) ;
+            return getInline();
         }
 
         @Override
         public String[] getFullText() {
             setOpened(true);
-            return IRCUtil.splitLongString(status.getText() + " (" + RelativeDate.getRelativeDate(status.getCreatedAt()) + ")") ;
+            return IRCUtil.splitLongString(String.format("%s (%s)", status.getText(), getRelativeDate()));
         }
 
         @Override
         public String getKey() {
-            return "" + status.getId();
+            return String.valueOf(status.getId());
         }
     }
 

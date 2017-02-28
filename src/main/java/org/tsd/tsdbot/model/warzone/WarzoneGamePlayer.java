@@ -3,12 +3,10 @@ package org.tsd.tsdbot.model.warzone;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
+import org.tsd.tsdbot.model.BasicEntity;
 
-/**
- * Created by Joe on 10/31/2015.
- */
 @DatabaseTable(tableName = "WarzoneGamePlayer")
-public class WarzoneGamePlayer {
+public class WarzoneGamePlayer extends BasicEntity {
 
     @DatabaseField(foreign = true, foreignAutoRefresh = true, columnName = "warzoneGameId", canBeNull = false, uniqueCombo = true)
     private WarzoneGame game;
@@ -118,24 +116,5 @@ public class WarzoneGamePlayer {
 
     public void setPowerWeaponKills(int powerWeaponKills) {
         this.powerWeaponKills = powerWeaponKills;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        WarzoneGamePlayer that = (WarzoneGamePlayer) o;
-
-        if (game != null ? !game.equals(that.game) : that.game != null) return false;
-        return !(gamertag != null ? !gamertag.equals(that.gamertag) : that.gamertag != null);
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = game != null ? game.hashCode() : 0;
-        result = 31 * result + (gamertag != null ? gamertag.hashCode() : 0);
-        return result;
     }
 }

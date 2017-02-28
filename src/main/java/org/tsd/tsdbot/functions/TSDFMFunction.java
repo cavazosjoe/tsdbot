@@ -11,6 +11,7 @@ import org.tsd.tsdbot.tsdfm.TSDFMLibrary;
 import org.tsd.tsdbot.tsdfm.model.TSDFMAlbum;
 import org.tsd.tsdbot.tsdfm.model.TSDFMArtist;
 import org.tsd.tsdbot.tsdfm.model.TSDFMSong;
+import org.tsd.tsdbot.util.AuthenticationUtil;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -23,12 +24,14 @@ public class TSDFMFunction extends MainFunctionImpl {
 
     private final TSDFM tsdfm;
     private final TSDFMLibrary library;
+    private final AuthenticationUtil authenticationUtil;
 
     @Inject
-    public TSDFMFunction(TSDBot bot, TSDFM tsdfm, TSDFMLibrary library) {
+    public TSDFMFunction(TSDBot bot, TSDFM tsdfm, TSDFMLibrary library, AuthenticationUtil authenticationUtil) {
         super(bot);
         this.tsdfm = tsdfm;
         this.library = library;
+        this.authenticationUtil = authenticationUtil;
         this.description = "The TSDFM Official Radio Station of TSDFM";
         this.usage = "USAGE: .tsdfm [ tag [tag_options] ] [ request [request_options] ]";
     }
@@ -45,7 +48,7 @@ public class TSDFMFunction extends MainFunctionImpl {
         switch(cmdParts[1]) {
             case "tag": {
 
-                if(!bot.userIsOwner(sender)) {
+                if(!authenticationUtil.userIsOwner(sender)) {
                     bot.sendMessage(channel, "Only my owner can tag songs");
                     return;
                 }
@@ -104,7 +107,7 @@ public class TSDFMFunction extends MainFunctionImpl {
                 break;
             }
             case "reload": {
-                if(!bot.userIsOwner(sender)) {
+                if(!authenticationUtil.userIsOwner(sender)) {
                     bot.sendMessage(channel, "Only my owner can do that");
                     return;
                 }

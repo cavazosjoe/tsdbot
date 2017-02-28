@@ -16,7 +16,6 @@ import org.tsd.tsdbot.functions.MainFunction;
 import org.tsd.tsdbot.history.HistoryBuff;
 import org.tsd.tsdbot.module.BotOwner;
 import org.tsd.tsdbot.module.MainChannel;
-import org.tsd.tsdbot.runnable.IRCListenerThread;
 import org.tsd.tsdbot.runnable.ThreadManager;
 import org.tsd.tsdbot.stats.Stats;
 import org.tsd.tsdbot.util.ArchivistUtil;
@@ -25,9 +24,10 @@ import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class TSDBot extends PircBot {
 
@@ -133,17 +133,8 @@ public class TSDBot extends PircBot {
         ));
 
         // watch out for schroogling
-        Iterator<String> it = blacklist.iterator();
-        boolean addToBlacklist = false;
-        while(it.hasNext()) {
-            String blacklisted = it.next();
-            if(blacklisted.equals(oldNick)) {
-                // this person was blacklisted and did a name change, remove the old one and add the new one
-                it.remove();
-                addToBlacklist = true;
-            }
-        }
-        if(addToBlacklist) {
+        if(blacklist.removeIf(blacklisted -> blacklisted.equals(oldNick))) {
+            // this person was blacklisted and did a name change, remove the old one and add the new one
             blacklist.add(newNick);
         }
     }
@@ -202,43 +193,44 @@ public class TSDBot extends PircBot {
                 message
         ));
 
-        HistoryBuff.MessageType type = HistoryBuff.MessageType.NORMAL;
+        final HistoryBuff.MessageType[] type = {HistoryBuff.MessageType.NORMAL};
         if(!blacklist.contains(sender)) {
             // pass message to functions that match its pattern
-            for (MainFunction function : functions) {
-                if (message.matches(function.getListeningRegex())) {
-                    function.run(channel, sender, login, message);
-                    type = HistoryBuff.MessageType.COMMAND;
-                }
-            }
+            functions.stream()
+                    .filter(function -> message.matches(function.getListeningRegex()))
+                    .forEach(function -> {
+                        function.run(channel, sender, login, message);
+                        type[0] = HistoryBuff.MessageType.COMMAND;
+                    });
 
             // propagate message to all listening threads
-            for (IRCListenerThread listenerThread : threadManager.getThreadsByChannel(channel)) {
-                if (listenerThread.matches(message)) {
-                    listenerThread.onMessage(sender, login, hostname, message);
-                    type = HistoryBuff.MessageType.COMMAND;
-                }
-            }
+            threadManager.getThreadsByChannel(channel).stream()
+                    .filter(thread -> thread.matches(message))
+                    .forEach(thread -> {
+                        thread.onMessage(sender, login, hostname, message);
+                        type[0] = HistoryBuff.MessageType.COMMAND;
+                    });
 
             // pass message to all stat-collecting entities
-            for(Stats s : stats) {
-                s.processMessage(channel, sender, login, hostname, message);
-            }
+            stats.stream()
+                    .forEach(stat -> stat.processMessage(channel, sender, login, hostname, message));
+
         } else {
-            type = HistoryBuff.MessageType.BLACKLISTED;
+            type[0] = HistoryBuff.MessageType.BLACKLISTED;
         }
 
-        historyBuff.updateHistory(channel, message, sender, type);
+        historyBuff.updateHistory(channel, message, sender, type[0]);
     }
 
-    public LinkedList<User> getNonBotUsers(String channel) {
-        LinkedList<User> ret = new LinkedList<>();
-        for(User u : getUsers(channel)) {
-            if( (!FuzzyLogic.fuzzyMatches("bot", u.getNick())) && (!FuzzyLogic.fuzzyMatches("wheatley", u.getNick())) ) {
-                ret.add(u);
-            }
-        }
-        return ret;
+    public List<User> getNonBotUsers(String channel) {
+        return Arrays.stream(getUsers(channel))
+                .filter(TSDBot::userIsBot)
+                .collect(Collectors.toList());
+    }
+
+    private static boolean userIsBot(User user) {
+        return Arrays.asList("bot", "wheatley", "doc").stream()
+                .anyMatch(name -> FuzzyLogic.fuzzyMatches(name, user.getNick()));
     }
 
     public boolean addToBlacklist(User user) {
@@ -246,51 +238,23 @@ public class TSDBot extends PircBot {
     }
 
     public boolean removeFromBlacklist(User user) {
-        Iterator<String> it = blacklist.iterator();
-        while(it.hasNext()) {
-            String nick = it.next();
-            if(nick.equals(user.getNick())) {
-                it.remove();
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public boolean userIsOwner(String nick) {
-        return nick.equals(owner);
-    }
-
-    public boolean userHasGlobalPriv(String nick, User.Priv priv) {
-        return userHasPrivInChannel(nick, mainChannel, priv);
-    }
-
-    public boolean userHasPrivInChannel(String nick, String channel, User.Priv priv) {
-        User u = getUserFromNick(channel, nick);
-        return u != null && (userIsOwner(nick) || u.hasPriv(priv));
+        return blacklist.removeIf(nick -> user.getNick().equals(nick));
     }
 
     public User getUserFromNick(String channel, String nick) {
-        User user = null;
-        String prefixlessNick;
-        for(User u : getUsers(channel)) {
-            prefixlessNick = IRCUtil.getPrefixlessNick(u);
-            if(prefixlessNick.equals(nick)) {
-                user = u;
-                break;
-            }
-        }
-        return user;
+        return Arrays.stream(getUsers(channel))
+                .filter(user -> IRCUtil.getPrefixlessNick(user).equals(nick))
+                .findFirst().orElse(null);
     }
 
     public void sendMessages(String target, String[] messages) {
-        for(String m : messages) sendMessage(target, m);
+        Arrays.stream(messages)
+                .forEach(message -> sendMessage(target, message));
     }
 
     public void broadcast(String message) {
-        for(String channel : getChannels()) {
-            sendMessage(channel, message);
-        }
+        Arrays.stream(getChannels())
+                .forEach(channel -> sendMessage(channel, message));
     }
 
     public void incrementBlunderCnt() {

@@ -2,9 +2,6 @@ package org.tsd.tsdbot.tsdtv;
 
 import org.jibble.pircbot.User;
 
-/**
- * Created by Joe on 2/4/2015.
- */
 public class TSDTVChatUser extends TSDTVUser {
 
     private User user;

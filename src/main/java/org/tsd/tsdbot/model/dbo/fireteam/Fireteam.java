@@ -5,6 +5,7 @@ import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.field.ForeignCollectionField;
 import com.j256.ormlite.table.DatabaseTable;
 import org.apache.commons.lang3.StringUtils;
+import org.tsd.tsdbot.model.BasicEntity;
 import org.tsd.tsdbot.model.dbo.DboUser;
 import org.tsd.tsdbot.util.IRCUtil;
 
@@ -13,10 +14,10 @@ import java.util.Date;
 import java.util.TimeZone;
 
 @DatabaseTable(tableName = "DBO_FIRETEAM")
-public class Fireteam {
+public class Fireteam extends BasicEntity {
 
-    @DatabaseField(id = true)
-    private int id;
+    @DatabaseField(canBeNull = false, unique = true)
+    private int fireteamId;
 
     @DatabaseField(canBeNull = false)
     private Platform platform;
@@ -55,7 +56,15 @@ public class Fireteam {
     public Fireteam() {}
 
     public Fireteam(int id) {
-        this.id = id;
+        this.fireteamId = id;
+    }
+
+    public int getFireteamId() {
+        return fireteamId;
+    }
+
+    public void setFireteamId(int fireteamId) {
+        this.fireteamId = fireteamId;
     }
 
     public boolean isSubscribed() {
@@ -88,14 +97,6 @@ public class Fireteam {
 
     public void setLevel(Integer level) {
         this.level = level;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     public Platform getPlatform() {
@@ -155,35 +156,15 @@ public class Fireteam {
     }
 
     public String getUrl() {
-        return "http://destiny.bungie.org/forum/index.php?mode=fireteambuilder&event=" + id;
+        return "http://destiny.bungie.org/forum/index.php?mode=fireteambuilder&event=" + fireteamId;
     }
 
     public String getEffectiveTitle() {
         return (StringUtils.isNotEmpty(title)) ? title : activity;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Fireteam fireteam = (Fireteam) o;
-
-        if (id != fireteam.id) return false;
-
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        return id;
-    }
-
     public String toBriefString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("(").append(creator.getHandle()).append(") ").append(getEffectiveTitle())
-                .append(" (id=").append(id).append(")");
-        return sb.toString();
+        return "(" + creator.getHandle() + ") " + getEffectiveTitle() + " (id=" + fireteamId + ")";
     }
 
     @Override
@@ -204,21 +185,24 @@ public class Fireteam {
 
         sb.append(" (").append(creator.getHandle()).append(") ");
         if (StringUtils.isEmpty(title)) {
-            if(activity != null)
+            if(activity != null) {
                 sb.append(IRCUtil.bold(activity));
-            if(difficulty != null)
+            }
+            if(difficulty != null) {
                 sb.append(", ").append(difficulty);
+            }
         } else {
             sb.append(IRCUtil.bold(title));
             if(activity != null) {
                 sb.append(" (").append(activity);
-                if (difficulty != null)
+                if (difficulty != null) {
                     sb.append(", ").append(difficulty);
+                }
                 sb.append(")");
             }
         }
 
-        sb.append(" ").append(sdf.format(eventTime)).append(" (id=").append(id).append(")");
+        sb.append(" ").append(sdf.format(eventTime)).append(" (id=").append(fireteamId).append(")");
 
         return sb.toString();
     }

@@ -3,6 +3,7 @@ package org.tsd.tsdbot.util;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Arrays;
 
 public class ServletUtils {
 
@@ -11,14 +12,14 @@ public class ServletUtils {
     };
 
     public static String getIpAddress(HttpServletRequest request) {
-        String ip = null;
-        for(String s : IP_HEADERS) {
-            ip = request.getHeader(s);
-            if(StringUtils.isNotBlank(ip) && !"unknown".equalsIgnoreCase(ip))
-                break;
-        }
-        if(StringUtils.isNotBlank(ip) || "unknown".equalsIgnoreCase(ip))
+        String ip = Arrays.stream(IP_HEADERS)
+                .map(request::getHeader)
+                .filter(addr -> StringUtils.isNotBlank(addr) && !"unknown".equalsIgnoreCase(addr))
+                .findAny().orElse(null);
+
+        if(StringUtils.isNotBlank(ip) || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getRemoteAddr();
+        }
 
         return ip;
     }

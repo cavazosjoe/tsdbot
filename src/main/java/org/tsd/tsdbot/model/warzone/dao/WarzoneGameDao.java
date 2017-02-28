@@ -7,9 +7,6 @@ import org.tsd.tsdbot.model.warzone.WarzoneGamePlayer;
 
 import java.sql.SQLException;
 
-/**
- * Created by Joe on 10/31/2015.
- */
 public class WarzoneGameDao extends BaseDaoImpl<WarzoneGame, String> {
 
     public WarzoneGameDao(ConnectionSource connectionSource) throws SQLException {

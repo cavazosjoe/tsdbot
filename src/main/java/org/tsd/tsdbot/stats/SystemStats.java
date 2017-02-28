@@ -9,14 +9,13 @@ import org.slf4j.LoggerFactory;
 import java.text.DecimalFormat;
 import java.util.LinkedHashMap;
 
-/**
- * Created by Joe on 1/11/2015.
- */
 @Singleton
 public class SystemStats implements Stats {
 
     private static final Logger log = LoggerFactory.getLogger(SystemStats.class);
 
+    private static final String deviceFmt =
+            "TxBytes=%s, TxErrors=%s, TxPackets=%s, TxDropped=%s, RxBytes=%s, RxErrors=%s, RxPackets=%s, RxDropped=%s";
     private static final DecimalFormat decimalFormat = new DecimalFormat("##0.0000");
 
     @Inject
@@ -47,21 +46,19 @@ public class SystemStats implements Stats {
             NetConnection[] netCnx = sigar.getNetConnectionList(NetFlags.CONN_CLIENT | NetFlags.CONN_PROTOCOLS);
             report.put("Connections", netCnx.length);
 
-            String deviceFmt = "TxBytes=%s, TxErrors=%s, TxPackets=%s, TxDropped=%s, RxBytes=%s, RxErrors=%s, RxPackets=%s, RxDropped=%s";
             String[] netDevices = sigar.getNetInterfaceList();
             for(String device : netDevices) {
                 NetInterfaceConfig config = sigar.getNetInterfaceConfig(device);
                 NetInterfaceStat stat = sigar.getNetInterfaceStat(device);
                 if(stat.getTxBytes() > 0) {
-                    report.put(config.getName(), String.format(
-                            deviceFmt,
+                    report.put(config.getName(), String.format(deviceFmt,
                             stat.getTxBytes(), stat.getTxErrors(), stat.getTxPackets(), stat.getTxDropped(),
                             stat.getRxBytes(), stat.getRxErrors(), stat.getRxPackets(), stat.getRxDropped()
-                            ));
+                    ));
                 }
             }
         } catch (SigarException e) {
-            e.printStackTrace();
+            log.error("Error getting network stats", e);
         }
 
         return report;

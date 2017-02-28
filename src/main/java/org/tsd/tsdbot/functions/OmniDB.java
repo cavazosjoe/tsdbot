@@ -10,6 +10,7 @@ import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.database.DBConnectionProvider;
 import org.tsd.tsdbot.database.Persistable;
 import org.tsd.tsdbot.module.Function;
+import org.tsd.tsdbot.util.AuthenticationUtil;
 import org.tsd.tsdbot.util.DatabaseLogic;
 import org.tsd.tsdbot.util.MiscUtils;
 
@@ -37,14 +38,16 @@ public class OmniDB extends MainFunctionImpl implements Persistable {
     );
 
     private final DBConnectionProvider connectionProvider;
+    private final AuthenticationUtil authenticationUtil;
     private final Map<String, Item> lastPulledItems = new ConcurrentHashMap<>();
 
     @Inject
-    public OmniDB(TSDBot bot, DBConnectionProvider connectionProvider) throws SQLException {
+    public OmniDB(TSDBot bot, DBConnectionProvider connectionProvider, AuthenticationUtil authenticationUtil) throws SQLException {
         super(bot);
         this.description = "Use the patented TSD Omni Database";
         this.usage = "USAGE: .odb [ add #tag1 #tag2 <item> | get tag1 tag2 ]";
         this.connectionProvider = connectionProvider;
+        this.authenticationUtil = authenticationUtil;
         initDB();
     }
 
@@ -156,7 +159,7 @@ public class OmniDB extends MainFunctionImpl implements Persistable {
 
             case "del": {
 
-                if (!bot.userHasGlobalPriv(sender, User.Priv.HALFOP)) {
+                if (!authenticationUtil.userHasGlobalPriv(bot, sender, User.Priv.HALFOP)) {
                     bot.sendMessage(channel, "Only ops can use that");
                     return;
                 }

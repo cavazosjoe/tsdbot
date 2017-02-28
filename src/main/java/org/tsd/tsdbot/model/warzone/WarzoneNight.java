@@ -4,27 +4,18 @@ import com.j256.ormlite.dao.ForeignCollection;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.field.ForeignCollectionField;
 import com.j256.ormlite.table.DatabaseTable;
+import org.tsd.tsdbot.model.BasicEntity;
 
 import java.util.Date;
 
-/**
- * Created by Joe on 10/31/2015.
- */
 @DatabaseTable(tableName = "WarzoneNight")
-public class WarzoneNight {
-
-    @DatabaseField(generatedId = true)
-    private int id;
+public class WarzoneNight extends BasicEntity {
 
     @DatabaseField(canBeNull = false)
     private Date date;
 
     @ForeignCollectionField
     private ForeignCollection<WarzoneGame> games;
-
-    public int getId() {
-        return id;
-    }
 
     public Date getDate() {
         return date;

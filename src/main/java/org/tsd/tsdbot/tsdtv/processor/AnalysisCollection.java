@@ -6,16 +6,14 @@ import org.tsd.tsdbot.tsdtv.TSDTVFileProcessor;
 import org.tsd.tsdbot.util.MiscUtils;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.TreeSet;
 
-/**
-* Created by Joe on 2/28/2015.
-*/
 public class AnalysisCollection {
     private String id;
     private String folder;
     private String textOutput;
-    private LinkedList<FileAnalysis> analyses = new LinkedList<>();
+    private List<FileAnalysis> analyses = new LinkedList<>();
 
     public AnalysisCollection(String folder) {
         this.id = MiscUtils.getRandomString();
@@ -30,7 +28,7 @@ public class AnalysisCollection {
         return id;
     }
 
-    public LinkedList<FileAnalysis> getAnalyses() {
+    public List<FileAnalysis> getAnalyses() {
         return analyses;
     }
 
@@ -107,8 +105,9 @@ public class AnalysisCollection {
             prevAnalysis = analysis;
         }
 
-        if(discrepancy)
+        if(discrepancy) {
             output.append("**** WARNING: STREAM DISCREPANCY DETECTED, SUGGEST MANUAL FILTERING ****\n\n");
+        }
 
         output.append(streamView.toString()).append("\n\n")
                 .append("-- sub stream config --").append("\n")
@@ -126,8 +125,9 @@ public class AnalysisCollection {
             Stream[] streams = (sub) ?
                     TSDTVFileProcessor.detectSubStreams(fileAnalysis) : TSDTVFileProcessor.detectDubStreams(fileAnalysis);
             for(int i=0 ; i < streams.length ; i++) {
-                if(i != 0)
+                if(i != 0) {
                     sb.append(",");
+                }
                 sb.append(streams[i].getStreamNumber());
             }
             sb.append("\n");

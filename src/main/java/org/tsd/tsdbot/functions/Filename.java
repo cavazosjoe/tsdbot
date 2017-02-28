@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.FilenameLibrary;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.module.Function;
+import org.tsd.tsdbot.util.AuthenticationUtil;
 import org.tsd.tsdbot.util.IRCUtil;
 
 import java.io.IOException;
@@ -22,13 +23,15 @@ public class Filename extends MainFunctionImpl {
     private static final String filenamesLocation = "http://www.teamschoolyd.org/filenames/";
 
     private final FilenameLibrary library;
+    private final AuthenticationUtil authenticationUtil;
 
     @Inject
-    public Filename(TSDBot bot, FilenameLibrary library) {
+    public Filename(TSDBot bot, FilenameLibrary library, AuthenticationUtil authenticationUtil) {
         super(bot);
         this.description = "Pull a random entry from the TSD Filenames Database";
         this.usage = "USAGE: .fname [ add <filename> <URL> ] [ submit <filename> <URL> ] [ get <query> ]";
         this.library = library;
+        this.authenticationUtil = authenticationUtil;
     }
 
     @Override
@@ -47,7 +50,7 @@ public class Filename extends MainFunctionImpl {
 
         switch(cmdParts[1]) {
             case "add": {
-                if(!bot.userHasGlobalPriv(sender, User.Priv.OP)) {
+                if(!authenticationUtil.userHasGlobalPriv(bot, sender, User.Priv.OP)) {
                     bot.sendMessage(channel, "Only ops can add filenames directly. Please use \".fname submit <filename> <URL>\"");
                     return;
                 }
@@ -95,7 +98,7 @@ public class Filename extends MainFunctionImpl {
                 break;
             }
             case "approve": {
-                if(!bot.userHasGlobalPriv(sender, User.Priv.OP)) {
+                if(!authenticationUtil.userHasGlobalPriv(bot, sender, User.Priv.OP)) {
                     bot.sendMessage(channel, "Only ops can approve filenames");
                     return;
                 }
@@ -114,7 +117,7 @@ public class Filename extends MainFunctionImpl {
                 break;
             }
             case "deny": {
-                if(!bot.userHasGlobalPriv(sender, User.Priv.OP)) {
+                if(!authenticationUtil.userHasGlobalPriv(bot, sender, User.Priv.OP)) {
                     bot.sendMessage(channel, "Only ops can deny filenames");
                     return;
                 }
@@ -152,8 +155,6 @@ public class Filename extends MainFunctionImpl {
                 bot.sendMessage(channel, usage);
             }
         }
-
-
     }
 
 }

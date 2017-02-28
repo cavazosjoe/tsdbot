@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.ThreadType;
 import org.tsd.tsdbot.notifications.TwitterManager;
+import org.tsd.tsdbot.util.AuthenticationUtil;
 import twitter4j.Status;
 import twitter4j.TwitterException;
 
@@ -16,7 +17,9 @@ public class TweetPoll extends IRCListenerThread {
 
     private static Logger logger = LoggerFactory.getLogger(TweetPoll.class);
 
-    private TwitterManager twitterManager;
+    private final TwitterManager twitterManager;
+    private final AuthenticationUtil authenticationUtil;
+
     private String proposedTweet;
     private String proposer;
     private TwitterManager.Tweet replyTo = null;
@@ -26,10 +29,12 @@ public class TweetPoll extends IRCListenerThread {
     private boolean aborted = false;
 
     @Inject
-    public TweetPoll(TSDBot bot, ThreadManager threadManager, TwitterManager twitterManager) throws Exception {
+    public TweetPoll(TSDBot bot, ThreadManager threadManager, TwitterManager twitterManager,
+                     AuthenticationUtil authenticationUtil) throws Exception {
         super(bot, threadManager);
         this.listeningRegex = "^\\.tw (aye|abort)$";
         this.twitterManager = twitterManager;
+        this.authenticationUtil = authenticationUtil;
     }
 
     public void init(String channel, String proposer, String proposedTweet, TwitterManager.Tweet replyTo) throws Exception {
@@ -135,7 +140,7 @@ public class TweetPoll extends IRCListenerThread {
 
                 case abort: {
 
-                    if (sender.equals(proposer) || bot.userHasPrivInChannel(sender, channel, User.Priv.OP)) {
+                    if (sender.equals(proposer) || authenticationUtil.userHasPrivInChannel(bot, sender, channel, User.Priv.OP)) {
                         this.aborted = true;
                         mutex.notify();
                     } else {

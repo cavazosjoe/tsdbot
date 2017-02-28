@@ -3,9 +3,6 @@ package org.tsd.tsdbot.util;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
-/**
- * Created by Joe on 11/14/2014.
- */
 public class ImageUtils {
 
     public static BufferedImage overlayImages(BufferedImage bgImage,

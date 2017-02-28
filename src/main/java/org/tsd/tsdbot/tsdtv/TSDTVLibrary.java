@@ -10,11 +10,11 @@ import org.tsd.tsdbot.tsdtv.model.TSDTVFiller;
 import org.tsd.tsdbot.tsdtv.model.TSDTVShow;
 import org.tsd.tsdbot.util.TSDTVUtil;
 import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
-import org.tsd.tsdbot.util.fuzzy.FuzzyVisitor;
 
 import javax.inject.Named;
 import java.io.File;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Singleton
 public class TSDTVLibrary {
@@ -40,43 +40,33 @@ public class TSDTVLibrary {
     }
 
     public TreeSet<TSDTVShow> getOrderedShows() {
-        TreeSet<TSDTVShow> result = new TreeSet<>();
-        for(File f : libraryDirectory.listFiles()) {
-            if(f.isDirectory() && !f.getName().startsWith(".")) {
-                result.add(new TSDTVShow(f));
-            }
-        }
-        return result;
+        return Arrays.stream(libraryDirectory.listFiles())
+                .filter(file -> file.isDirectory() && !isDotFile(file))
+                .map(TSDTVShow::new)
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
-    public LinkedList<TSDTVShow> getAllShows() {
-        LinkedList<TSDTVShow> result = new LinkedList<>();
-        for(File f : libraryDirectory.listFiles()) {
-            if(f.isDirectory() && !f.getName().startsWith(".")) {
-                result.add(new TSDTVShow(f));
-            }
-        }
-        return result;
+    public List<TSDTVShow> getAllShows() {
+        return Arrays.stream(libraryDirectory.listFiles())
+                .filter(file -> file.isDirectory() && !isDotFile(file))
+                .map(TSDTVShow::new)
+                .collect(Collectors.toList());
     }
 
     public TSDTVShow getShow(String query) throws ShowNotFoundException {
         List<TSDTVShow> matchingDirs = FuzzyLogic.fuzzySubset(
                 query,
                 getAllShows(),
-                new FuzzyVisitor<TSDTVShow>() {
-                    @Override
-                    public String visit(TSDTVShow o1) {
-                        return o1.getRawName();
-                    }
-                });
+                TSDTVShow::getRawName);
 
-        if(matchingDirs.size() == 0)
+        if(matchingDirs.size() == 0) {
             throw new ShowNotFoundException("Could not find show matching \"" + query + "\"");
-        else if(matchingDirs.size() > 1) {
+        } else if(matchingDirs.size() > 1) {
             StringBuilder sb = new StringBuilder();
             sb.append("Found multiple shows matching \"").append(query).append("\":");
-            for(TSDTVShow show : matchingDirs)
+            for(TSDTVShow show : matchingDirs) {
                 sb.append(" ").append(show.getRawName());
+            }
             throw new ShowNotFoundException(sb.toString());
         } else {
             return matchingDirs.get(0);
@@ -114,6 +104,10 @@ public class TSDTVLibrary {
         }
         File video = TSDTVUtil.getRandomFileFromDirectory(random, new File(searchingDirPath));
         return (video != null) ? new TSDTVFiller(video, fillerType) : null;
+    }
+
+    private static boolean isDotFile(File f) {
+        return f.getName().startsWith(".");
     }
 
 }

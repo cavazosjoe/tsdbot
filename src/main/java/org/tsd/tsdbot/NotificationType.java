@@ -1,8 +1,5 @@
 package org.tsd.tsdbot;
 
-/**
- * Created by Joe on 1/13/2015.
- */
 public enum NotificationType {
     HBO_FORUM("HBO Forum", ".hbof"),
     HBO_NEWS("HBO News",   ".hbon"),
@@ -29,8 +26,9 @@ public enum NotificationType {
 
     public static NotificationType fromCommand(String cmd) {
         for(NotificationType type : values()) {
-            if(cmd.startsWith(type.getCommandPrefix()))
+            if(cmd.startsWith(type.getCommandPrefix())) {
                 return type;
+            }
         }
         return null;
     }

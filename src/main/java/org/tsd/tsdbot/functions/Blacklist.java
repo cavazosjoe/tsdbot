@@ -5,23 +5,27 @@ import com.google.inject.Singleton;
 import org.jibble.pircbot.User;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.module.Function;
+import org.tsd.tsdbot.util.AuthenticationUtil;
 import org.tsd.tsdbot.util.IRCUtil;
 
 @Singleton
 @Function(initialRegex = "^\\.blacklist.*")
 public class Blacklist extends MainFunctionImpl {
 
+    private final AuthenticationUtil authenticationUtil;
+
     @Inject
-    public Blacklist(TSDBot bot) {
+    public Blacklist(TSDBot bot, AuthenticationUtil authenticationUtil) {
         super(bot);
         this.description = "Adds or removes a user from the bot's blacklist";
         this.usage = "USAGE: .blacklist [ add <user> | remove <user> ]";
+        this.authenticationUtil = authenticationUtil;
     }
 
     @Override
     public void run(String channel, String sender, String ident, String text) {
 
-        if(!bot.userIsOwner(sender)) {
+        if(!authenticationUtil.userIsOwner(sender)) {
             bot.sendMessage(channel, "Only my owner can banish people to the shadow realm");
             return;
         }

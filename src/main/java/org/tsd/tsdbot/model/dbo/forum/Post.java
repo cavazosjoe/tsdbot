@@ -3,15 +3,15 @@ package org.tsd.tsdbot.model.dbo.forum;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
+import org.tsd.tsdbot.model.BasicEntity;
 
-import java.io.Serializable;
 import java.util.Date;
 
 @DatabaseTable(tableName = "DBO_POST")
-public class Post implements Serializable {
+public class Post extends BasicEntity {
 
-    @DatabaseField(id = true)
-    private int id;
+    @DatabaseField(canBeNull = false, unique = true)
+    private int postId;
 
     @DatabaseField(canBeNull = false)
     private String author;
@@ -29,15 +29,15 @@ public class Post implements Serializable {
     }
 
     public Post(int id) {
-        this.id = id;
+        this.postId = id;
     }
 
-    public int getId() {
-        return id;
+    public int getPostId() {
+        return postId;
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public void setPostId(int postId) {
+        this.postId = postId;
     }
 
     public String getAuthor() {
@@ -70,20 +70,5 @@ public class Post implements Serializable {
 
     public void setBody(String body) {
         this.body = body;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Post post = (Post) o;
-
-        return id == post.id;
-    }
-
-    @Override
-    public int hashCode() {
-        return id;
     }
 }
