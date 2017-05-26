@@ -11,10 +11,7 @@ import org.tsd.tsdbot.TestBot2;
 import org.tsd.tsdbot.TestBotModule;
 import org.tsd.tsdbot.history.HistoryBuff;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -33,8 +30,7 @@ public class GVTest {
     public void test(TSDBot bot) {
         TestBot2 testBot = (TestBot2)bot;
 
-        HashSet<String> gvResponses = new HashSet<>();
-        gvResponses.addAll(Arrays.asList(GeeVee.gvResponses));
+        Set<String> gvResponses = new HashSet<>(Arrays.asList(GeeVee.gvResponses));
 
         sendMessage(bot, normalUser, ".gv");
         assertNull(testBot.getAllMessages(channel));

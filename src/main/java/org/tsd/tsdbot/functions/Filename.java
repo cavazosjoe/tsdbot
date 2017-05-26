@@ -49,6 +49,14 @@ public class Filename extends MainFunctionImpl {
         }
 
         switch(cmdParts[1]) {
+            case "rando": {
+                try {
+                    bot.sendMessage(channel, library.generateRandomFilename());
+                } catch (Exception e) {
+                    bot.sendMessage(channel, "Error: " + e.getMessage());
+                }
+                break;
+            }
             case "add": {
                 if(!authenticationUtil.userHasGlobalPriv(bot, sender, User.Priv.OP)) {
                     bot.sendMessage(channel, "Only ops can add filenames directly. Please use \".fname submit <filename> <URL>\"");

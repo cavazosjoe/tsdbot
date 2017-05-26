@@ -194,29 +194,35 @@ public class TSDBot extends PircBot {
         ));
 
         final HistoryBuff.MessageType[] type = {HistoryBuff.MessageType.NORMAL};
-        if(!blacklist.contains(sender)) {
-            // pass message to functions that match its pattern
-            functions.stream()
-                    .filter(function -> message.matches(function.getListeningRegex()))
-                    .forEach(function -> {
+        boolean blacklistedSender = blacklist.contains(sender);
+
+        // pass message to functions that match its pattern
+        functions.stream()
+                .filter(function -> message.matches(function.getListeningRegex()))
+                .forEach(function -> {
+                    if (blacklistedSender) {
+                        type[0] = HistoryBuff.MessageType.BLACKLISTED;
+                    } else {
                         function.run(channel, sender, login, message);
                         type[0] = HistoryBuff.MessageType.COMMAND;
-                    });
+                    }
+                });
 
-            // propagate message to all listening threads
-            threadManager.getThreadsByChannel(channel).stream()
-                    .filter(thread -> thread.matches(message))
-                    .forEach(thread -> {
+        // propagate message to all listening threads
+        threadManager.getThreadsByChannel(channel).stream()
+                .filter(thread -> thread.matches(message))
+                .forEach(thread -> {
+                    if (blacklistedSender) {
+                        type[0] = HistoryBuff.MessageType.BLACKLISTED;
+                    } else {
                         thread.onMessage(sender, login, hostname, message);
                         type[0] = HistoryBuff.MessageType.COMMAND;
-                    });
+                    }
+                });
 
-            // pass message to all stat-collecting entities
-            stats.stream()
-                    .forEach(stat -> stat.processMessage(channel, sender, login, hostname, message));
-
-        } else {
-            type[0] = HistoryBuff.MessageType.BLACKLISTED;
+        // pass message to all stat-collecting entities
+        if (!blacklistedSender) {
+            stats.forEach(stat -> stat.processMessage(channel, sender, login, hostname, message));
         }
 
         historyBuff.updateHistory(channel, message, sender, type[0]);
@@ -224,12 +230,12 @@ public class TSDBot extends PircBot {
 
     public List<User> getNonBotUsers(String channel) {
         return Arrays.stream(getUsers(channel))
-                .filter(TSDBot::userIsBot)
+                .filter(user -> !userIsBot(user))
                 .collect(Collectors.toList());
     }
 
     private static boolean userIsBot(User user) {
-        return Arrays.asList("bot", "wheatley", "doc").stream()
+        return Arrays.stream(new String[]{"bot", "wheatley", "doc"})
                 .anyMatch(name -> FuzzyLogic.fuzzyMatches(name, user.getNick()));
     }
 
@@ -244,7 +250,7 @@ public class TSDBot extends PircBot {
     public User getUserFromNick(String channel, String nick) {
         return Arrays.stream(getUsers(channel))
                 .filter(user -> IRCUtil.getPrefixlessNick(user).equals(nick))
-                .findFirst().orElse(null);
+                .findAny().orElse(null);
     }
 
     public void sendMessages(String target, String[] messages) {

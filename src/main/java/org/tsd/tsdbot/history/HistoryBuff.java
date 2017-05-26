@@ -4,12 +4,14 @@ import com.google.common.collect.EvictingQueue;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tsd.tsdbot.TSDBot;
 import org.tsd.tsdbot.history.filter.MessageFilter;
 import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -24,8 +26,9 @@ public class HistoryBuff {
 
     @Inject
     public HistoryBuff(TSDBot bot, Random random) {
-        for(String channel : bot.getChannels())
+        for(String channel : bot.getChannels()) {
             channelHistory.put(channel, EvictingQueue.create(CHANNEL_HISTORY_SIZE));
+        }
         this.random = random;
     }
 
@@ -44,7 +47,7 @@ public class HistoryBuff {
         m.sender = sender;
         m.text = message;
         m.type = type;
-        m.date = new Date();
+        m.date = Instant.now();
 
         messages.add(m);
     }
@@ -68,12 +71,10 @@ public class HistoryBuff {
             possibilities = FuzzyLogic.fuzzySubset(author, buffer, message -> message.sender);
         }
 
-        possibilities = possibilities.parallelStream()
+        Collections.reverse(possibilities);
+        return possibilities.parallelStream()
                 .filter(message -> message.type.equals(MessageType.NORMAL))
-                .sorted((m1, m2) -> m2.date.compareTo(m1.date))
                 .collect(Collectors.toList());
-
-        return possibilities;
     }
 
     public Message getRandomFilteredMessage(String channel, String targetUser, MessageFilter filter) {
@@ -99,16 +100,24 @@ public class HistoryBuff {
     }
 
     public void reset() {
-        for(EvictingQueue<Message> buffer : channelHistory.values()) {
-            buffer.clear();
-        }
+        channelHistory.values().forEach(EvictingQueue::clear);
     }
 
     public class Message {
         public String text;
         public String sender;
         public MessageType type;
-        public Date date;
+        public Instant date;
+
+        @Override
+        public String toString() {
+            return new ToStringBuilder(this)
+                    .append("date", date)
+                    .append("sender", sender)
+                    .append("type", type)
+                    .append("text", text)
+                    .toString();
+        }
     }
 
     public enum MessageType {

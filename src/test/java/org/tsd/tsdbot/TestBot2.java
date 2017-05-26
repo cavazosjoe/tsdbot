@@ -6,8 +6,8 @@ import java.util.*;
 
 public class TestBot2 extends TSDBot {
 
-    private HashMap<String, Set<User>> channelUsers = new HashMap<>();
-    private HashMap<String, LinkedList<String>> linesSent = new HashMap<>();
+    private Map<String, Set<User>> channelUsers = new HashMap<>();
+    private Map<String, LinkedList<String>> linesSent = new HashMap<>();
 
     @Override
     public synchronized void sendMessage(String target, String text) {
@@ -40,7 +40,8 @@ public class TestBot2 extends TSDBot {
     }
 
     public String getLastMessage(String channel) {
-        return getLastMessages(channel, 1).get(0);
+        List<String> lastMessages = getLastMessages(channel, 1);
+        return lastMessages.isEmpty() ? null : lastMessages.get(0);
     }
 
     public List<String> getAllMessages(String target) {
@@ -51,12 +52,15 @@ public class TestBot2 extends TSDBot {
         if(count < 1) {
             throw new RuntimeException("number must be larger than 0");
         }
+        if (!linesSent.containsKey(channel)) {
+            return Collections.emptyList();
+        }
         return linesSent.get(channel).subList(0, count);
     }
 
     public void reset() {
         blacklist.clear();
         blunderCount = 0;
-        linesSent.values().forEach(LinkedList<String>::clear);
+        linesSent.clear();
     }
 }

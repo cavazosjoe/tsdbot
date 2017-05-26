@@ -27,6 +27,10 @@ public class TSDBotConfiguration {
     @NotNull
     public String filenamesDir;
 
+    @NotEmpty
+    @NotNull
+    public String randomImageDir;
+
     @NotNull
     public ArchivistConfig archivist;
 

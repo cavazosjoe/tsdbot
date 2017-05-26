@@ -232,12 +232,22 @@ public class TSDBotModule extends AbstractModule {
         log.info("Bound DBConnectionString: {}", configuration.database);
 
         File filenameLibrary = new File(configuration.filenamesDir);
-        if(!filenameLibrary.exists())
+        if(!filenameLibrary.exists()) {
             filenameLibrary.mkdir();
+        }
         bind(File.class)
                 .annotatedWith(Names.named("filenameLibrary"))
                 .toInstance(filenameLibrary);
         log.info("Bound filename library directory to {}", filenameLibrary.getAbsolutePath());
+
+        File randomImageDirectory = new File(configuration.randomImageDir);
+        if(!randomImageDirectory.exists()) {
+            randomImageDirectory.mkdir();
+        }
+        bind(File.class)
+                .annotatedWith(Names.named("randomImages"))
+                .toInstance(randomImageDirectory);
+        log.info("Bound random image directory to {}", randomImageDirectory.getAbsolutePath());
 
         File markovDirectory = new File(configuration.markovFileDirectory);
         if(!markovDirectory.exists()) {

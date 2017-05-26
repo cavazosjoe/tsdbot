@@ -38,7 +38,7 @@ public class Blacklist extends MainFunctionImpl {
 
         User user = bot.getUserFromNick(channel, cmdParts[2]);
         if(user == null) {
-            bot.sendMessage(channel, "Could not find user named "+sender);
+            bot.sendMessage(channel, "Could not find user named "+cmdParts[2]);
             return;
         }
 

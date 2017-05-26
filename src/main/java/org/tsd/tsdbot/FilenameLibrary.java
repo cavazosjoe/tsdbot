@@ -5,6 +5,7 @@ import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.validator.routines.UrlValidator;
@@ -14,10 +15,12 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tsd.tsdbot.servlets.filename.RandomFilenames;
 import org.tsd.tsdbot.util.fuzzy.FuzzyLogic;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Singleton
 public class FilenameLibrary implements Serializable {
@@ -26,25 +29,65 @@ public class FilenameLibrary implements Serializable {
 
     private static final int MAX_SUBMISSIONS_PER_PERSON = 5;
     private static final int MAX_TOTAL_SUBMISSIONS = 20;
+    private static final int MAX_RANDOM_FILENAME_HISTORY = 50;
 
     private static final long MAX_FILESIZE = 1024 * 1024 * 5; // 5 megabytes
     private static final String[] VALID_FILE_TYPES = {"jpg", "jpeg", "bmp", "webm", "flv", "png", ".mp3", "gif", "gifv"};
 
     private final LinkedList<FilenameSubmission> submissionQueue = new LinkedList<>();
     private final File filenameDirectory;
+    private final File randomImagesDirectory;
     private final HttpClient httpClient;
     private final Random random;
     private final String serverUrl;
 
+    private LinkedHashMap<String, byte[]> randomFilenames = new LinkedHashMap<>();
+
     @Inject
     public FilenameLibrary(@Named("filenameLibrary") File filenameDirectory,
+                           @Named("randomImages") File randomImagesDirectory,
                            HttpClient httpClient,
                            Random random,
                            @Named("serverUrl") String serverUrl) {
         this.filenameDirectory = filenameDirectory;
+        this.randomImagesDirectory = randomImagesDirectory;
         this.httpClient = httpClient;
         this.random = random;
         this.serverUrl = serverUrl;
+    }
+
+    public String generateRandomFilename() throws IOException {
+        File[] randomImages = randomImagesDirectory.listFiles();
+        if (ArrayUtils.isEmpty(randomImages)) {
+            throw new RuntimeException("No random images available");
+        }
+
+        File randomImage = randomImages[random.nextInt(randomImages.length)];
+        List<String> possibleFilenames;
+        boolean useExistingFilename = random.nextBoolean();
+        if (useExistingFilename) {
+            possibleFilenames = readFiles().stream()
+                    .map(File::getName)
+                    .map(FilenameLibrary::stripExtension)
+                    .collect(Collectors.toList());
+        } else {
+            possibleFilenames = Arrays.asList(RandomFilenames.FILENAMES);
+        }
+
+        String chosenFilename = possibleFilenames.get(random.nextInt(possibleFilenames.size()))
+                + "." + parseExtensionFromName(randomImage.getName());
+
+        if (randomFilenames.size() >= MAX_RANDOM_FILENAME_HISTORY) {
+            String toRemove = randomFilenames.keySet().iterator().next();
+            randomFilenames.remove(toRemove);
+        }
+
+        randomFilenames.put(chosenFilename, FileUtils.readFileToByteArray(randomImage));
+        return serverUrl + "/randomFilenames/" + chosenFilename;
+    }
+
+    private static String stripExtension(String input) {
+        return input.substring(0, input.lastIndexOf('.'));
     }
 
     public String addFilename(String name, String path) throws IOException, FilenameValidationException {
@@ -112,8 +155,9 @@ public class FilenameLibrary implements Serializable {
 
     public String get(String contains) throws FilenameRetrievalException {
         TreeSet<File> filenames = readFiles();
-        if(filenames.isEmpty())
+        if(filenames.isEmpty()) {
             throw new FilenameRetrievalException("no filenames available");
+        }
 
         if(StringUtils.isBlank(contains)) {
             // return random
@@ -127,7 +171,7 @@ public class FilenameLibrary implements Serializable {
             }
             throw new FilenameRetrievalException("no filenames available");
         } else {
-            List<File> matchedFiles = FuzzyLogic.fuzzySubset(contains, filenames, filename -> filename.getName());
+            List<File> matchedFiles = FuzzyLogic.fuzzySubset(contains, filenames, File::getName);
 
             if(matchedFiles.size() == 0) {
                 throw new FilenameRetrievalException("found no filenames matching \"" + contains + "\"");
@@ -138,22 +182,25 @@ public class FilenameLibrary implements Serializable {
         }
     }
 
+    public byte[] getRandomFilename(String filename) throws FileNotFoundException {
+        if (randomFilenames.containsKey(filename)) {
+            return randomFilenames.get(filename);
+        }
+        throw new FileNotFoundException();
+    }
+
     public byte[] getFile(String name) throws Exception {
         TreeSet<File> filenames = readFiles();
         for(File f : filenames) {
-            if(f.getName().equals(name))
+            if(f.getName().equals(name)) {
                 return IOUtils.toByteArray(new FileInputStream(f));
+            }
         }
         throw new FileNotFoundException();
     }
 
     public TreeSet<File> readFiles() {
-        TreeSet<File> filenames = new TreeSet<>(new Comparator<File>() {
-            @Override
-            public int compare(File o1, File o2) {
-                return o1.getName().compareToIgnoreCase(o2.getName());
-            }
-        });
+        TreeSet<File> filenames = new TreeSet<>((o1, o2) -> o1.getName().compareToIgnoreCase(o2.getName()));
         filenames.addAll(Arrays.asList(filenameDirectory.listFiles()));
         return filenames;
     }
@@ -198,13 +245,17 @@ public class FilenameLibrary implements Serializable {
 
         log.info("Validating filename submission: name={} path={}", name, path);
 
-        if(StringUtils.isBlank(name))
+        if(StringUtils.isBlank(name)) {
             throw new FilenameValidationException("name cannot be null");
-        if(StringUtils.isBlank(path))
-            throw new FilenameValidationException("URL cannot be null");
+        }
 
-        if(!UrlValidator.getInstance().isValid(path))
+        if(StringUtils.isBlank(path)) {
+            throw new FilenameValidationException("URL cannot be null");
+        }
+
+        if(!UrlValidator.getInstance().isValid(path)) {
             throw new FilenameValidationException("not a valid URL");
+        }
 
 
         String extension = parseExtensionFromName(name);
@@ -213,13 +264,15 @@ public class FilenameLibrary implements Serializable {
         }
 
         for(File f : readFiles()) {
-            if(f.getName().equalsIgnoreCase(name))
+            if(f.getName().equalsIgnoreCase(name)) {
                 throw new FilenameValidationException("detected an existing filename named " + name);
+            }
         }
 
         for(FilenameSubmission submission : submissionQueue) {
-            if(submission.getName().equalsIgnoreCase(name))
+            if(submission.getName().equalsIgnoreCase(name)) {
                 throw new FilenameValidationException("detected a pending filename named " + name);
+            }
         }
 
         try {

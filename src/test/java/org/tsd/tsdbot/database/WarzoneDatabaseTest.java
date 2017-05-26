@@ -101,8 +101,9 @@ public class WarzoneDatabaseTest {
             e.printStackTrace();
             fail();
         } finally {
-            if(jdbcConnectionSource.isOpen())
+            if(jdbcConnectionSource.isOpen()) {
                 jdbcConnectionSource.closeQuietly();
+            }
         }
     }
 

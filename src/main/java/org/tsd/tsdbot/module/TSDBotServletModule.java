@@ -8,6 +8,7 @@ import org.tsd.tsdbot.servlets.RecapServlet;
 import org.tsd.tsdbot.servlets.StatusServlet;
 import org.tsd.tsdbot.servlets.filename.FilenameImageServlet;
 import org.tsd.tsdbot.servlets.filename.FilenameListingServlet;
+import org.tsd.tsdbot.servlets.filename.RandomFilenameImageServlet;
 import org.tsd.tsdbot.servlets.hustle.HustleChartServlet;
 import org.tsd.tsdbot.servlets.hustle.HustleServlet;
 import org.tsd.tsdbot.servlets.tsdtv.*;
@@ -61,6 +62,9 @@ public class TSDBotServletModule extends ServletModule {
 
         bind(FilenameImageServlet.class);
         serve("/filenames/*").with(FilenameImageServlet.class);
+
+        bind(RandomFilenameImageServlet.class);
+        serve("/randomFilenames/*").with(RandomFilenameImageServlet.class);
 
         /**
          * Status

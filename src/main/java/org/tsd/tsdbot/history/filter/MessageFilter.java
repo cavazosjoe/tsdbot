@@ -3,10 +3,11 @@ package org.tsd.tsdbot.history.filter;
 import org.tsd.tsdbot.history.HistoryBuff;
 
 import java.util.HashSet;
+import java.util.Set;
 
 public class MessageFilter {
 
-    private HashSet<MessageFilterStrategy> filters = new HashSet<>();
+    private Set<MessageFilterStrategy> filters = new HashSet<>();
 
     private MessageFilter() {}
 
@@ -16,11 +17,7 @@ public class MessageFilter {
     }
 
     public boolean validateMessage(HistoryBuff.Message m) {
-        for(MessageFilterStrategy strategy : filters) {
-            if(!strategy.apply(m))
-                return false;
-        }
-        return true;
+        return filters.stream().allMatch(filter -> filter.apply(m));
     }
 
     public static MessageFilter create() {
